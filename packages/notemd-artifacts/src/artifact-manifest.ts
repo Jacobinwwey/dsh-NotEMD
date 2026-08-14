@@ -102,8 +102,7 @@ function parseManifest(content: string, expectedArtifactId: string): ArtifactMan
     throw new ArtifactManifestError('Artifact manifest has an invalid shape.')
   }
 
-  const allowedPrefix = `.notemd/artifacts/${expectedArtifactId}/`
-  if (value.ownedPaths.some((path) => !path.startsWith(allowedPrefix))) {
+  if (value.ownedPaths.some((path) => !isArtifactOwnedPath(path, expectedArtifactId))) {
     throw new ArtifactManifestError('Artifact manifest attempts to own a path outside its directory.')
   }
 
@@ -115,6 +114,18 @@ function parseManifest(content: string, expectedArtifactId: string): ArtifactMan
     renderer: 'source',
     ownedPaths: [...value.ownedPaths],
   }
+}
+
+function isArtifactOwnedPath(path: string, artifactId: string): boolean {
+  const prefix = `.notemd/artifacts/${artifactId}/`
+  if (!path.startsWith(prefix) || path.includes('\\') || path.includes('\0')) {
+    return false
+  }
+
+  const relativePath = path.slice(prefix.length)
+  return relativePath.length > 0 && relativePath.split('/').every(
+    (segment) => segment.length > 0 && segment !== '.' && segment !== '..',
+  )
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

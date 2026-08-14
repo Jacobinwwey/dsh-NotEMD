@@ -51,3 +51,23 @@ test('plans portable source files and a manifest with exact ownership', async ()
     ownedPaths: expect.arrayContaining(plan.writes.map((write) => write.path).filter((path) => !path.endsWith('/manifest.json'))),
   })
 })
+
+test('rejects a manifest that claims a path outside its artifact directory', async () => {
+  const artifactId = `notemd-artifact-${'a'.repeat(20)}`
+  const artifactDirectory = join(workspaceRoot, '.notemd', 'artifacts', artifactId)
+  await mkdir(artifactDirectory, { recursive: true })
+  await writeFile(join(artifactDirectory, 'manifest.json'), JSON.stringify({
+    version: 1,
+    artifactId,
+    sourcePath: 'notes/architecture.md',
+    sourceRevision: 'revision',
+    renderer: 'source',
+    ownedPaths: [`.notemd/artifacts/${artifactId}/../../notes/architecture.md`],
+  }))
+
+  const artifacts = new SourceArtifactPlanner(await LocalVault.open(workspaceRoot))
+
+  await expect(artifacts.planCleanup(artifactId)).rejects.toMatchObject({
+    code: 'ARTIFACT_MANIFEST_INVALID',
+  })
+})
