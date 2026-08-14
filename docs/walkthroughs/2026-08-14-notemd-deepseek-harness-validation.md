@@ -10,6 +10,7 @@ This walkthrough validates the packed NoteMD bundle against the source DeepSeek 
 | --- | --- |
 | Node.js | `22.19.0` |
 | Workspace pnpm | `10.7.1` |
+| Vitest suite | `12` test files / `38` tests |
 | DeepSeek Harness | `0.1.0-rc.5` source checkout |
 | DSH installer pnpm | `11.7.0` |
 | Cordis peer contract | `@deepseek-ai/cordis` `4.0.1` |

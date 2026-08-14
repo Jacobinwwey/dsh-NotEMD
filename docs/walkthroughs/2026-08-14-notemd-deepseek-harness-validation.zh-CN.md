@@ -10,6 +10,7 @@
 | --- | --- |
 | Node.js | `22.19.0` |
 | workspace pnpm | `10.7.1` |
+| Vitest 测试套件 | `12` 个测试文件 / `38` 个测试 |
 | DeepSeek Harness | `0.1.0-rc.5` source checkout |
 | DSH 安装器 pnpm | `11.7.0` |
 | Cordis peer 契约 | `@deepseek-ai/cordis` `4.0.1` |
