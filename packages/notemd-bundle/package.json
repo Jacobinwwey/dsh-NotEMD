@@ -1,0 +1,85 @@
+{
+  "name": "@jacobinwwey/notemd-deepseek-harness",
+  "version": "0.1.0",
+  "description": "Portable NoteMD workflow bundle for DeepSeek Harness",
+  "type": "module",
+  "files": ["lib/**/*.js", "lib/**/*.d.ts", "cordis.patch.yml", "README.md"],
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./vault-local": {
+      "types": "./lib/vault-local.d.ts",
+      "default": "./lib/vault-local.js"
+    },
+    "./jobs": {
+      "types": "./lib/jobs.d.ts",
+      "default": "./lib/jobs.js"
+    },
+    "./knowledge": {
+      "types": "./lib/knowledge.d.ts",
+      "default": "./lib/knowledge.js"
+    },
+    "./artifacts": {
+      "types": "./lib/artifacts.d.ts",
+      "default": "./lib/artifacts.js"
+    },
+    "./llm": {
+      "types": "./lib/llm.d.ts",
+      "default": "./lib/llm.js"
+    },
+    "./workflows": {
+      "types": "./lib/workflows.d.ts",
+      "default": "./lib/workflows.js"
+    },
+    "./tools": {
+      "types": "./lib/tools.d.ts",
+      "default": "./lib/tools.js"
+    },
+    "./approval": {
+      "types": "./lib/approval.d.ts",
+      "default": "./lib/approval.js"
+    }
+  },
+  "types": "./lib/index.d.ts",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-tools": "0.1.0-rc.5"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": { "optional": true },
+    "@deepseek-ai/dsh-tools": { "optional": true }
+  },
+  "dependencies": {
+    "@notemd-harness/artifacts": "workspace:*",
+    "@notemd-harness/jobs": "workspace:*",
+    "@notemd-harness/knowledge": "workspace:*",
+    "@notemd-harness/llm-openai-compatible": "workspace:*",
+    "@notemd-harness/tools": "workspace:*",
+    "@notemd-harness/vault": "workspace:*",
+    "@notemd-harness/vault-local": "workspace:*",
+    "@notemd-harness/workflows": "workspace:*",
+    "minisearch": "^7.1.2"
+  },
+  "bundledDependencies": [
+    "@notemd-harness/artifacts",
+    "@notemd-harness/jobs",
+    "@notemd-harness/knowledge",
+    "@notemd-harness/llm-openai-compatible",
+    "@notemd-harness/tools",
+    "@notemd-harness/vault",
+    "@notemd-harness/vault-local",
+    "@notemd-harness/workflows"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config ../../vitest.config.ts"
+  }
+}

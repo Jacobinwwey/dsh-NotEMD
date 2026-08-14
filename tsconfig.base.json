@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "useUnknownInCatchVariables": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "verbatimModuleSyntax": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@notemd-harness/vault": ["packages/notemd-vault/src/index.ts"],
+      "@notemd-harness/vault-local": ["packages/notemd-vault-local/src/index.ts"],
+      "@notemd-harness/jobs": ["packages/notemd-jobs/src/index.ts"],
+      "@notemd-harness/knowledge": ["packages/notemd-knowledge/src/index.ts"],
+      "@notemd-harness/workflows": ["packages/notemd-workflows/src/index.ts"],
+      "@notemd-harness/artifacts": ["packages/notemd-artifacts/src/index.ts"],
+      "@notemd-harness/llm-openai-compatible": ["packages/notemd-llm-openai-compatible/src/index.ts"],
+      "@notemd-harness/tools": ["packages/notemd-tools/src/index.ts"]
+    }
+  }
+}

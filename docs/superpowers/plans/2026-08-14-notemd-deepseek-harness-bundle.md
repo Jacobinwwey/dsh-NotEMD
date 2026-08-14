@@ -42,7 +42,7 @@
 - Create: package.json
 - Create: pnpm-workspace.yaml
 - Create: tsconfig.base.json
-- Create: vitest.workspace.ts
+- Create: vitest.config.ts
 - Create: .npmrc
 - Create: packages/*/package.json
 - Create: packages/*/tsconfig.json

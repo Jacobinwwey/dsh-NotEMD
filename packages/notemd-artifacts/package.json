@@ -1,0 +1,22 @@
+{
+  "name": "@notemd-harness/artifacts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "files": ["lib/**/*.js", "lib/**/*.d.ts"],
+  "dependencies": {
+    "@notemd-harness/vault": "workspace:*"
+  },
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    }
+  },
+  "types": "./lib/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config ../../vitest.config.ts"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/notemd-vault" },
+    { "path": "./packages/notemd-vault-local" },
+    { "path": "./packages/notemd-jobs" },
+    { "path": "./packages/notemd-knowledge" },
+    { "path": "./packages/notemd-workflows" },
+    { "path": "./packages/notemd-artifacts" },
+    { "path": "./packages/notemd-llm-openai-compatible" },
+    { "path": "./packages/notemd-tools" },
+    { "path": "./packages/notemd-bundle" }
+  ]
+}

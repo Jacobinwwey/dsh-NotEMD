@@ -1,0 +1,44 @@
+# Portable NoteMD workflow providers. Values remain deployment-owned; a later
+# profile patch replaces a row's whole config and must restate its fields.
+- insert:
+    - id: notemd-vault
+      name: '@jacobinwwey/notemd-deepseek-harness/vault-local'
+      config:
+        workspaceRoot: !!js process.cwd()
+
+    - id: notemd-jobs
+      name: '@jacobinwwey/notemd-deepseek-harness/jobs'
+      inject: [notemdVault]
+      config:
+        workspaceRoot: !!js process.cwd()
+
+    - id: notemd-approval
+      name: '@jacobinwwey/notemd-deepseek-harness/approval'
+      config:
+        workspaceRoot: !!js process.cwd()
+        approvalTtlMs: 300000
+
+    - id: notemd-knowledge
+      name: '@jacobinwwey/notemd-deepseek-harness/knowledge'
+      inject: [notemdVault]
+
+    - id: notemd-artifacts
+      name: '@jacobinwwey/notemd-deepseek-harness/artifacts'
+      inject: [notemdVault]
+
+    - id: notemd-llm
+      name: '@jacobinwwey/notemd-deepseek-harness/llm'
+      config:
+        endpoint: !!js process.env.NOTEMD_OPENAI_ENDPOINT ?? 'https://api.deepseek.com/v1/chat/completions'
+        model: !!js process.env.NOTEMD_OPENAI_MODEL ?? 'deepseek-chat'
+        apiKeyEnv: NOTEMD_API_KEY
+        timeoutMs: 30000
+
+    - id: notemd-workflows
+      name: '@jacobinwwey/notemd-deepseek-harness/workflows'
+      inject: [notemdVault, notemdTextTransformer]
+
+    - id: notemd-tools
+      name: '@jacobinwwey/notemd-deepseek-harness/tools'
+      inject:
+        [tools, notemdVault, notemdJobs, notemdKnowledge, notemdWorkflows, notemdArtifacts, notemdApprovalLedger, notemdApprovalGate]

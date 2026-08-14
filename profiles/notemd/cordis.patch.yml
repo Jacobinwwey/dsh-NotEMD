@@ -1,0 +1,14 @@
+# Sample overlay for running this repository's fixture workspace. Production
+# profiles must replace all three workspaceRoot values with their own root.
+- id: notemd-vault
+  config:
+    workspaceRoot: !!js process.cwd() + '/fixtures/workspace'
+
+- id: notemd-jobs
+  config:
+    workspaceRoot: !!js process.cwd() + '/fixtures/workspace'
+
+- id: notemd-approval
+  config:
+    workspaceRoot: !!js process.cwd() + '/fixtures/workspace'
+    approvalTtlMs: 300000

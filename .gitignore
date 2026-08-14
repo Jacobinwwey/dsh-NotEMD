@@ -1,1 +1,8 @@
 ref/
+node_modules/
+lib/
+coverage/
+artifacts/
+.notemd/
+*.tsbuildinfo
+*.tgz
