@@ -10,7 +10,7 @@
 | --- | --- |
 | Node.js | `22.19.0` |
 | workspace pnpm | `10.7.1` |
-| Vitest 测试套件 | `12` 个测试文件 / `38` 个测试 |
+| Vitest 测试套件 | `13` 个测试文件 / `39` 个测试 |
 | DeepSeek Harness | `0.1.0-rc.5` source checkout |
 | DSH 安装器 pnpm | `11.7.0` |
 | Cordis peer 契约 | `@deepseek-ai/cordis` `4.0.1` |
@@ -22,12 +22,15 @@
 pnpm typecheck
 pnpm lint
 pnpm test
+pnpm test:coverage
 pnpm build
 pnpm pack:bundle
 pnpm verify:bundle
 pnpm accept:dsh
 git diff --check
 ```
+
+`pnpm test:coverage` 只采集可发布的 `packages/**/src/**/*.ts`；固定的 `ref/` checkout 与发布脚本被有意排除。
 
 DSH source runtime 只在 `ref/deepseek-harness` 内准备：
 

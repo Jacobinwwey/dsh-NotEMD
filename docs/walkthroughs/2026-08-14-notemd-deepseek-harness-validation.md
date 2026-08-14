@@ -10,7 +10,7 @@ This walkthrough validates the packed NoteMD bundle against the source DeepSeek 
 | --- | --- |
 | Node.js | `22.19.0` |
 | Workspace pnpm | `10.7.1` |
-| Vitest suite | `12` test files / `38` tests |
+| Vitest suite | `13` test files / `39` tests |
 | DeepSeek Harness | `0.1.0-rc.5` source checkout |
 | DSH installer pnpm | `11.7.0` |
 | Cordis peer contract | `@deepseek-ai/cordis` `4.0.1` |
@@ -22,12 +22,15 @@ This walkthrough validates the packed NoteMD bundle against the source DeepSeek 
 pnpm typecheck
 pnpm lint
 pnpm test
+pnpm test:coverage
 pnpm build
 pnpm pack:bundle
 pnpm verify:bundle
 pnpm accept:dsh
 git diff --check
 ```
+
+`pnpm test:coverage` collects only publishable `packages/**/src/**/*.ts`; the pinned `ref/` checkout and release scripts are intentionally excluded.
 
 The DSH source runtime is prepared only in `ref/deepseek-harness`:
 
