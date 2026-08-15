@@ -51,12 +51,12 @@ notemd-bundle                Cordis services, schema config, bundle patch
 
 **Produces:** A machine-readable mapping from all source operation IDs to `included`, `excluded-by-design`, or `excluded-wip`, plus deterministic fixture inputs and normalized expected outputs.
 
-- [ ] Extract the 29 source registry IDs and classify provider/profile and Obsidian-host operations as `excluded-by-design`; classify only the listed uncommitted Drawnix files and fixtures as `excluded-wip`.
-- [ ] Capture fixture cases for chapter splitting, original-text extraction, link generation, title generation, translation, concepts, dedupe, formula repair, Mermaid repair, local retrieval, diagram source, and slide-source preparation.
-- [ ] Use deterministic fake LLM/Web services. Assert output schemas, target paths, citations, mutation preconditions, and artifact digests; do not snapshot arbitrary natural-language wording.
-- [ ] Add an assertion that every `included` matrix row has at least one target fixture and every `excluded` row has a documented reason.
-- [ ] Run `rtk proxy pnpm.cmd --filter @notemd-harness/workflows test -- source-contracts.test.ts` and `rtk proxy pnpm.cmd --filter @notemd-harness/artifacts test -- source-artifact-contracts.test.ts`.
-- [ ] Record fixture count, source commit, and exclusions in both progress documents; commit `test: characterize NotEMD migration behavior`.
+- [x] Extracted the 29 source registry IDs. The matrix contains 18 `included` and 11 `excluded-by-design` operation rows; only the four pinned Drawnix worktree paths are `excluded-wip`.
+- [x] Captured 14 deterministic fixtures for chapter splitting, original-text extraction, link generation, title generation, translation, concepts, dedupe, formula repair, Mermaid repair, local retrieval, diagram source, and slide-source preparation.
+- [x] Pinned input and artifact SHA-256 values and asserted output schemas, target paths, citations, mutation preconditions, and artifact lineage without snapshotting generated prose.
+- [x] Asserted complete included-fixture coverage, exclusion reasons, the exact fixture set, and the exact Drawnix WIP quarantine set.
+- [x] Ran focused source-contract tests, full Vitest, and strict TypeScript build verification.
+- [x] Recorded source commit, fixture count, exclusions, and test evidence in both progress documents; commit `test: characterize NotEMD migration behavior`.
 
 ### Task 2: Introduce Typed Workspace Mutation Proposals
 

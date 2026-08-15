@@ -2,7 +2,7 @@
 
 > English version: [2026-08-15-dsh-notemd-migration-progress.md](2026-08-15-dsh-notemd-migration-progress.md)
 
-**状态：** standalone bundle 与 next-level runtime 基础已实现。全量迁移架构与可执行计划已在 `main` 的 `626f6e1` 发布；十一项全量迁移能力任务均尚未开始实现。
+**状态：** standalone bundle 与 next-level runtime 基础已实现。全量迁移架构与可执行计划已在 `main` 的 `626f6e1` 发布；Task 1（源行为契约）已完成，Task 2-11 仍待实现。
 
 ## 1. 范围基线
 
@@ -16,6 +16,7 @@
 - 目标已具备审批门控、修订感知的文本 `WritePlan` 路径，持久化的只规划作业，工作区变更对账，以及增量 MiniSearch 索引。
 - 当前运行时已使用 Cordis `Service`、显式 `inject` 依赖，并通过 `ctx.effect()` 管理轮询扫描器和知识订阅清理。
 - 本文档更新前目标工作树处于 clean 状态。
+- Task 1 已在 `fixtures/migration/source-operation-matrix.json` 冻结源边界：29 个 operation ID、18 个 included 行、11 个 design exclusion、四个精确的 Drawnix-WIP exclusion，以及 14 个 SHA-256 固定的确定性 fixture。
 
 ## 3. 已完成的代码审计
 
@@ -53,7 +54,7 @@
 
 | 任务 | `6672f54` 时的状态 | 离开该状态的关口 |
 | --- | --- | --- |
-| 1. 源行为契约 | 未开始。尚无 operation matrix 或迁移 fixture。 | 29 个源 operation ID 均有分类和原因；每个范围内条目都有确定性 fixture。 |
+| 1. 源行为契约 | 已完成。矩阵在 `4168a51cd19ad8c3d1e05f604b50936255461a31` 固定全部 29 个源 registry ID；18 个 included 行均引用 14 个确定性 fixture 中的一个或多个。 | 源契约不能静默扩大 Drawnix WIP exclusion 集合，也不能丢失本地检索、图表或 slide fixture 覆盖。 |
 | 2. 类型化 mutation proposal | 未开始。`notemd-mutation` 尚不存在。 | 不可变 text/bytes/delete plan、staged asset reference、digest 和封闭 receipt 通过契约测试。 |
 | 3. 本地 journaled executor | 未开始。本地写入是彼此独立的 `Promise.all()` 操作，没有 batch journal 或恢复。 | 在 Windows 上通过崩溃点、规范锁、二进制、delete/quarantine、路径边界和幂等恢复测试。 |
 | 4. 审批、事件、作业与 Tool receipt | 未开始。审批、checkpoint、event 和开放 Tool schema 仍以 `WritePlan` 为中心。 | 审批绑定 plan/asset digest；只有已验证 receipt 能发布 metadata-only change；每个具名 Tool 有封闭结果 schema。 |
@@ -69,16 +70,16 @@
 
 - [权威架构](../specs/2026-08-15-dsh-notemd-full-migration-architecture.zh-CN.md) 定义了符合 DSH/Koishi/Cordis 的 service graph，并修正旧文档中默认 Provider 与 source-only artifact 的结论。
 - [可执行实施计划](../superpowers/plans/2026-08-15-dsh-notemd-full-migration.zh-CN.md) 将迁移拆为 11 个可独立测试的任务。
-- 第一实现关口是特征化 fixture。它阻止看似完成的重写静默丢失章节 manifest cleanup、原文抽取、任务级检索或按目标导出等源语义。
+- Task 1 的特征化 fixture 阻止后续实现静默丢失章节 manifest cleanup、原文抽取、任务级检索或按目标导出等源语义。
 
 ## 7. 后续推进方向
 
-1. 从任务 1 开始。没有源 operation matrix，“全量迁移”不可测试，后续 fixture 会把偶然的目标行为错误固化为源契约。
-2. 将任务 2-4 视为一段权限迁移。不要把章节清理、二进制 artifact 或 exporter output 先移到 `WritePlan`；那会造成二次重写并削弱审批因果关系。
-3. 在 proposal contract 可用后完成任务 5-6。LLM/Web bridge 必须先成为 DSH consumer，工作流才能安全持久化生成或研究结果。
-4. 在扩展 renderer 宽度前完成任务 7。文档结构和检索证据是图表、引用和 artifact provenance 的上游输入。
-5. 任务 8-10 必须按目标类别实现，不能使用 target selector。先实现 SVG-capable renderer；随后仅在具备显式 capability test 时加入 process-gated Draw.io/Drawnix/Circuitikz 和 Slidev/media exporter。
-6. 将任务 11 留给证明，而不是乐观判断：在实现任务全部完成后运行 source-matrix conformance、生命周期/HMR 失败路径、隔离 bundle 验收和完整 release gate。
+1. 开始 Task 2。不要把章节清理、二进制 artifact 或 exporter output 移入 `WritePlan`；那会造成二次重写并削弱审批因果关系。
+2. 将 Task 2-4 视为一段权限迁移；调用方迁移完成后只保留一个 public mutation protocol。
+3. 在 proposal contract 可用后完成 Task 5-6。LLM/Web bridge 必须先成为 DSH consumer，工作流才能安全持久化生成或研究结果。
+4. 在扩展 renderer 宽度前完成 Task 7。文档结构和检索证据是图表、引用和 artifact provenance 的上游输入。
+5. Task 8-10 必须按目标类别实现，不能使用 target selector。先实现 SVG-capable renderer；随后仅在具备显式 capability test 时加入 process-gated Draw.io/Drawnix/Circuitikz 和 Slidev/media exporter。
+6. 将 Task 11 留给证明，而不是乐观判断：在实现任务全部完成后运行 source-matrix conformance、生命周期/HMR 失败路径、隔离 bundle 验收和完整 release gate。
 
 ## 8. 约束
 
@@ -110,3 +111,10 @@
 - 该提交已非强制推送至 `git@github.com:Jacobinwwey/dsh-NotEMD.git`，远程快进为 `6672f54..626f6e1`；写入本发布日志前，`git status --short --branch` 只显示 `## main`。
 
 本次发布只记录架构、计划、审计和基线验证。它不会推进任何能力任务；任务进度必须以对应的源 fixture 与退出证据为准。
+
+### Task 1 验证
+
+- 源基线：`4168a51cd19ad8c3d1e05f604b50936255461a31`，machine-readable matrix 表示其 29 个 registry ID。
+- 分类：18 个 `included` operation、11 个 `excluded-by-design` operation，以及精确四个 `excluded-wip` Drawnix 路径。14 个 fixture input 均已固定 SHA-256，其中显式包含 local-retrieval、diagram-source 和 slide-source。
+- `pnpm exec vitest run --config vitest.config.ts packages/notemd-workflows/test/source-contracts.test.ts packages/notemd-artifacts/test/source-artifact-contracts.test.ts`：2 个文件、4 个测试通过。
+- `pnpm test`：18 个文件、54 个测试通过。`pnpm typecheck` 成功完成；staging 前 `git diff --check` 无空白错误。

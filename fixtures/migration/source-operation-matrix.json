@@ -1,0 +1,218 @@
+{
+  "version": 1,
+  "source": {
+    "commit": "4168a51cd19ad8c3d1e05f604b50936255461a31",
+    "registryPath": "src/operations/registry.ts"
+  },
+  "operations": [
+    { "id": "provider.diagnostic.run", "disposition": "excluded-by-design", "reason": "DSH owns provider diagnostics and credential routing.", "fixtureIds": [] },
+    { "id": "provider.diagnostic.stability-run", "disposition": "excluded-by-design", "reason": "DSH owns provider diagnostics and credential routing.", "fixtureIds": [] },
+    { "id": "diagram.generate", "disposition": "included", "fixtureIds": ["diagram-source", "slide-source"] },
+    { "id": "diagram.preview", "disposition": "excluded-by-design", "reason": "The Obsidian preview UI is a host concern; portable previews are renderer derivatives.", "fixtureIds": [] },
+    { "id": "provider.connection.test", "disposition": "excluded-by-design", "reason": "DSH owns provider configuration and connection behavior.", "fixtureIds": [] },
+    { "id": "editor.create-link-and-generate", "disposition": "excluded-by-design", "reason": "Editor-selection capture is an Obsidian host concern; path-based link and generation workflows remain in scope.", "fixtureIds": [] },
+    { "id": "file.process-add-links", "disposition": "included", "fixtureIds": ["wiki-links"] },
+    { "id": "file.process-folder-add-links", "disposition": "included", "fixtureIds": ["wiki-links"] },
+    { "id": "content.generate-from-title", "disposition": "included", "fixtureIds": ["title-generation"] },
+    { "id": "content.batch-generate-from-titles", "disposition": "included", "fixtureIds": ["title-generation"] },
+    { "id": "content.split-note-by-chapters", "disposition": "included", "fixtureIds": ["chapter-split"] },
+    { "id": "research.summarize-topic", "disposition": "included", "fixtureIds": ["research-synthesis"] },
+    { "id": "translate.file", "disposition": "included", "fixtureIds": ["translation"] },
+    { "id": "translate.folder-batch", "disposition": "included", "fixtureIds": ["translation"] },
+    { "id": "concept.extract-file", "disposition": "included", "fixtureIds": ["concept-extraction"] },
+    { "id": "concept.extract-folder", "disposition": "included", "fixtureIds": ["concept-extraction"] },
+    { "id": "content.extract-original-text", "disposition": "included", "fixtureIds": ["original-text"] },
+    { "id": "workflow.extract-and-generate", "disposition": "included", "fixtureIds": ["extract-and-generate"] },
+    { "id": "duplicate.check-file", "disposition": "included", "fixtureIds": ["duplicate-reconciliation"] },
+    { "id": "concept.dedupe", "disposition": "included", "fixtureIds": ["duplicate-reconciliation"] },
+    { "id": "mermaid.batch-fix", "disposition": "included", "fixtureIds": ["mermaid-repair"] },
+    { "id": "formula.fix-file", "disposition": "included", "fixtureIds": ["formula-repair"] },
+    { "id": "formula.batch-fix", "disposition": "included", "fixtureIds": ["formula-repair"] },
+    { "id": "cli.capability-manifest.export", "disposition": "excluded-by-design", "reason": "DSH Tool schemas and bundle metadata replace the source CLI manifest exporter.", "fixtureIds": [] },
+    { "id": "cli.invocation-contract.export", "disposition": "excluded-by-design", "reason": "DSH Tool schemas and bundle metadata replace the source CLI invocation exporter.", "fixtureIds": [] },
+    { "id": "cli.public-surface.export", "disposition": "excluded-by-design", "reason": "DSH Tool schemas and bundle metadata replace the source CLI public-surface exporter.", "fixtureIds": [] },
+    { "id": "provider.profile.export", "disposition": "excluded-by-design", "reason": "DSH profiles and secrets own provider configuration.", "fixtureIds": [] },
+    { "id": "provider.profile.export-redacted", "disposition": "excluded-by-design", "reason": "DSH profiles and secrets own provider configuration.", "fixtureIds": [] },
+    { "id": "provider.profile.import", "disposition": "excluded-by-design", "reason": "DSH profiles and secrets own provider configuration.", "fixtureIds": [] }
+  ],
+  "fixtures": [
+    {
+      "id": "wiki-links",
+      "inputPath": "notes/source.md",
+      "inputSha256": "e2a4a989f04fec9f1d31ef404a6925fd65a264bfcdfd8a5361b56771cca78cfb",
+      "expected": {
+        "outputSchema": "workspace-mutation-plan/v1",
+        "targetPaths": ["notes/source.md"],
+        "citationIds": [],
+        "mutationPreconditions": { "notes/source.md": "source-revision" }
+      }
+    },
+    {
+      "id": "title-generation",
+      "inputPath": "notes/source.md",
+      "inputSha256": "e2a4a989f04fec9f1d31ef404a6925fd65a264bfcdfd8a5361b56771cca78cfb",
+      "expected": {
+        "outputSchema": "workspace-mutation-plan/v1",
+        "targetPaths": ["notes/source.md"],
+        "citationIds": [],
+        "mutationPreconditions": { "notes/source.md": "source-revision" }
+      }
+    },
+    {
+      "id": "chapter-split",
+      "inputPath": "notes/chapters.md",
+      "inputSha256": "4049379edb0dcf49f1eeeeab3cce4d9e1824489a7cb0df5d506c41975c005910",
+      "expected": {
+        "outputSchema": "workspace-mutation-plan/v1",
+        "targetPaths": ["chapters/Planning.md", "chapters/Execution.md"],
+        "citationIds": [],
+        "mutationPreconditions": { "notes/chapters.md": "source-revision", "chapters/Planning.md": "absent" }
+      }
+    },
+    {
+      "id": "research-synthesis",
+      "inputPath": "notes/research.md",
+      "inputSha256": "ec7fafbd6888355a4635876ef005371acb7c8993aa7e375220d3765b1f9abcd7",
+      "expected": {
+        "outputSchema": "research-evidence-and-mutation-plan/v1",
+        "targetPaths": ["notes/research.md"],
+        "citationIds": ["evidence:revision-aware-mutations"],
+        "mutationPreconditions": { "notes/research.md": "source-revision" }
+      }
+    },
+    {
+      "id": "translation",
+      "inputPath": "notes/source.md",
+      "inputSha256": "e2a4a989f04fec9f1d31ef404a6925fd65a264bfcdfd8a5361b56771cca78cfb",
+      "expected": {
+        "outputSchema": "workspace-mutation-plan/v1",
+        "targetPaths": ["translations/de/notes/source.md"],
+        "citationIds": [],
+        "mutationPreconditions": { "translations/de/notes/source.md": "absent" }
+      }
+    },
+    {
+      "id": "concept-extraction",
+      "inputPath": "notes/concepts.md",
+      "inputSha256": "f8b29becc158f94ab99eee2d22dc72248d9c269311202d17a448bb7c86b6cdf6",
+      "expected": {
+        "outputSchema": "workspace-mutation-plan/v1",
+        "targetPaths": ["concepts/Atomic Writes.md"],
+        "citationIds": [],
+        "mutationPreconditions": { "concepts/Atomic Writes.md": "absent" }
+      }
+    },
+    {
+      "id": "original-text",
+      "inputPath": "notes/original.md",
+      "inputSha256": "ac01e84764f7e7dd93f2bdecc5d8bffbd310bb38911ede970c76716b6d667547",
+      "expected": {
+        "outputSchema": "workspace-mutation-plan/v1",
+        "targetPaths": ["originals/notes/original.md"],
+        "citationIds": [],
+        "mutationPreconditions": { "originals/notes/original.md": "absent" }
+      }
+    },
+    {
+      "id": "extract-and-generate",
+      "inputPath": "notes/concepts.md",
+      "inputSha256": "f8b29becc158f94ab99eee2d22dc72248d9c269311202d17a448bb7c86b6cdf6",
+      "expected": {
+        "outputSchema": "workspace-mutation-plan/v1",
+        "targetPaths": ["concepts/Atomic Writes.md", "generated/Atomic Writes.md"],
+        "citationIds": [],
+        "mutationPreconditions": { "concepts/Atomic Writes.md": "absent", "generated/Atomic Writes.md": "absent" }
+      }
+    },
+    {
+      "id": "duplicate-reconciliation",
+      "inputPath": "notes/duplicates.md",
+      "inputSha256": "1fe53de36b717678a019b4146e2bb00e9c6b915f69e2eba3b156818ff9b2531d",
+      "expected": {
+        "outputSchema": "duplicate-diagnostic-or-mutation-plan/v1",
+        "targetPaths": ["notes/duplicates.md"],
+        "citationIds": [],
+        "mutationPreconditions": { "notes/duplicates.md": "source-revision" }
+      }
+    },
+    {
+      "id": "mermaid-repair",
+      "inputPath": "notes/mermaid.md",
+      "inputSha256": "6619cd6d48e1d77a4a61d38e171a373dfbcc56a8860166f05b032bec2f0b34d0",
+      "expected": {
+        "outputSchema": "workspace-mutation-plan/v1",
+        "targetPaths": ["notes/mermaid.md"],
+        "citationIds": [],
+        "mutationPreconditions": { "notes/mermaid.md": "source-revision" }
+      }
+    },
+    {
+      "id": "formula-repair",
+      "inputPath": "notes/formula.md",
+      "inputSha256": "9020346c6c8147bc6b07d3c11fdc274c5285c53fe582f7d482371ab97fcd9735",
+      "expected": {
+        "outputSchema": "workspace-mutation-plan/v1",
+        "targetPaths": ["notes/formula.md"],
+        "citationIds": [],
+        "mutationPreconditions": { "notes/formula.md": "source-revision" }
+      }
+    },
+    {
+      "id": "local-retrieval",
+      "inputPath": "notes/knowledge.md",
+      "inputSha256": "9db35f685e503be862384fb59d4831116af0673032c789edd4e6f88ed1c073fc",
+      "expected": {
+        "outputSchema": "knowledge-query-result/v1",
+        "targetPaths": ["notes/knowledge.md"],
+        "citationIds": ["citation:notes/knowledge.md#canonical-lock-ordering"],
+        "mutationPreconditions": { "notes/knowledge.md": "source-revision" }
+      }
+    },
+    {
+      "id": "diagram-source",
+      "inputPath": "notes/diagram.md",
+      "inputSha256": "ae1f4196d536d876abd148e051eb85d089b14c9ba4133ba1d1e768b190eca8b9",
+      "expected": {
+        "outputSchema": "diagram-spec-and-artifact-plan/v1",
+        "targetPaths": [".notemd/artifacts/diagram-source/diagram.json"],
+        "citationIds": [],
+        "mutationPreconditions": { ".notemd/artifacts/diagram-source/diagram.json": "absent" },
+        "artifactSha256": "ae1f4196d536d876abd148e051eb85d089b14c9ba4133ba1d1e768b190eca8b9"
+      }
+    },
+    {
+      "id": "slide-source",
+      "inputPath": "slides/architecture.md",
+      "inputSha256": "7413bb40f0457dd79efae0feb5b38a17ff48932e45e4a65f7dc413e0d5ae0b7d",
+      "expected": {
+        "outputSchema": "slide-source-and-layout-report/v1",
+        "targetPaths": [".notemd/artifacts/slide-source/slides.md"],
+        "citationIds": [],
+        "mutationPreconditions": { ".notemd/artifacts/slide-source/slides.md": "absent" },
+        "artifactSha256": "7413bb40f0457dd79efae0feb5b38a17ff48932e45e4a65f7dc413e0d5ae0b7d"
+      }
+    }
+  ],
+  "excludedWip": [
+    {
+      "sourcePath": "src/diagram/adapters/drawnix/drawnixCrossRootRouter.ts",
+      "disposition": "excluded-wip",
+      "reason": "Uncommitted source-worktree routing experiment is not a reproducible parity oracle."
+    },
+    {
+      "sourcePath": "src/diagram/adapters/drawnix/drawnixMindMapProjection.ts",
+      "disposition": "excluded-wip",
+      "reason": "Uncommitted source-worktree projection experiment is not a reproducible parity oracle."
+    },
+    {
+      "sourcePath": "src/diagram/adapters/drawnix/drawnixRelationLaneLayout.ts",
+      "disposition": "excluded-wip",
+      "reason": "Uncommitted source-worktree layout experiment is not a reproducible parity oracle."
+    },
+    {
+      "sourcePath": "src/tests/fixtures/",
+      "disposition": "excluded-wip",
+      "reason": "The source working tree contains untracked Drawnix fixture material outside the pinned commit."
+    }
+  ]
+}

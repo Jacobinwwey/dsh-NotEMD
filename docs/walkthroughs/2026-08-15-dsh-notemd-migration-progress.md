@@ -2,7 +2,7 @@
 
 > Chinese version: [2026-08-15-dsh-notemd-migration-progress.zh-CN.md](2026-08-15-dsh-notemd-migration-progress.zh-CN.md)
 
-**Status:** The standalone-bundle and next-level-runtime foundations are implemented. The full-migration architecture and executable plan were published on `main` at `626f6e1`; none of the eleven full-migration capability tasks has started implementation.
+**Status:** The standalone-bundle and next-level-runtime foundations are implemented. The full-migration architecture and executable plan were published on `main` at `626f6e1`; Task 1, the source behavior contract, is complete and Tasks 2-11 remain pending implementation.
 
 ## 1. Scope Baseline
 
@@ -16,6 +16,7 @@
 - The target has an approval-gated, revision-aware text `WritePlan` path, durable plan-only jobs, workspace change reconciliation, and incremental MiniSearch indexing.
 - The current runtime already uses Cordis `Service` classes, declared `inject` dependencies, and `ctx.effect()` for the polling scanner and knowledge subscription cleanup.
 - The target worktree was clean before this documentation update.
+- Task 1 freezes the source boundary in `fixtures/migration/source-operation-matrix.json`: 29 operation IDs, 18 included rows, 11 design exclusions, four exact Drawnix-WIP exclusions, and 14 SHA-256-pinned deterministic fixtures.
 
 ## 3. Completed Code Audit
 
@@ -53,7 +54,7 @@ The table records code state, not planned completion. A passing baseline release
 
 | Task | State at `6672f54` | Gate to leave the state |
 | --- | --- | --- |
-| 1. Source behavior contract | Not started. No operation matrix or migration fixtures exist. | Every one of the 29 source operation IDs is classified with a reason; every in-scope row has deterministic fixture coverage. |
+| 1. Source behavior contract | Complete. The matrix pins all 29 source registry IDs at `4168a51cd19ad8c3d1e05f604b50936255461a31`; each of 18 included rows references one or more of 14 deterministic fixtures. | The source contract cannot silently expand its Drawnix WIP exclusion set or lose local retrieval, diagram, or slide fixture coverage. |
 | 2. Typed mutation proposals | Not started. `notemd-mutation` does not exist. | Immutable text/bytes/delete plans, staged-asset references, digests, and closed receipts pass contract tests. |
 | 3. Local journaled executor | Not started. Local writes are independent `Promise.all()` operations with no batch journal or recovery. | Crash-point, canonical-lock, binary, delete/quarantine, path-boundary, and idempotent recovery tests pass on Windows. |
 | 4. Approval, events, jobs, and Tool receipts | Not started. Approvals, checkpoints, events, and open Tool schemas still center on `WritePlan`. | Approval binds plan and asset digests; verified receipts alone publish metadata-only changes; each named Tool has a closed result schema. |
@@ -69,12 +70,12 @@ The table records code state, not planned completion. A passing baseline release
 
 - [Authoritative architecture](../specs/2026-08-15-dsh-notemd-full-migration-architecture.md) defines the DSH/Koishi/Cordis-aligned service graph and corrects the earlier default-provider and source-only artifact decisions.
 - [Executable implementation plan](../superpowers/plans/2026-08-15-dsh-notemd-full-migration.md) breaks migration into eleven independently testable tasks.
-- The first implementation gate is characterization fixtures. It prevents an apparently complete rewrite from silently dropping source semantics such as chapter manifest cleanup, original-text extraction, task-scoped retrieval, or target-specific exports.
+- Task 1's characterization fixtures prevent later implementation from silently dropping chapter manifest cleanup, original-text extraction, task-scoped retrieval, or target-specific exports.
 
 ## 7. Next Direction
 
-1. Start with Task 1. Without a source-operation matrix, a claim of full migration is untestable and later fixtures will encode accidental target behavior instead of source contracts.
-2. Treat Tasks 2-4 as one authority migration. Do not port chapter cleanup, binary artifacts, or exporter output to `WritePlan`; that would force a second rewrite and weaken approval causality.
+1. Begin Task 2. Do not port chapter cleanup, binary artifacts, or exporter output to `WritePlan`; that would force a second rewrite and weaken approval causality.
+2. Treat Tasks 2-4 as one authority migration, with one public mutation protocol after callers migrate.
 3. Complete Tasks 5-6 after the proposal contract is available. The LLM and web bridges must be DSH consumers before workflows start persisting generated or researched outputs.
 4. Complete Task 7 before renderer breadth. Document structure and retrieval evidence are upstream inputs to diagrams, citations, and artifact provenance.
 5. Implement Tasks 8-10 by target class, never through a target selector. SVG-capable renderers come first; process-gated Draw.io/Drawnix/Circuitikz and Slidev/media exporters follow only with explicit capability tests.
@@ -110,3 +111,10 @@ The second verification segment completed successfully:
 - The commit was pushed non-force to `git@github.com:Jacobinwwey/dsh-NotEMD.git` as `6672f54..626f6e1`; immediately before this publication-log update, `git status --short --branch` reported only `## main`.
 
 This publication records architecture, planning, audit, and baseline verification only. It intentionally does not advance a capability task; that requires the task's source fixtures and exit evidence.
+
+### Task 1 Verification
+
+- Source baseline: `4168a51cd19ad8c3d1e05f604b50936255461a31`, represented by 29 registry IDs in the machine-readable matrix.
+- Classification: 18 `included` operations, 11 `excluded-by-design` operations, and exactly four `excluded-wip` Drawnix paths. The 14 fixture inputs are SHA-256 pinned, including the explicit local-retrieval, diagram-source, and slide-source cases.
+- `pnpm exec vitest run --config vitest.config.ts packages/notemd-workflows/test/source-contracts.test.ts packages/notemd-artifacts/test/source-artifact-contracts.test.ts`: 2 files and 4 tests passed.
+- `pnpm test`: 18 files and 54 tests passed. `pnpm typecheck` completed successfully. `git diff --check` completed without whitespace errors before staging.

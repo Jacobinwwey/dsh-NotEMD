@@ -48,12 +48,12 @@ notemd-bundle                Cordis service、schema config、bundle patch
 - 新建：`packages/notemd-artifacts/test/source-artifact-contracts.test.ts`
 - 修改：两份 `docs/walkthroughs/2026-08-15-dsh-notemd-migration-progress.*.md`
 
-- [ ] 提取源 registry 的 29 个 operation ID，将 Provider/profile 和 Obsidian-host 分类为 `excluded-by-design`，仅将列明的未提交 Drawnix 文件和 fixture 分类为 `excluded-wip`。
-- [ ] 固化章节拆分、原文抽取、链接、标题、翻译、概念、去重、公式、Mermaid、本地检索、图表 source 与 slide source 的确定性 fixture。
-- [ ] 使用 deterministic fake LLM/Web；断言 schema、输出路径、citation、mutation precondition 与 artifact digest，不对随机自然语言逐字快照。
-- [ ] 断言每个 `included` 行至少有一个目标 fixture，每个 `excluded` 行都有书面原因。
-- [ ] 运行 `rtk proxy pnpm.cmd --filter @notemd-harness/workflows test -- source-contracts.test.ts` 与 `rtk proxy pnpm.cmd --filter @notemd-harness/artifacts test -- source-artifact-contracts.test.ts`。
-- [ ] 在两份进度文档记录 fixture 数、源提交和排除项；提交 `test: characterize NotEMD migration behavior`。
+- [x] 已提取源 registry 的 29 个 operation ID。矩阵含 18 个 `included` 与 11 个 `excluded-by-design` operation 行；只有四个固定的 Drawnix 工作树路径属于 `excluded-wip`。
+- [x] 已固化 14 个确定性 fixture，覆盖章节拆分、原文抽取、链接、标题、翻译、概念、去重、公式、Mermaid、本地检索、图表 source 与 slide source preparation。
+- [x] 已固定输入和 artifact 的 SHA-256，并断言 output schema、目标路径、citation、mutation precondition 与 artifact lineage，未对生成性 prose 做逐字快照。
+- [x] 已断言完整的 included-fixture 覆盖、排除理由、精确 fixture 集合与精确 Drawnix WIP 隔离集合。
+- [x] 已运行 focused source-contract 测试、完整 Vitest 与 strict TypeScript build verification。
+- [x] 已在两份进度文档记录源提交、fixture 数、排除项和测试证据；提交 `test: characterize NotEMD migration behavior`。
 
 ### Task 2：引入类型化工作区 Mutation Proposal
 
