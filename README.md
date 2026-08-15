@@ -2,7 +2,7 @@
 
 An installable DeepSeek Harness bundle that moves NoteMD note-workflow semantics out of Obsidian. It operates on an explicit workspace root and has no runtime dependency on Obsidian APIs, editor state, or the command registry.
 
-The design rationale is in [the architecture record](docs/specs/2026-08-14-notemd-deepseek-harness-design.md). The Chinese edition is [README.zh-CN.md](README.zh-CN.md).
+The current runtime baseline is in [the original architecture record](docs/specs/2026-08-14-notemd-deepseek-harness-design.md). The approved [full-migration architecture](docs/specs/2026-08-15-dsh-notemd-full-migration-architecture.md), [implementation plan](docs/superpowers/plans/2026-08-15-dsh-notemd-full-migration.md), and [progress record](docs/walkthroughs/2026-08-15-dsh-notemd-migration-progress.md) define the next direction. The Chinese edition is [README.zh-CN.md](README.zh-CN.md).
 
 ## Runtime Contract
 

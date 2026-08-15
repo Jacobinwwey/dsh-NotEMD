@@ -2,7 +2,7 @@
 
 这是一个可安装的 DeepSeek Harness bundle，用于将 NoteMD 的笔记工作流语义从 Obsidian 宿主中迁出。它只面向显式配置的工作区根目录运行，不依赖 Obsidian API、编辑器状态或命令注册表。
 
-架构取舍见[设计记录](docs/specs/2026-08-14-notemd-deepseek-harness-design.zh-CN.md)。英文版见 [README.md](README.md)。
+当前运行时基线见[原设计记录](docs/specs/2026-08-14-notemd-deepseek-harness-design.zh-CN.md)。已批准的[全量迁移架构](docs/specs/2026-08-15-dsh-notemd-full-migration-architecture.zh-CN.md)、[实施计划](docs/superpowers/plans/2026-08-15-dsh-notemd-full-migration.zh-CN.md)和[进度记录](docs/walkthroughs/2026-08-15-dsh-notemd-migration-progress.zh-CN.md)定义后续方向。英文版见 [README.md](README.md)。
 
 ## 运行时契约
 
