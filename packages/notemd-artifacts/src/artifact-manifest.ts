@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 
-import { createWritePlan, type NotemdVault, type Revision, type VaultDocument, type WritePlan } from '@notemd-harness/vault'
+import { createContentSha256, createWorkspaceMutationPlan, type WorkspaceMutationPlan } from '@notemd-harness/mutation'
+import type { NotemdVault, Revision, VaultDocument } from '@notemd-harness/vault'
 
 import { validateDiagramSpec, type DiagramSpec } from './diagram-spec.js'
 
@@ -29,7 +30,7 @@ export class ArtifactManifestError extends Error {
 }
 
 export interface NotemdArtifacts {
-  planDiagram(spec: DiagramSpec, source: VaultDocument): WritePlan
+  planDiagram(spec: DiagramSpec, source: VaultDocument): WorkspaceMutationPlan
   planCleanup(artifactId: string): Promise<readonly string[]>
   diagramRenderingCapability(): ArtifactCapability
   documentExportCapability(): ArtifactCapability
@@ -38,7 +39,7 @@ export interface NotemdArtifacts {
 export class SourceArtifactPlanner implements NotemdArtifacts {
   constructor(private readonly vault: NotemdVault) {}
 
-  planDiagram(specInput: DiagramSpec, source: VaultDocument): WritePlan {
+  planDiagram(specInput: DiagramSpec, source: VaultDocument): WorkspaceMutationPlan {
     const spec = validateDiagramSpec(specInput)
     const artifactId = artifactIdFor(spec, source)
     const directory = `.notemd/artifacts/${artifactId}`
@@ -54,15 +55,19 @@ export class SourceArtifactPlanner implements NotemdArtifacts {
       ownedPaths: [diagramPath, readmePath],
     }
 
-    return createWritePlan([
-      { path: diagramPath, content: `${JSON.stringify(spec, null, 2)}\n`, expectedRevision: 'absent' },
-      {
-        path: readmePath,
-        content: `# ${spec.title}\n\nRenderer: source\n\nSource: ${source.path}\n`,
-        expectedRevision: 'absent',
-      },
-      { path: manifestPath, content: `${JSON.stringify(manifest, null, 2)}\n`, expectedRevision: 'absent' },
-    ])
+    const provenance = {
+      operationId: 'diagram.generate',
+      sourceRefs: [source.path],
+      evidenceRefs: [],
+    }
+    return createWorkspaceMutationPlan({
+      provenance,
+      mutations: [
+        textMutation(diagramPath, `${JSON.stringify(spec, null, 2)}\n`, provenance),
+        textMutation(readmePath, `# ${spec.title}\n\nRenderer: source\n\nSource: ${source.path}\n`, provenance),
+        textMutation(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, provenance),
+      ],
+    })
   }
 
   async planCleanup(artifactId: string): Promise<readonly string[]> {
@@ -95,6 +100,23 @@ export class SourceArtifactPlanner implements NotemdArtifacts {
       status: 'unavailable',
       reason: 'No portable document export provider is configured.',
     }
+  }
+}
+
+function textMutation(
+  destination: string,
+  content: string,
+  provenance: { readonly operationId: string; readonly sourceRefs: readonly string[]; readonly evidenceRefs: readonly string[] },
+) {
+  return {
+    kind: 'write-text' as const,
+    destination,
+    expectedRevision: 'absent' as const,
+    provenance,
+    conflictPolicy: 'reject' as const,
+    mediaType: 'text/plain',
+    content,
+    contentSha256: createContentSha256(content),
   }
 }
 

@@ -4,8 +4,11 @@
     "composite": true,
     "rootDir": "src",
     "outDir": "lib",
-    "tsBuildInfoFile": "lib/.tsbuildinfo"
+    "tsBuildInfoFile": "tsconfig.tsbuildinfo"
   },
-  "references": [{ "path": "../notemd-vault" }],
+  "references": [
+    { "path": "../notemd-mutation" },
+    { "path": "../notemd-vault" }
+  ],
   "include": ["src/**/*.ts"]
 }

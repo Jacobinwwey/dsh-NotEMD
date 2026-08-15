@@ -34,5 +34,9 @@ test('plans deterministic LaTeX delimiter normalization without an LLM', async (
 
   const plan = await workflows.planFormulaRepair('notes/formula.md')
 
-  expect(plan.writes[0]?.content).toBe('Inline $x + y$ and display:\n$$\na = b\n$$')
+  expect(plan.mutations[0]).toMatchObject({
+    kind: 'write-text',
+    destination: 'notes/formula.md',
+    content: 'Inline $x + y$ and display:\n$$\na = b\n$$',
+  })
 })

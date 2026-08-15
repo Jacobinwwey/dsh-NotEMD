@@ -8,6 +8,7 @@
     "lib/**/*.d.ts"
   ],
   "dependencies": {
+    "@notemd-harness/mutation": "workspace:*",
     "@notemd-harness/vault": "workspace:*"
   },
   "exports": {

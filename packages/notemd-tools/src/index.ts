@@ -11,7 +11,7 @@ import { registerWriteTools } from './write-tools.js'
 export * from './approval-ledger.js'
 export * from './notemd-services.js'
 export * from './tool-contract.js'
-export * from './write-plan.js'
+export * from './mutation-plan.js'
 
 export function registerNotemdTools(context: NotemdToolContext, defineTool: ToolDefinitionFactory): void {
   registerReadTools(context, defineTool)

@@ -3,6 +3,7 @@ import {
   DurableWorkflowRunner,
   FileJobStore,
   JobStoreError,
+  createMutationProposalCheckpoint,
   type JobRecord,
   type JsonValue,
   type WorkflowJobExecutor,
@@ -17,7 +18,7 @@ import type {
   TranslationJobRequest,
   WikiLinkJobRequest,
 } from '@notemd-harness/tools'
-import type { WritePlan } from '@notemd-harness/vault'
+import type { WorkspaceMutationPlan } from '@notemd-harness/mutation'
 import type { WorkflowPlanner } from '@notemd-harness/workflows'
 
 import { workspaceRootFrom, type WorkspaceRootConfig } from './workspace-root.js'
@@ -186,26 +187,12 @@ function planningExecutors(workflows: WorkflowPlanner): Map<string, WorkflowJobE
 
 function planningExecutor(
   workflow: string,
-  createPlan: (target: string, input: Readonly<JsonValue>, signal: AbortSignal) => Promise<WritePlan>,
+  createPlan: (target: string, input: Readonly<JsonValue>, signal: AbortSignal) => Promise<WorkspaceMutationPlan>,
 ): WorkflowJobExecutor {
   return {
     workflow,
     async execute(input, target, signal) {
-      return { target, status: 'completed', checkpoint: planCheckpoint(await createPlan(target, input, signal)) }
-    },
-  }
-}
-
-function planCheckpoint(plan: WritePlan): JsonValue {
-  return {
-    plan: {
-      id: plan.id,
-      digest: plan.digest,
-      writes: plan.writes.map((write) => ({
-        path: write.path,
-        content: write.content,
-        expectedRevision: write.expectedRevision,
-      })),
+      return { target, status: 'completed', checkpoint: createMutationProposalCheckpoint(await createPlan(target, input, signal)) }
     },
   }
 }

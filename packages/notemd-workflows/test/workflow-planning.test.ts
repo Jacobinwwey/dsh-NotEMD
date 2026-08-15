@@ -44,9 +44,11 @@ test('plans Mermaid replacement only inside a mermaid fence', async () => {
 
   const plan = await workflows.planMermaidRepair('notes/diagram.md')
 
-  expect(plan.writes[0]?.content).toContain('~~~mermaid\nflowchart TD\n  A --> B\n~~~')
-  expect(plan.writes[0]?.content).toContain('outside prose remains unchanged')
-  expect(plan.writes[0]?.content).toContain('closing prose remains unchanged')
+  const mutation = plan.mutations[0]
+  expect(mutation).toMatchObject({ kind: 'write-text', destination: 'notes/diagram.md' })
+  expect(mutation?.kind === 'write-text' ? mutation.content : '').toContain('~~~mermaid\nflowchart TD\n  A --> B\n~~~')
+  expect(mutation?.kind === 'write-text' ? mutation.content : '').toContain('outside prose remains unchanged')
+  expect(mutation?.kind === 'write-text' ? mutation.content : '').toContain('closing prose remains unchanged')
   expect(transformer.requests[0]?.prompt).toBe('broken diagram')
 })
 
@@ -59,13 +61,14 @@ test('creates a concept note with an absent precondition', async () => {
 
   const plan = await workflows.planConceptExtraction('notes/architecture.md')
 
-  expect(plan.writes).toContainEqual(
+  expect(plan.mutations).toContainEqual(
     expect.objectContaining({
-      path: 'concepts/Atomic Writes.md',
+      destination: 'concepts/Atomic Writes.md',
       expectedRevision: 'absent',
     }),
   )
-  expect(plan.writes[0]?.content).toContain('A replacement becomes visible atomically.')
+  const conceptMutation = plan.mutations[0]
+  expect(conceptMutation?.kind === 'write-text' ? conceptMutation.content : '').toContain('A replacement becomes visible atomically.')
 })
 
 test('rejects malformed concept extraction responses instead of guessing', async () => {
@@ -89,9 +92,10 @@ test('uses a non-destructive target for a translation plan', async () => {
 
   const plan = await workflows.planTranslation('notes/source.md', 'de')
 
-  expect(plan.writes).toEqual([
+  expect(plan.mutations).toEqual([
     expect.objectContaining({
-      path: 'translations/de/notes/source.md',
+      kind: 'write-text',
+      destination: 'translations/de/notes/source.md',
       content: '# Quelle\n\nHallo',
       expectedRevision: 'absent',
     }),
@@ -113,14 +117,14 @@ test('binds link, title, and research transformations to the source revision', a
     workflows.planResearchSynthesis('notes/source.md', ['https://example.test/source']),
   ])
 
-  expect(links.writes[0]).toMatchObject({ path: 'notes/source.md' })
-  expect(title.writes[0]).toMatchObject({ path: 'notes/source.md' })
-  expect(research.writes[0]).toMatchObject({ path: 'notes/source.md' })
+  expect(links.mutations[0]).toMatchObject({ kind: 'write-text', destination: 'notes/source.md' })
+  expect(title.mutations[0]).toMatchObject({ kind: 'write-text', destination: 'notes/source.md' })
+  expect(research.mutations[0]).toMatchObject({ kind: 'write-text', destination: 'notes/source.md' })
   expect(
     new Set([
-      links.writes[0]?.expectedRevision,
-      title.writes[0]?.expectedRevision,
-      research.writes[0]?.expectedRevision,
+      links.mutations[0]?.expectedRevision,
+      title.mutations[0]?.expectedRevision,
+      research.mutations[0]?.expectedRevision,
     ]).size,
   ).toBe(1)
 })

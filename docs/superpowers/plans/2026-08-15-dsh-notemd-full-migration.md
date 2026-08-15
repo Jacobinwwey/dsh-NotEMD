@@ -142,13 +142,13 @@ prepared | staged | applying -> recovering -> committed | rolled-back | failed
 - Modify: `packages/notemd-bundle/src/workspace-changes.ts`
 - Modify: `packages/notemd-bundle/src/tools.ts`
 
-- [ ] Replace tool-wide `objectOutput` with per-tool closed schemas. Every result is one of explicit success, conflict, rejected, unavailable, cancelled, or failed variants.
-- [ ] Bind approval receipts to the full mutation-plan digest and staged asset digests. An expired, consumed, or mismatched receipt must not enter the executor.
-- [ ] Publish workspace changes from verified mutation receipts, including deletes. Keep events metadata-only and make the knowledge synchronizer re-read content.
-- [ ] Persist job checkpoints as proposal ids/digests and evidence references. Jobs may produce plans but may not invoke approval or mutation application.
-- [ ] Add Tool tests proving that a stale plan, staged-asset substitution, and rejected delete do not publish an indexable change.
-- [ ] Run `rtk proxy pnpm.cmd --filter @notemd-harness/tools test`, `rtk proxy pnpm.cmd --filter @notemd-harness/workspace-events test`, `rtk proxy pnpm.cmd --filter @notemd-harness/jobs test`, and `rtk tsc`.
-- [ ] Update progress records and commit `refactor: route NoteMD writes through mutation receipts`.
+- [x] Replaced tool-wide `objectOutput` with per-tool closed DSH author schemas. Required output fields now use property-level `required: true`, so the schemas survive real `defineTool()` compilation; every result has an explicit success, conflict, rejected, unavailable, cancelled, or failed variant.
+- [x] Bound approval receipts to the canonical mutation-plan digest and sorted staged-asset digests. Expired, consumed, malformed, or mismatched receipts never invoke the executor.
+- [x] Publish workspace changes only from matching committed mutation receipts, including metadata-only deletes; rejected, conflict, cancelled, failed, or inconsistent receipts never publish an indexable event, and the knowledge synchronizer re-reads changed Markdown.
+- [x] Persist durable checkpoints only as proposal id, proposal digest, and evidence references. Planning jobs can create proposals but have no approval or mutation-application authority.
+- [x] Added Tool contract coverage for stale proposals, staged-asset substitution, rejected deletes, unavailable/rejected/cancelled approval decisions, and invalid approval consumption; migrated legacy tests and the clean-profile runner from `WritePlan` to mutation plan/receipt semantics.
+- [x] Ran strict typecheck, lint, the full Vitest suite (21 files, 97 tests), build, packed-bundle verification, and clean DSH-profile acceptance. The package boundary now excludes stale build output, source maps, build-info, and non-distribution mutation content.
+- [x] Updated paired progress records and prepared the phase commit `refactor: route NoteMD writes through mutation receipts`.
 
 ### Task 5: Replace the Default LLM Adapter With a DSH Consumer Bridge
 

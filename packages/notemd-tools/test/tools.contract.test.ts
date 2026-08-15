@@ -1,188 +1,346 @@
 import { expect, test } from 'vitest'
 
-import { createWritePlan, type WritePlan } from '@notemd-harness/vault'
+import {
+  createContentSha256,
+  createStagedAssetRef,
+  createWorkspaceMutationPlan,
+  createWorkspaceMutationReceipt,
+  type WorkspaceMutationPlan,
+  type WorkspaceMutationReceipt,
+} from '@notemd-harness/mutation'
 
-import { registerNotemdTools, type ToolRegistrationSpec } from '../src/index.js'
+import { registerNotemdTools, type NotemdToolContext, type ToolRegistrationSpec } from '../src/index.js'
 
-test('registers authority-separated read, plan, write, artifact, and job tools', async () => {
-  const registered: ToolRegistrationSpec[] = []
-  const plan = createWritePlan([{ path: 'notes/a.md', content: 'translated', expectedRevision: 'rev-a' }])
-  let appliedPlan: WritePlan | undefined
-  const approvals = new Map<string, WritePlan>()
-  let approvalNumber = 0
-
-  registerNotemdTools(
-    {
-      tools: { register: (tool) => registered.push(tool) },
-      notemdVault: {
-        listMarkdown: async () => ['notes/a.md'],
-        read: async (path) => ({ path, content: '# A', revision: 'rev-a' }),
-        apply: async (candidate) => {
-          appliedPlan = candidate
-          return [{ path: 'notes/a.md', status: 'updated', revision: 'rev-b' }]
+function textPlan(content = 'translated'): WorkspaceMutationPlan {
+  return createWorkspaceMutationPlan({
+    provenance: {
+      operationId: 'translate.file',
+      sourceRefs: ['notes/a.md'],
+      evidenceRefs: [],
+    },
+    mutations: [
+      {
+        kind: 'write-text',
+        destination: 'notes/a.md',
+        expectedRevision: 'rev-a',
+        provenance: {
+          operationId: 'translate.file',
+          sourceRefs: ['notes/a.md'],
+          evidenceRefs: [],
         },
+        conflictPolicy: 'reject',
+        mediaType: 'text/markdown',
+        content,
+        contentSha256: createContentSha256(content),
       },
-      notemdWorkflows: {
-        planWikiLinks: async () => plan,
-        planTranslation: async () => plan,
-        planTitleGeneration: async () => plan,
-        planResearchSynthesis: async () => plan,
-        planConceptExtraction: async () => plan,
-        planMermaidRepair: async () => plan,
-        planFormulaRepair: async () => plan,
-      },
-      notemdArtifacts: {
-        planDiagram: () => plan,
-        planCleanup: async () => [],
-        diagramRenderingCapability: () => ({ capability: 'diagram-rendering', status: 'unavailable', reason: 'not configured' }),
-        documentExportCapability: () => ({ capability: 'document-export', status: 'unavailable', reason: 'not configured' }),
-      },
-      notemdTextTransformer: {
-        diagnoseProvider: async () => ({ status: 'available', endpoint: 'https://example.test/v1/chat/completions', model: 'test-model', elapsedMs: 1 }),
-        discoverModels: async () => ({ status: 'available', endpoint: 'https://example.test/v1/models', models: [{ id: 'test-model' }] }),
-      },
-      notemdJobs: {
-        startFormulaRepairs: async () => ({ id: 'job-formula' }),
-        startMermaidRepairs: async () => ({ id: 'job-mermaid' }),
-        startTranslations: async () => ({ id: 'job-translation' }),
-        startWikiLinkPlans: async () => ({ id: 'job-links' }),
-        startTitlePlans: async () => ({ id: 'job-title' }),
-        startResearchSyntheses: async () => ({ id: 'job-research' }),
-        startConceptExtractions: async () => ({ id: 'job-concepts' }),
-        resume: async () => ({ id: 'job', state: 'running' }),
-        get: async () => undefined,
-        cancel: async () => ({ id: 'job', state: 'cancelled' }),
-      },
-      notemdWorkspaceChanges: {
-        recordApprovedPlan: async (candidate) => ({
-          id: 'notemd-change-1',
-          occurredAt: '2026-08-15T00:00:00.000Z',
-          origin: 'notemd-approved-plan',
-          causationId: candidate.id,
-          changes: [{ path: 'notes/a.md', kind: 'updated', revision: 'rev-b' }],
+    ],
+  })
+}
+
+function bytesPlan(): WorkspaceMutationPlan {
+  const content = '<svg>approved</svg>'
+  const sha256 = createContentSha256(content)
+  return createWorkspaceMutationPlan({
+    provenance: {
+      operationId: 'diagram.generate',
+      sourceRefs: ['notes/a.md'],
+      evidenceRefs: [],
+    },
+    mutations: [
+      {
+        kind: 'write-bytes',
+        destination: 'artifacts/a.svg',
+        expectedRevision: 'absent',
+        provenance: {
+          operationId: 'diagram.generate',
+          sourceRefs: ['notes/a.md'],
+          evidenceRefs: [],
+        },
+        conflictPolicy: 'reject',
+        mediaType: 'image/svg+xml',
+        contentSha256: sha256,
+        stagedAsset: createStagedAssetRef({
+          id: 'diagram-a',
+          byteLength: Buffer.byteLength(content),
+          mediaType: 'image/svg+xml',
+          sha256,
         }),
       },
-      notemdApprovalLedger: {
-        issue: async (candidate) => {
-          const approvalId = `approval-${++approvalNumber}`
-          approvals.set(approvalId, candidate)
-          return { approvalId, digest: candidate.digest, planId: candidate.id }
-        },
-        consume: async (candidate, approvalId) => approvals.get(approvalId)?.digest === candidate.digest,
-      },
-      notemdApprovalGate: {
-        request: async () => true,
-      },
-    },
-    (tool) => tool,
-  )
-
-  const toolNames = registered.map((tool) => tool.name)
-  expect(toolNames).toContain('notemd_workspace_read')
-  expect(toolNames).toContain('notemd_plan_translation')
-  expect(toolNames).toContain('notemd_request_plan_approval')
-  expect(toolNames).toContain('notemd_apply_approved_plan')
-  expect(toolNames).toContain('notemd_artifact_cleanup')
-  expect(toolNames).toContain('notemd_job_status')
-  expect(toolNames).toContain('notemd_job_start_formula_repair')
-  expect(toolNames).toContain('notemd_job_resume')
-  expect(toolNames).toContain('notemd_provider_diagnostic')
-  expect(toolNames).toContain('notemd_provider_models')
-  expect(toolNames).toContain('notemd_artifact_render_status')
-  expect(toolNames).toContain('notemd_artifact_export_status')
-  expect(toolNames).not.toContain('notemd_run')
-
-  const planTool = registered.find((tool) => tool.name === 'notemd_plan_translation')
-  const approvalTool = registered.find((tool) => tool.name === 'notemd_request_plan_approval')
-  const applyTool = registered.find((tool) => tool.name === 'notemd_apply_approved_plan')
-  if (planTool === undefined || approvalTool === undefined || applyTool === undefined) {
-    throw new Error('Required Notemd tools were not registered.')
-  }
-
-  await expect(planTool.execute({ language: 'de', path: 'notes/a.md' })).resolves.toMatchObject({ plan })
-  const approval = await approvalTool.execute({ plan })
-  await expect(applyTool.execute({ approvalId: approval.approvalId, plan })).resolves.toMatchObject({
-    results: [{ status: 'updated' }],
-    change: { origin: 'notemd-approved-plan', causationId: plan.id },
+    ],
   })
-  expect(appliedPlan).toEqual(plan)
-})
+}
 
-test('rejects an unapproved plan before it reaches the vault', async () => {
+function deletePlan(): WorkspaceMutationPlan {
+  const prior = 'old note'
+  return createWorkspaceMutationPlan({
+    provenance: {
+      operationId: 'duplicate.check-file',
+      sourceRefs: ['notes/a.md'],
+      evidenceRefs: [],
+    },
+    mutations: [
+      {
+        kind: 'delete',
+        destination: 'notes/a.md',
+        expectedRevision: 'rev-a',
+        provenance: {
+          operationId: 'duplicate.check-file',
+          sourceRefs: ['notes/a.md'],
+          evidenceRefs: [],
+        },
+        conflictPolicy: 'reject',
+        expectedContentSha256: createContentSha256(prior),
+      },
+    ],
+  })
+}
+
+function receiptFor(plan: WorkspaceMutationPlan, status: WorkspaceMutationReceipt['status']): WorkspaceMutationReceipt {
+  return createWorkspaceMutationReceipt({
+    planId: plan.id,
+    planDigest: plan.digest,
+    status,
+    mutations: plan.mutations.map((mutation) => ({
+      destination: mutation.destination,
+      kind: mutation.kind,
+      status,
+      ...(status === 'committed' && mutation.kind !== 'delete' ? { revision: 'rev-b' } : {}),
+      ...(status === 'committed' ? {} : { diagnosticCode: `mutation-${status}` }),
+    })),
+  })
+}
+
+interface RegisteredContext {
+  readonly registered: ToolRegistrationSpec[]
+  readonly appliedPlans: WorkspaceMutationPlan[]
+  readonly publishedReceipts: Array<{ plan: WorkspaceMutationPlan; receipt: WorkspaceMutationReceipt }>
+}
+
+interface FixtureOptions {
+  readonly approvalDecision?: 'approved' | 'rejected' | 'unavailable' | 'cancelled'
+  readonly consumeApproval?: boolean
+}
+
+function registerFixture(
+  plan: WorkspaceMutationPlan,
+  executorReceipt = receiptFor(plan, 'committed'),
+  options: FixtureOptions = {},
+): RegisteredContext {
   const registered: ToolRegistrationSpec[] = []
-  const plan = createWritePlan([{ path: 'notes/a.md', content: 'translated', expectedRevision: 'rev-a' }])
-  let applyCalls = 0
-  let receiptCalls = 0
+  const appliedPlans: WorkspaceMutationPlan[] = []
+  const publishedReceipts: Array<{ plan: WorkspaceMutationPlan; receipt: WorkspaceMutationReceipt }> = []
+  let approvalNumber = 0
 
-  registerNotemdTools(
-    {
-      tools: { register: (tool) => registered.push(tool) },
-      notemdVault: {
-        listMarkdown: async () => ['notes/a.md'],
-        read: async (path) => ({ path, content: '# A', revision: 'rev-a' }),
-        apply: async () => {
-          applyCalls += 1
-          return []
-        },
+  const context = {
+    tools: { register: (tool: ToolRegistrationSpec) => registered.push(tool) },
+    notemdVault: {
+      listMarkdown: async () => ['notes/a.md'],
+      read: async (path: string) => ({ path, content: '# A', revision: 'rev-a' }),
+      applyMutationPlan: async (candidate: WorkspaceMutationPlan) => {
+        appliedPlans.push(candidate)
+        return executorReceipt
       },
-      notemdWorkflows: {
-        planWikiLinks: async () => plan,
-        planTranslation: async () => plan,
-        planTitleGeneration: async () => plan,
-        planResearchSynthesis: async () => plan,
-        planConceptExtraction: async () => plan,
-        planMermaidRepair: async () => plan,
-        planFormulaRepair: async () => plan,
-      },
-      notemdArtifacts: {
-        planDiagram: () => plan,
-        planCleanup: async () => [],
-        diagramRenderingCapability: () => ({ capability: 'diagram-rendering', status: 'unavailable', reason: 'not configured' }),
-        documentExportCapability: () => ({ capability: 'document-export', status: 'unavailable', reason: 'not configured' }),
-      },
-      notemdTextTransformer: {
-        diagnoseProvider: async () => ({ status: 'available', endpoint: 'https://example.test/v1/chat/completions', model: 'test-model', elapsedMs: 1 }),
-        discoverModels: async () => ({ status: 'available', endpoint: 'https://example.test/v1/models', models: [{ id: 'test-model' }] }),
-      },
-      notemdJobs: {
-        startFormulaRepairs: async () => ({ id: 'job-formula' }),
-        startMermaidRepairs: async () => ({ id: 'job-mermaid' }),
-        startTranslations: async () => ({ id: 'job-translation' }),
-        startWikiLinkPlans: async () => ({ id: 'job-links' }),
-        startTitlePlans: async () => ({ id: 'job-title' }),
-        startResearchSyntheses: async () => ({ id: 'job-research' }),
-        startConceptExtractions: async () => ({ id: 'job-concepts' }),
-        resume: async () => ({ id: 'job', state: 'running' }),
-        get: async () => undefined,
-        cancel: async () => ({ id: 'job', state: 'cancelled' }),
-      },
-      notemdWorkspaceChanges: {
-        recordApprovedPlan: async () => undefined,
-      },
-      notemdApprovalLedger: {
-        issue: async () => {
-          receiptCalls += 1
-          return { approvalId: 'unexpected', digest: plan.digest, planId: plan.id }
-        },
-        consume: async () => false,
-      },
-      notemdApprovalGate: {
-        request: async () => false,
+      recoverIncompleteMutationPlans: async () => [],
+    },
+    notemdWorkflows: {
+      planWikiLinks: async () => plan,
+      planTranslation: async () => plan,
+      planTitleGeneration: async () => plan,
+      planResearchSynthesis: async () => plan,
+      planConceptExtraction: async () => plan,
+      planMermaidRepair: async () => plan,
+      planFormulaRepair: async () => plan,
+    },
+    notemdArtifacts: {
+      planDiagram: () => plan,
+      planCleanup: async () => [],
+      diagramRenderingCapability: () => ({ capability: 'diagram-rendering', status: 'unavailable', reason: 'not configured' }),
+      documentExportCapability: () => ({ capability: 'document-export', status: 'unavailable', reason: 'not configured' }),
+    },
+    notemdTextTransformer: {
+      diagnoseProvider: async () => ({ status: 'available', endpoint: 'https://example.test/v1/chat/completions', model: 'test-model', elapsedMs: 1 }),
+      discoverModels: async () => ({ status: 'available', endpoint: 'https://example.test/v1/models', models: [{ id: 'test-model' }] }),
+    },
+    notemdJobs: {
+      startFormulaRepairs: async () => ({ id: 'job-formula' }),
+      startMermaidRepairs: async () => ({ id: 'job-mermaid' }),
+      startTranslations: async () => ({ id: 'job-translation' }),
+      startWikiLinkPlans: async () => ({ id: 'job-links' }),
+      startTitlePlans: async () => ({ id: 'job-title' }),
+      startResearchSyntheses: async () => ({ id: 'job-research' }),
+      startConceptExtractions: async () => ({ id: 'job-concepts' }),
+      resume: async () => ({ id: 'job', state: 'running' }),
+      get: async () => undefined,
+      cancel: async () => ({ id: 'job', state: 'cancelled' }),
+    },
+    notemdWorkspaceChanges: {
+      recordMutationReceipt: async (candidate: WorkspaceMutationPlan, receipt: WorkspaceMutationReceipt) => {
+        publishedReceipts.push({ plan: candidate, receipt })
+        return {
+          id: 'notemd-change-1',
+          occurredAt: '2026-08-15T00:00:00.000Z',
+          origin: 'notemd-mutation-receipt',
+          causationId: candidate.id,
+          changes: [{ path: 'notes/a.md', kind: 'updated', revision: 'rev-b' }],
+        }
       },
     },
-    (tool) => tool,
-  )
+    notemdApprovalLedger: {
+      issue: async (candidate: WorkspaceMutationPlan) => ({
+        approvalId: `approval-${++approvalNumber}`,
+        digest: candidate.digest,
+        planId: candidate.id,
+        assetDigests: candidate.mutations.flatMap((mutation) => mutation.kind === 'write-bytes' ? [mutation.stagedAsset.sha256] : []),
+        expiresAt: 1,
+      }),
+      consume: async () => options.consumeApproval ?? true,
+    },
+    notemdApprovalGate: {
+      request: async () => options.approvalDecision ?? 'approved',
+    },
+  } as unknown as NotemdToolContext
 
-  const approvalTool = registered.find((tool) => tool.name === 'notemd_request_plan_approval')
-  const applyTool = registered.find((tool) => tool.name === 'notemd_apply_approved_plan')
-  if (approvalTool === undefined || applyTool === undefined) {
-    throw new Error('Required approval tools were not registered.')
+  registerNotemdTools(context, (tool) => tool)
+  return { registered, appliedPlans, publishedReceipts }
+}
+
+function registeredTool(context: RegisteredContext, name: string): ToolRegistrationSpec {
+  const tool = context.registered.find((candidate) => candidate.name === name)
+  if (tool === undefined) {
+    throw new Error(`Tool ${name} was not registered.`)
   }
+  return tool
+}
 
-  await expect(approvalTool.execute({ plan })).resolves.toEqual({ approved: false })
-  await expect(applyTool.execute({ approvalId: 'unknown', plan })).resolves.toMatchObject({
-    results: [{ path: 'notes/a.md', status: 'rejected' }],
+test('routes an approved proposal through the mutation executor and receipt event boundary', async () => {
+  const plan = textPlan()
+  const context = registerFixture(plan)
+  const planTool = registeredTool(context, 'notemd_plan_translation')
+  const approvalTool = registeredTool(context, 'notemd_request_plan_approval')
+  const applyTool = registeredTool(context, 'notemd_apply_approved_plan')
+
+  await expect(planTool.execute({ language: 'de', path: 'notes/a.md' })).resolves.toMatchObject({ status: 'success', plan })
+  const approval = await approvalTool.execute({ plan }) as { approvalId: string }
+  await expect(applyTool.execute({ approvalId: approval.approvalId, plan })).resolves.toMatchObject({
+    status: 'success',
+    receipt: { status: 'committed', planId: plan.id },
+    change: { origin: 'notemd-mutation-receipt', causationId: plan.id },
   })
-  expect(receiptCalls).toBe(0)
-  expect(applyCalls).toBe(0)
+  expect(context.appliedPlans).toEqual([plan])
+  expect(context.publishedReceipts).toEqual([{ plan, receipt: receiptFor(plan, 'committed') }])
 })
+
+test.each([
+  ['rejected', 'rejected', 'approval-rejected'],
+  ['unavailable', 'unavailable', 'approval-unavailable'],
+  ['cancelled', 'cancelled', 'approval-cancelled'],
+] as const)('reports a %s approval decision without issuing executable authority', async (decision, status, code) => {
+  const plan = textPlan()
+  const context = registerFixture(plan, receiptFor(plan, 'committed'), { approvalDecision: decision })
+  const approvalTool = registeredTool(context, 'notemd_request_plan_approval')
+
+  await expect(approvalTool.execute({ plan })).resolves.toMatchObject({
+    status,
+    code,
+    planId: plan.id,
+    digest: plan.digest,
+  })
+  expect(context.appliedPlans).toEqual([])
+  expect(context.publishedReceipts).toEqual([])
+})
+
+test('rejects a missing or mismatched approval before invoking the mutation executor', async () => {
+  const plan = textPlan()
+  const context = registerFixture(plan, receiptFor(plan, 'committed'), { consumeApproval: false })
+  const applyTool = registeredTool(context, 'notemd_apply_approved_plan')
+
+  await expect(applyTool.execute({ approvalId: 'approval-missing', plan })).resolves.toMatchObject({
+    status: 'rejected',
+    code: 'approval-receipt-invalid',
+    planId: plan.id,
+    digest: plan.digest,
+  })
+  expect(context.appliedPlans).toEqual([])
+  expect(context.publishedReceipts).toEqual([])
+})
+
+test.each([
+  ['stale proposal', textPlan(), 'conflict' as const],
+  ['staged asset substitution', bytesPlan(), 'rejected' as const],
+  ['rejected delete', deletePlan(), 'rejected' as const],
+])('does not publish a workspace event for a %s receipt', async (_label, plan, status) => {
+  const context = registerFixture(plan, receiptFor(plan, status))
+  const approvalTool = registeredTool(context, 'notemd_request_plan_approval')
+  const applyTool = registeredTool(context, 'notemd_apply_approved_plan')
+  const approval = await approvalTool.execute({ plan }) as { approvalId: string }
+
+  await expect(applyTool.execute({ approvalId: approval.approvalId, plan })).resolves.toMatchObject({
+    status,
+    receipt: { status },
+  })
+  expect(context.appliedPlans).toEqual([plan])
+  expect(context.publishedReceipts).toEqual([])
+})
+
+test('registers named tools with closed canonical result schemas', () => {
+  const context = registerFixture(textPlan())
+  const names = context.registered.map((tool) => tool.name)
+
+  expect(names).toContain('notemd_workspace_read')
+  expect(names).toContain('notemd_plan_translation')
+  expect(names).toContain('notemd_request_plan_approval')
+  expect(names).toContain('notemd_apply_approved_plan')
+  expect(names).toContain('notemd_artifact_cleanup')
+  expect(names).toContain('notemd_job_status')
+  expect(names).not.toContain('notemd_run')
+  expect(context.registered.every((tool) => schemaIsClosed(tool.output.schema))).toBe(true)
+  expect(context.registered.every((tool) => schemaUsesDshValueDsl(tool.output.schema))).toBe(true)
+})
+
+function schemaIsClosed(schema: unknown): boolean {
+  if (typeof schema !== 'object' || schema === null || Array.isArray(schema)) {
+    return false
+  }
+  const record = schema as Record<string, unknown>
+  if (Array.isArray(record.oneOf)) {
+    return record.oneOf.every(schemaIsClosed)
+  }
+  if (record.type === 'object') {
+    if (record.additionalProperties !== false || typeof record.properties !== 'object' || record.properties === null) {
+      return false
+    }
+    return Object.values(record.properties as Record<string, unknown>).every(schemaIsClosed)
+  }
+  if (record.type === 'array') {
+    return schemaIsClosed(record.items)
+  }
+  return typeof record.type === 'string'
+}
+
+function schemaUsesDshValueDsl(schema: unknown): boolean {
+  if (typeof schema !== 'object' || schema === null || Array.isArray(schema)) {
+    return false
+  }
+  const record = schema as Record<string, unknown>
+  if (record.required !== undefined && record.required !== true) {
+    return false
+  }
+  if (Array.isArray(record.oneOf)) {
+    return record.oneOf.length >= 2 && record.oneOf.every(schemaUsesDshValueDsl)
+  }
+  if (record.type === 'object') {
+    return (
+      typeof record.additionalProperties === 'boolean' &&
+      (record.properties === undefined || (
+        typeof record.properties === 'object' &&
+        record.properties !== null &&
+        !Array.isArray(record.properties) &&
+        Object.values(record.properties as Record<string, unknown>).every(schemaUsesDshValueDsl)
+      ))
+    )
+  }
+  if (record.type === 'array') {
+    return record.items === undefined || schemaUsesDshValueDsl(record.items)
+  }
+  return typeof record.type === 'string'
+}

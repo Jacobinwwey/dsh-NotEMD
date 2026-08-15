@@ -1,9 +1,17 @@
-import type { WritePlan } from '@notemd-harness/vault'
+import type { WorkspaceMutationPlan } from '@notemd-harness/mutation'
 
 import type { NotemdToolContext } from './notemd-services.js'
-import { objectOutput, requiredString, requiredStringList, type ToolDefinitionFactory, type ToolExecutionContext } from './tool-contract.js'
+import {
+  executeTool,
+  outcomeOutput,
+  requiredString,
+  requiredStringList,
+  type ToolDefinitionFactory,
+  type ToolExecutionContext,
+  workspaceMutationPlanSchema,
+} from './tool-contract.js'
 
-type PlanOperation = (args: unknown, execution?: ToolExecutionContext) => Promise<WritePlan>
+type PlanOperation = (args: unknown, execution?: ToolExecutionContext) => Promise<WorkspaceMutationPlan>
 
 export function registerPlanTools(context: NotemdToolContext, defineTool: ToolDefinitionFactory): void {
   registerPlanTool(context, defineTool, {
@@ -87,9 +95,9 @@ function registerPlanTool(
     name: definition.name,
     description: definition.description,
     parameters: definition.parameters,
-    output: objectOutput,
+    output: outcomeOutput({ plan: workspaceMutationPlanSchema }, ['plan']),
     async execute(args, execution) {
-      return { plan: await definition.execute(args, execution) }
+      return executeTool(async () => ({ plan: await definition.execute(args, execution) }))
     },
   }))
 }

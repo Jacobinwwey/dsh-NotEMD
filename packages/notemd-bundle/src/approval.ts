@@ -1,6 +1,6 @@
 import { Service, type Context } from '@deepseek-ai/cordis'
 import { FileApprovalLedger, type ApprovalLedger } from '@notemd-harness/tools'
-import type { WritePlan } from '@notemd-harness/vault'
+import type { WorkspaceMutationPlan } from '@notemd-harness/mutation'
 
 import { DshApprovalGate } from './runtime-adapter.js'
 import { workspaceRootFrom, type WorkspaceRootConfig } from './workspace-root.js'
@@ -27,11 +27,11 @@ export class NotemdApprovalLedgerService extends Service implements ApprovalLedg
     this.ledger = await FileApprovalLedger.open(this.workspaceRoot, { ttlMs: this.approvalTtlMs })
   }
 
-  issue(plan: WritePlan) {
+  issue(plan: WorkspaceMutationPlan) {
     return this.requireLedger().issue(plan)
   }
 
-  consume(plan: WritePlan, approvalId: string) {
+  consume(plan: WorkspaceMutationPlan, approvalId: string) {
     return this.requireLedger().consume(plan, approvalId)
   }
 

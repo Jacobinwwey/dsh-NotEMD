@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "files": ["lib/**/*.js", "lib/**/*.d.ts"],
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",

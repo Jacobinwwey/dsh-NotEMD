@@ -1,6 +1,5 @@
-import { randomUUID } from 'node:crypto'
-import { chmod, open, readdir, readFile, rename, rm, stat } from 'node:fs/promises'
-import { basename, dirname, join } from 'node:path'
+import { readdir, readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 
 import type {
   RecoveredMutation,
@@ -10,16 +9,12 @@ import type {
 import {
   createRevision,
   type NotemdVault,
-  type PlannedWrite,
   type Revision,
   type VaultDocument,
-  type WritePlan,
-  type WriteResult,
-  type WriteStatus,
 } from '@notemd-harness/vault'
 
 import { LocalMutationExecutor } from './local-mutation-executor.js'
-import { VaultBoundaryError, VaultPathBoundary } from './path-boundary.js'
+import { VaultPathBoundary } from './path-boundary.js'
 import { TargetWriteLocks } from './write-lock.js'
 
 export class VaultFileError extends Error {
@@ -31,21 +26,23 @@ export class VaultFileError extends Error {
   }
 }
 
+/**
+ * The local authority owns both workspace facts and the only recoverable
+ * mutation path, so all in-process writes share its canonical target locks.
+ */
 export class LocalVault implements NotemdVault {
   private constructor(
     private readonly boundary: VaultPathBoundary,
     private readonly workspaceRoot: string,
-    private readonly locks: TargetWriteLocks,
     private readonly mutationExecutor: LocalMutationExecutor,
   ) {}
 
   static async open(workspaceRoot: string): Promise<LocalVault> {
     const boundary = await VaultPathBoundary.open(workspaceRoot)
-    const locks = new TargetWriteLocks()
     const mutationExecutor = await LocalMutationExecutor.open(boundary.workspaceRoot, {
-      targetWriteLocks: locks,
+      targetWriteLocks: new TargetWriteLocks(),
     })
-    return new LocalVault(boundary, boundary.workspaceRoot, locks, mutationExecutor)
+    return new LocalVault(boundary, boundary.workspaceRoot, mutationExecutor)
   }
 
   async listMarkdown(signal?: AbortSignal): Promise<readonly string[]> {
@@ -65,7 +62,6 @@ export class LocalVault implements NotemdVault {
 
     const resolved = await this.boundary.resolveForRead(path)
     const document = await this.readExisting(resolved.absolutePath)
-
     if (document === undefined) {
       throw new VaultFileError(resolved.relativePath)
     }
@@ -77,69 +73,15 @@ export class LocalVault implements NotemdVault {
     }
   }
 
-  async apply(plan: WritePlan, signal?: AbortSignal): Promise<readonly WriteResult[]> {
-    return Promise.all(plan.writes.map((write) => this.applyWrite(write, signal)))
-  }
-
-  async applyMutationPlan(
+  applyMutationPlan(
     plan: WorkspaceMutationPlan,
     signal?: AbortSignal,
   ): Promise<WorkspaceMutationReceipt> {
     return this.mutationExecutor.apply(plan, signal)
   }
 
-  async recoverIncompleteMutationPlans(signal?: AbortSignal): Promise<readonly RecoveredMutation[]> {
+  recoverIncompleteMutationPlans(signal?: AbortSignal): Promise<readonly RecoveredMutation[]> {
     return this.mutationExecutor.recover(signal)
-  }
-
-  private async applyWrite(write: PlannedWrite, signal?: AbortSignal): Promise<WriteResult> {
-    if (signal?.aborted) {
-      return this.result(write.path, 'cancelled')
-    }
-
-    let lockKey: string
-    try {
-      lockKey = this.boundary.lockKey(write.path)
-    } catch (error) {
-      return this.result(write.path, 'rejected', undefined, diagnostic(error))
-    }
-
-    try {
-      return await this.locks.run(lockKey, async () => {
-        if (signal?.aborted) {
-          return this.result(write.path, 'cancelled')
-        }
-
-        const resolved = await this.boundary.resolveForWrite(write.path)
-        const existing = await this.readExisting(resolved.absolutePath)
-
-        if (write.expectedRevision === 'absent') {
-          if (existing !== undefined) {
-            return this.result(resolved.relativePath, 'skipped-stale')
-          }
-        } else if (existing === undefined || existing.revision !== write.expectedRevision) {
-          return this.result(resolved.relativePath, 'skipped-stale')
-        }
-
-        if (signal?.aborted) {
-          return this.result(resolved.relativePath, 'cancelled')
-        }
-
-        await replaceAtomically(resolved.absolutePath, write.content)
-        return this.result(
-          resolved.relativePath,
-          existing === undefined ? 'created' : 'updated',
-          createRevision(write.content),
-        )
-      })
-    } catch (error) {
-      return this.result(
-        write.path,
-        error instanceof VaultBoundaryError ? 'rejected' : 'failed',
-        undefined,
-        diagnostic(error),
-      )
-    }
   }
 
   private async collectMarkdown(
@@ -165,7 +107,6 @@ export class LocalVault implements NotemdVault {
 
       const relativePath = relativeDirectory.length === 0 ? entry.name : `${relativeDirectory}/${entry.name}`
       const absolutePath = join(directory, entry.name)
-
       if (entry.isDirectory()) {
         await this.collectMarkdown(absolutePath, relativePath, paths, signal)
       } else if (entry.isFile() && entry.name.toLowerCase().endsWith('.md')) {
@@ -186,92 +127,8 @@ export class LocalVault implements NotemdVault {
       throw error
     }
   }
-
-  private result(
-    path: string,
-    status: WriteStatus,
-    revision?: Revision,
-    failureDiagnostic?: string,
-  ): WriteResult {
-    const result: WriteResult = { path, status }
-    if (revision !== undefined) {
-      result.revision = revision
-    }
-    if (failureDiagnostic !== undefined) {
-      result.diagnostic = failureDiagnostic
-    }
-    return result
-  }
-}
-
-async function replaceAtomically(targetPath: string, content: string): Promise<void> {
-  const originalMode = await existingMode(targetPath)
-  const temporaryPath = join(
-    dirname(targetPath),
-    `.${basename(targetPath)}.${process.pid}.${randomUUID()}.notemd-tmp`,
-  )
-
-  try {
-    const handle = await open(temporaryPath, 'wx', originalMode ?? 0o600)
-    try {
-      await handle.writeFile(content, 'utf8')
-      await handle.sync()
-    } finally {
-      await handle.close()
-    }
-
-    if (originalMode !== undefined) {
-      await chmod(temporaryPath, originalMode)
-    }
-
-    await renameWithRetry(temporaryPath, targetPath)
-  } catch (error) {
-    await rm(temporaryPath, { force: true }).catch(() => undefined)
-    throw error
-  }
-}
-
-async function existingMode(targetPath: string): Promise<number | undefined> {
-  try {
-    return (await stat(targetPath)).mode
-  } catch (error) {
-    if (isMissingPath(error)) {
-      return undefined
-    }
-    throw error
-  }
-}
-
-async function renameWithRetry(temporaryPath: string, targetPath: string): Promise<void> {
-  const retryDelays = [10, 30, 90]
-
-  for (let attempt = 0; ; attempt += 1) {
-    try {
-      await rename(temporaryPath, targetPath)
-      return
-    } catch (error) {
-      const delay = retryDelays[attempt]
-      if (!isRenameConflict(error) || delay === undefined) {
-        throw error
-      }
-      await new Promise<void>((resolve) => setTimeout(resolve, delay))
-    }
-  }
-}
-
-function isRenameConflict(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error.code === 'EPERM' || error.code === 'EACCES' || error.code === 'ENOTEMPTY')
-  )
 }
 
 function isMissingPath(error: unknown): boolean {
   return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT'
-}
-
-function diagnostic(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
 }

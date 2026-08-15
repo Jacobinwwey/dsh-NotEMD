@@ -4,13 +4,14 @@
     "composite": true,
     "rootDir": "src",
     "outDir": "lib",
-    "tsBuildInfoFile": "lib/.tsbuildinfo"
+    "tsBuildInfoFile": "tsconfig.tsbuildinfo"
   },
   "references": [
     { "path": "../notemd-artifacts" },
     { "path": "../notemd-jobs" },
     { "path": "../notemd-knowledge" },
     { "path": "../notemd-llm-openai-compatible" },
+    { "path": "../notemd-mutation" },
     { "path": "../notemd-vault" },
     { "path": "../notemd-workspace-events" },
     { "path": "../notemd-workflows" }

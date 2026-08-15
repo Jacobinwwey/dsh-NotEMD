@@ -4,11 +4,74 @@ import { join } from 'node:path'
 
 import { afterEach, beforeEach, expect, test } from 'vitest'
 
-import { createWritePlan } from '@notemd-harness/vault'
+import {
+  createContentSha256,
+  createStagedAssetRef,
+  createWorkspaceMutationPlan,
+  type WorkspaceMutationPlan,
+} from '@notemd-harness/mutation'
 
 import { FileApprovalLedger } from '../src/index.js'
 
 let workspaceRoot = ''
+
+function textPlan(content: string): WorkspaceMutationPlan {
+  return createWorkspaceMutationPlan({
+    provenance: {
+      operationId: 'notemd.test.approval',
+      sourceRefs: ['notes/a.md'],
+      evidenceRefs: [],
+    },
+    mutations: [
+      {
+        kind: 'write-text',
+        destination: 'notes/a.md',
+        expectedRevision: 'absent',
+        provenance: {
+          operationId: 'notemd.test.approval',
+          sourceRefs: ['notes/a.md'],
+          evidenceRefs: [],
+        },
+        conflictPolicy: 'reject',
+        mediaType: 'text/markdown',
+        content,
+        contentSha256: createContentSha256(content),
+      },
+    ],
+  })
+}
+
+function bytesPlan(assetId: string, content: string): WorkspaceMutationPlan {
+  const sha256 = createContentSha256(content)
+  return createWorkspaceMutationPlan({
+    provenance: {
+      operationId: 'notemd.test.approval',
+      sourceRefs: ['notes/a.md'],
+      evidenceRefs: [],
+    },
+    mutations: [
+      {
+        kind: 'write-bytes',
+        destination: 'artifacts/a.svg',
+        expectedRevision: 'absent',
+        provenance: {
+          operationId: 'notemd.test.approval',
+          sourceRefs: ['notes/a.md'],
+          evidenceRefs: [],
+        },
+        conflictPolicy: 'reject',
+        mediaType: 'image/svg+xml',
+        contentSha256: sha256,
+        stagedAsset: createStagedAssetRef({
+          id: assetId,
+          byteLength: Buffer.byteLength(content),
+          mediaType: 'image/svg+xml',
+          sha256,
+        }),
+      },
+    ],
+  })
+}
 
 beforeEach(async () => {
   workspaceRoot = await mkdtemp(join(tmpdir(), 'notemd-approvals-'))
@@ -20,8 +83,8 @@ afterEach(async () => {
 
 test('does not accept an approval for a mutated plan', async () => {
   const ledger = await FileApprovalLedger.open(workspaceRoot)
-  const original = createWritePlan([{ path: 'notes/a.md', content: 'original', expectedRevision: 'absent' }])
-  const mutated = createWritePlan([{ path: 'notes/a.md', content: 'mutated', expectedRevision: 'absent' }])
+  const original = textPlan('original')
+  const mutated = textPlan('mutated')
 
   const approval = await ledger.issue(original)
 
@@ -30,8 +93,20 @@ test('does not accept an approval for a mutated plan', async () => {
   await expect(ledger.consume(original, approval.approvalId)).resolves.toBe(false)
 })
 
+test('binds approval to staged asset digests as well as the proposal digest', async () => {
+  const ledger = await FileApprovalLedger.open(workspaceRoot)
+  const approvedPlan = bytesPlan('asset-a', '<svg>approved</svg>')
+  const substitutedPlan = bytesPlan('asset-a', '<svg>substituted</svg>')
+
+  const approval = await ledger.issue(approvedPlan)
+
+  expect(approval.assetDigests).toEqual([createContentSha256('<svg>approved</svg>')])
+  await expect(ledger.consume(substitutedPlan, approval.approvalId)).resolves.toBe(false)
+  await expect(ledger.consume(approvedPlan, approval.approvalId)).resolves.toBe(true)
+})
+
 test('persists an unconsumed receipt across a ledger reload', async () => {
-  const plan = createWritePlan([{ path: 'notes/a.md', content: 'content', expectedRevision: 'absent' }])
+  const plan = textPlan('content')
   const issued = await (await FileApprovalLedger.open(workspaceRoot)).issue(plan)
   const reloaded = await FileApprovalLedger.open(workspaceRoot)
 
@@ -41,7 +116,7 @@ test('persists an unconsumed receipt across a ledger reload', async () => {
 test('rejects an expired receipt without applying a write', async () => {
   let now = 1_000
   const ledger = await FileApprovalLedger.open(workspaceRoot, { now: () => now, ttlMs: 100 })
-  const plan = createWritePlan([{ path: 'notes/a.md', content: 'content', expectedRevision: 'absent' }])
+  const plan = textPlan('content')
   const approval = await ledger.issue(plan)
   now = 1_101
 
@@ -50,7 +125,7 @@ test('rejects an expired receipt without applying a write', async () => {
 
 test('consumes a receipt exactly once when callers race', async () => {
   const ledger = await FileApprovalLedger.open(workspaceRoot)
-  const plan = createWritePlan([{ path: 'notes/a.md', content: 'content', expectedRevision: 'absent' }])
+  const plan = textPlan('content')
   const approval = await ledger.issue(plan)
 
   const consumed = await Promise.all([
@@ -63,13 +138,7 @@ test('consumes a receipt exactly once when callers race', async () => {
 
 test('persists only receipt metadata, never planned document content', async () => {
   const ledger = await FileApprovalLedger.open(workspaceRoot)
-  const plan = createWritePlan([
-    {
-      path: 'notes/private.md',
-      content: 'this planned document content must not be persisted in the approval ledger',
-      expectedRevision: 'absent',
-    },
-  ])
+  const plan = textPlan('this planned document content must not be persisted in the approval ledger')
 
   await ledger.issue(plan)
 

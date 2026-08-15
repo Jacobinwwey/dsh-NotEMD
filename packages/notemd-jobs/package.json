@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "files": ["lib/**/*.js", "lib/**/*.d.ts"],
+  "dependencies": {
+    "@notemd-harness/mutation": "workspace:*"
+  },
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",

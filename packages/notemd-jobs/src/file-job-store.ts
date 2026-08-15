@@ -2,14 +2,22 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
+import type { WorkspaceMutationPlan } from '@notemd-harness/mutation'
+
 export type JsonPrimitive = boolean | null | number | string
 export type JsonValue = JsonPrimitive | readonly JsonValue[] | { readonly [key: string]: JsonValue }
+
+export interface MutationProposalCheckpoint {
+  proposalId: string
+  proposalDigest: string
+  evidenceRefs: readonly string[]
+}
 
 export interface JobTargetResult {
   target: string
   status: 'completed' | 'cancelled' | 'failed'
   detail?: string
-  checkpoint?: JsonValue
+  checkpoint?: MutationProposalCheckpoint
 }
 
 export type JobState = 'queued' | 'running' | 'cancelling' | 'completed' | 'cancelled' | 'failed'
@@ -387,14 +395,13 @@ function parseTargetResult(value: unknown, path: string): JobTargetResult {
     throw invalidRecord(path)
   }
   const checkpoint = value.checkpoint
-  if (checkpoint !== undefined) {
-    try {
-      assertJsonValue(checkpoint)
-    } catch {
-      throw invalidRecord(path)
-    }
-  }
-  return normalizeTargetResult({ target, status, ...(detail === undefined ? {} : { detail }), ...(checkpoint === undefined ? {} : { checkpoint }) })
+  const parsedCheckpoint = checkpoint === undefined ? undefined : parseMutationProposalCheckpoint(checkpoint, path)
+  return normalizeTargetResult({
+    target,
+    status,
+    ...(detail === undefined ? {} : { detail }),
+    ...(parsedCheckpoint === undefined ? {} : { checkpoint: parsedCheckpoint }),
+  })
 }
 
 function normalizeTargets(targets: readonly unknown[]): readonly string[] {
@@ -432,13 +439,65 @@ function normalizeTargetResult(result: JobTargetResult): JobTargetResult {
   if (result.detail !== undefined && typeof result.detail !== 'string') {
     throw new JobStoreError('JOB_RECORD_INVALID', 'Job result detail must be a string.')
   }
-  const checkpoint = result.checkpoint === undefined ? undefined : cloneJson(result.checkpoint)
+  const checkpoint = result.checkpoint === undefined ? undefined : normalizeMutationProposalCheckpoint(result.checkpoint)
   return {
     target: result.target,
     status: result.status,
     ...(result.detail === undefined ? {} : { detail: result.detail }),
     ...(checkpoint === undefined ? {} : { checkpoint }),
   }
+}
+
+export function createMutationProposalCheckpoint(plan: WorkspaceMutationPlan): MutationProposalCheckpoint {
+  return normalizeMutationProposalCheckpoint({
+    proposalId: plan.id,
+    proposalDigest: plan.digest,
+    evidenceRefs: plan.provenance.evidenceRefs,
+  })
+}
+
+function parseMutationProposalCheckpoint(value: unknown, path: string): MutationProposalCheckpoint {
+  if (!isObject(value)) {
+    throw invalidRecord(path)
+  }
+  try {
+    return normalizeMutationProposalCheckpoint({
+      proposalId: stringProperty(value, 'proposalId', path),
+      proposalDigest: stringProperty(value, 'proposalDigest', path),
+      evidenceRefs: arrayProperty(value, 'evidenceRefs', path).map((reference) => {
+        if (typeof reference !== 'string') {
+          throw invalidRecord(path)
+        }
+        return reference
+      }),
+    })
+  } catch (error) {
+    if (error instanceof JobStoreError) {
+      throw error
+    }
+    throw invalidRecord(path)
+  }
+}
+
+function normalizeMutationProposalCheckpoint(checkpoint: MutationProposalCheckpoint): MutationProposalCheckpoint {
+  if (
+    typeof checkpoint.proposalId !== 'string' ||
+    checkpoint.proposalId.trim().length === 0 ||
+    !/^[a-f0-9]{64}$/u.test(checkpoint.proposalDigest) ||
+    !Array.isArray(checkpoint.evidenceRefs) ||
+    checkpoint.evidenceRefs.some((reference) => typeof reference !== 'string' || reference.trim().length === 0)
+  ) {
+    throw new JobStoreError('JOB_RECORD_INVALID', 'Job checkpoints must contain only a mutation proposal identity and evidence references.')
+  }
+  const evidenceRefs = [...checkpoint.evidenceRefs].sort()
+  if (new Set(evidenceRefs).size !== evidenceRefs.length) {
+    throw new JobStoreError('JOB_RECORD_INVALID', 'Job checkpoint evidence references must not contain duplicates.')
+  }
+  return Object.freeze({
+    proposalId: checkpoint.proposalId,
+    proposalDigest: checkpoint.proposalDigest,
+    evidenceRefs: Object.freeze(evidenceRefs),
+  })
 }
 
 function cloneJson<T extends JsonValue>(value: T): T {

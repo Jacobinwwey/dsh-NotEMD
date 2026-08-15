@@ -28,7 +28,11 @@ test('recovers interrupted work and executes only targets without checkpoints', 
   await store.recordTargetCheckpoint(job.id, {
     target: 'notes/a.md',
     status: 'completed',
-    checkpoint: { planId: 'notemd-plan-existing' },
+    checkpoint: {
+      proposalId: 'notemd-proposal-existing',
+      proposalDigest: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      evidenceRefs: ['evidence:existing'],
+    },
   })
   await store.recoverInterrupted()
   const executed: string[] = []
@@ -36,7 +40,15 @@ test('recovers interrupted work and executes only targets without checkpoints', 
     workflow: 'formula-repair',
     async execute(_input, target) {
       executed.push(target)
-      return { target, status: 'completed', checkpoint: { planId: `notemd-plan-${target}` } }
+      return {
+        target,
+        status: 'completed',
+        checkpoint: {
+          proposalId: 'notemd-proposal-' + target,
+          proposalDigest: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          evidenceRefs: [],
+        },
+      }
     },
   })
 
@@ -45,8 +57,24 @@ test('recovers interrupted work and executes only targets without checkpoints', 
   expect(executed).toEqual(['notes/b.md'])
   expect(completed).toMatchObject({ state: 'completed', attempt: 2 })
   expect(completed.results).toEqual([
-    { target: 'notes/a.md', status: 'completed', checkpoint: { planId: 'notemd-plan-existing' } },
-    { target: 'notes/b.md', status: 'completed', checkpoint: { planId: 'notemd-plan-notes/b.md' } },
+    {
+      target: 'notes/a.md',
+      status: 'completed',
+      checkpoint: {
+        proposalId: 'notemd-proposal-existing',
+        proposalDigest: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        evidenceRefs: ['evidence:existing'],
+      },
+    },
+    {
+      target: 'notes/b.md',
+      status: 'completed',
+      checkpoint: {
+        proposalId: 'notemd-proposal-notes/b.md',
+        proposalDigest: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        evidenceRefs: [],
+      },
+    },
   ])
 })
 

@@ -2,18 +2,23 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
-import { createWritePlan, type WritePlan } from '@notemd-harness/vault'
+import {
+  createWorkspaceMutationPlan,
+  type ContentSha256,
+  type WorkspaceMutationPlan,
+} from '@notemd-harness/mutation'
 
 export interface ApprovalReceipt {
   approvalId: string
   planId: string
-  digest: string
+  digest: ContentSha256
+  assetDigests: readonly ContentSha256[]
   expiresAt: number
 }
 
 export interface ApprovalLedger {
-  issue(plan: WritePlan): Promise<ApprovalReceipt>
-  consume(plan: WritePlan, approvalId: string): Promise<boolean>
+  issue(plan: WorkspaceMutationPlan): Promise<ApprovalReceipt>
+  consume(plan: WorkspaceMutationPlan, approvalId: string): Promise<boolean>
 }
 
 export interface FileApprovalLedgerOptions {
@@ -53,7 +58,7 @@ export class FileApprovalLedger implements ApprovalLedger {
     return new FileApprovalLedger(approvalsDirectory, options.now ?? Date.now, ttlMs)
   }
 
-  async issue(plan: WritePlan): Promise<ApprovalReceipt> {
+  async issue(plan: WorkspaceMutationPlan): Promise<ApprovalReceipt> {
     const canonicalPlan = canonicalPlanOf(plan)
 
     return this.synchronize(async () => {
@@ -62,6 +67,7 @@ export class FileApprovalLedger implements ApprovalLedger {
         approvalId: `notemd-approval-${randomUUID()}`,
         planId: canonicalPlan.id,
         digest: canonicalPlan.digest,
+        assetDigests: assetDigestsOf(canonicalPlan),
         issuedAt,
         expiresAt: issuedAt + this.ttlMs,
       }
@@ -70,8 +76,8 @@ export class FileApprovalLedger implements ApprovalLedger {
     })
   }
 
-  async consume(plan: WritePlan, approvalId: string): Promise<boolean> {
-    let canonicalPlan: WritePlan
+  async consume(plan: WorkspaceMutationPlan, approvalId: string): Promise<boolean> {
+    let canonicalPlan: WorkspaceMutationPlan
     try {
       canonicalPlan = canonicalPlanOf(plan)
     } catch {
@@ -88,7 +94,8 @@ export class FileApprovalLedger implements ApprovalLedger {
         receipt.consumedAt !== undefined ||
         receipt.expiresAt < this.now() ||
         receipt.planId !== canonicalPlan.id ||
-        receipt.digest !== canonicalPlan.digest
+        receipt.digest !== canonicalPlan.digest ||
+        !sameAssetDigests(receipt.assetDigests, assetDigestsOf(canonicalPlan))
       ) {
         return false
       }
@@ -146,14 +153,25 @@ export class FileApprovalLedger implements ApprovalLedger {
   }
 }
 
-function canonicalPlanOf(plan: WritePlan): WritePlan {
-  if (!Array.isArray(plan.writes)) {
-    throw new ApprovalReceiptError('APPROVAL_PLAN_INVALID', 'Approval requires a write plan with writes.')
+function canonicalPlanOf(plan: WorkspaceMutationPlan): WorkspaceMutationPlan {
+  if (!Array.isArray(plan.mutations)) {
+    throw new ApprovalReceiptError('APPROVAL_PLAN_INVALID', 'Approval requires a workspace mutation plan with mutations.')
   }
 
-  const canonical = createWritePlan(plan.writes)
+  let canonical: WorkspaceMutationPlan
+  try {
+    canonical = createWorkspaceMutationPlan({
+      provenance: plan.provenance,
+      mutations: plan.mutations,
+    })
+  } catch (error) {
+    throw new ApprovalReceiptError(
+      'APPROVAL_PLAN_INVALID',
+      `Approval requires a canonical workspace mutation plan: ${diagnostic(error)}`,
+    )
+  }
   if (plan.id !== canonical.id || plan.digest !== canonical.digest) {
-    throw new ApprovalReceiptError('APPROVAL_PLAN_INVALID', 'Approval requires an unmodified canonical write plan.')
+    throw new ApprovalReceiptError('APPROVAL_PLAN_INVALID', 'Approval requires an unmodified canonical workspace mutation plan.')
   }
   return canonical
 }
@@ -166,6 +184,7 @@ function parseReceipt(value: unknown): StoredReceipt {
   const approvalId = stringProperty(value, 'approvalId')
   const planId = stringProperty(value, 'planId')
   const digest = stringProperty(value, 'digest')
+  const assetDigests = assetDigestProperty(value)
   const issuedAt = numberProperty(value, 'issuedAt')
   const expiresAt = numberProperty(value, 'expiresAt')
   const consumedAt = value.consumedAt
@@ -173,7 +192,7 @@ function parseReceipt(value: unknown): StoredReceipt {
     throw invalidReceipt()
   }
 
-  const receipt: StoredReceipt = { approvalId, planId, digest, issuedAt, expiresAt }
+  const receipt: StoredReceipt = { approvalId, planId, digest, assetDigests, issuedAt, expiresAt }
   if (consumedAt !== undefined) {
     receipt.consumedAt = consumedAt
   }
@@ -185,6 +204,7 @@ function publicReceipt(receipt: StoredReceipt): ApprovalReceipt {
     approvalId: receipt.approvalId,
     planId: receipt.planId,
     digest: receipt.digest,
+    assetDigests: receipt.assetDigests,
     expiresAt: receipt.expiresAt,
   }
 }
@@ -207,6 +227,33 @@ function numberProperty(value: Record<string, unknown>, key: string): number {
     throw invalidReceipt()
   }
   return property
+}
+
+function assetDigestProperty(value: Record<string, unknown>): readonly ContentSha256[] {
+  const raw = value.assetDigests
+  if (!Array.isArray(raw) || raw.some((digest) => typeof digest !== 'string' || !/^[a-f0-9]{64}$/u.test(digest))) {
+    throw invalidReceipt()
+  }
+  const assetDigests = [...raw] as ContentSha256[]
+  if (new Set(assetDigests).size !== assetDigests.length || !sameAssetDigests(assetDigests, [...assetDigests].sort())) {
+    throw invalidReceipt()
+  }
+  return Object.freeze(assetDigests)
+}
+
+function assetDigestsOf(plan: WorkspaceMutationPlan): readonly ContentSha256[] {
+  return Object.freeze(
+    [...new Set(plan.mutations.flatMap((mutation) => mutation.kind === 'write-bytes' ? [mutation.stagedAsset.sha256] : []))]
+      .sort(),
+  )
+}
+
+function sameAssetDigests(left: readonly ContentSha256[], right: readonly ContentSha256[]): boolean {
+  return left.length === right.length && left.every((digest, index) => digest === right[index])
+}
+
+function diagnostic(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
 }
 
 function isTimestamp(value: unknown): value is number {

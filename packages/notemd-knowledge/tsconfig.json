@@ -4,9 +4,10 @@
     "composite": true,
     "rootDir": "src",
     "outDir": "lib",
-    "tsBuildInfoFile": "lib/.tsbuildinfo"
+    "tsBuildInfoFile": "tsconfig.tsbuildinfo"
   },
   "references": [
+    { "path": "../notemd-mutation" },
     { "path": "../notemd-vault" },
     { "path": "../notemd-workspace-events" }
   ],

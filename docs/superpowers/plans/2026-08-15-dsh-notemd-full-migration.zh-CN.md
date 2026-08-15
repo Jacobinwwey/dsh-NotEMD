@@ -120,12 +120,13 @@ prepared | staged | applying -> recovering -> committed | rolled-back | failed
 - 修改：`packages/notemd-jobs/src/file-job-store.ts`
 - 修改：`packages/notemd-bundle/src/{approval.ts,vault-local.ts,workspace-changes.ts,tools.ts}`
 
-- [ ] 用逐 Tool 的封闭 schema 替换全局 `objectOutput`；每个结果只能是显式 success、conflict、rejected、unavailable、cancelled、failed 之一。
-- [ ] 审批 receipt 绑定完整 mutation-plan digest 和 staged asset digest；过期、已消费或不匹配 receipt 不能进入 executor。
-- [ ] 从已核验 mutation receipt 发布 workspace event，包含 delete；event 只带元数据，知识同步器必须重新读取文件。
-- [ ] job checkpoint 保存 proposal id/digest 与 evidence reference；job 不能申请审批或应用 mutation。
-- [ ] 测试 stale plan、staged asset 替换和 rejected delete 均不发布可索引变更。
-- [ ] 运行 tools/events/jobs 测试与 typecheck，更新进度并提交 `refactor: route NoteMD writes through mutation receipts`。
+- [x] 已用逐 Tool 的封闭 DSH author schema 替换全局 `objectOutput`。必填输出字段使用属性级 `required: true`，可通过真实 `defineTool()` 编译；每个结果都有显式 success、conflict、rejected、unavailable、cancelled 或 failed 变体。
+- [x] approval receipt 已绑定 canonical mutation-plan digest 和排序后的 staged-asset digest。过期、已消费、畸形或不匹配 receipt 均不会调用 executor。
+- [x] workspace change 只从匹配的 committed mutation receipt 发布，包含仅元数据的 delete；rejected、conflict、cancelled、failed 或不一致 receipt 均不发布可索引 event，知识同步器会重新读取变更的 Markdown。
+- [x] durable checkpoint 只保存 proposal id、proposal digest 与 evidence reference。规划 job 可以产生 proposal，但没有申请审批或应用 mutation 的权限。
+- [x] 已增加 Tool contract 覆盖 stale proposal、staged-asset substitution、rejected delete、unavailable/rejected/cancelled approval decision 与 invalid approval consumption；legacy 测试和 clean-profile runner 已从 `WritePlan` 迁移到 mutation plan/receipt 语义。
+- [x] 已运行 strict typecheck、lint、完整 Vitest（21 文件、97 测试）、build、packed-bundle verification 与 clean DSH-profile acceptance。package boundary 现排除 stale build output、source map、build-info 和非分发 mutation 内容。
+- [x] 已更新成对进度文档，并准备阶段提交 `refactor: route NoteMD writes through mutation receipts`。
 
 ### Task 5：以 DSH Consumer Bridge 替换默认 LLM Adapter
 

@@ -1,6 +1,6 @@
 import { Service, type Context } from '@deepseek-ai/cordis'
 import { NotemdWorkflowPlanner, type WorkflowPlanner } from '@notemd-harness/workflows'
-import type { WritePlan } from '@notemd-harness/vault'
+import type { WorkspaceMutationPlan } from '@notemd-harness/mutation'
 
 export class NotemdWorkflowsService extends Service implements WorkflowPlanner {
   static inject = ['notemdVault', 'notemdTextTransformer'] as const
@@ -15,31 +15,31 @@ export class NotemdWorkflowsService extends Service implements WorkflowPlanner {
     this.planner = new NotemdWorkflowPlanner(this.ctx.notemdVault, this.ctx.notemdTextTransformer)
   }
 
-  planWikiLinks(path: string, signal?: AbortSignal): Promise<WritePlan> {
+  planWikiLinks(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan> {
     return this.requirePlanner().planWikiLinks(path, signal)
   }
 
-  planTranslation(path: string, language: string, signal?: AbortSignal): Promise<WritePlan> {
+  planTranslation(path: string, language: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan> {
     return this.requirePlanner().planTranslation(path, language, signal)
   }
 
-  planTitleGeneration(path: string, signal?: AbortSignal): Promise<WritePlan> {
+  planTitleGeneration(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan> {
     return this.requirePlanner().planTitleGeneration(path, signal)
   }
 
-  planResearchSynthesis(path: string, sources: readonly string[], signal?: AbortSignal): Promise<WritePlan> {
+  planResearchSynthesis(path: string, sources: readonly string[], signal?: AbortSignal): Promise<WorkspaceMutationPlan> {
     return this.requirePlanner().planResearchSynthesis(path, sources, signal)
   }
 
-  planConceptExtraction(path: string, signal?: AbortSignal): Promise<WritePlan> {
+  planConceptExtraction(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan> {
     return this.requirePlanner().planConceptExtraction(path, signal)
   }
 
-  planMermaidRepair(path: string, signal?: AbortSignal): Promise<WritePlan> {
+  planMermaidRepair(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan> {
     return this.requirePlanner().planMermaidRepair(path, signal)
   }
 
-  planFormulaRepair(path: string): Promise<WritePlan> {
+  planFormulaRepair(path: string): Promise<WorkspaceMutationPlan> {
     return this.requirePlanner().planFormulaRepair(path)
   }
 

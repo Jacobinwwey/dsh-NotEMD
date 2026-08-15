@@ -1,6 +1,13 @@
 import type { NotemdArtifacts } from '@notemd-harness/artifacts'
+import type { JobRecord } from '@notemd-harness/jobs'
+import type { KnowledgeMatch } from '@notemd-harness/knowledge'
 import type { ModelDiscoveryResult, ProviderDiagnosticResult } from '@notemd-harness/llm-openai-compatible'
-import type { NotemdVault, WritePlan, WriteResult } from '@notemd-harness/vault'
+import type {
+  RecoveredMutation,
+  WorkspaceMutationPlan,
+  WorkspaceMutationReceipt,
+} from '@notemd-harness/mutation'
+import type { NotemdVault } from '@notemd-harness/vault'
 import type { WorkspaceChangeEvent } from '@notemd-harness/workspace-events'
 import type { WorkflowPlanner } from '@notemd-harness/workflows'
 
@@ -12,16 +19,16 @@ export interface NotemdToolRegistry {
 }
 
 export interface NotemdJobs {
-  startFormulaRepairs(request: FormulaRepairJobRequest): Promise<unknown>
-  startMermaidRepairs(request: MermaidRepairJobRequest): Promise<unknown>
-  startTranslations(request: TranslationJobRequest): Promise<unknown>
-  startWikiLinkPlans(request: WikiLinkJobRequest): Promise<unknown>
-  startTitlePlans(request: TitleJobRequest): Promise<unknown>
-  startResearchSyntheses(request: ResearchJobRequest): Promise<unknown>
-  startConceptExtractions(request: ConceptJobRequest): Promise<unknown>
-  resume(id: string): Promise<unknown>
-  get(id: string): Promise<unknown | undefined>
-  cancel(id: string): Promise<unknown>
+  startFormulaRepairs(request: FormulaRepairJobRequest): Promise<JobRecord>
+  startMermaidRepairs(request: MermaidRepairJobRequest): Promise<JobRecord>
+  startTranslations(request: TranslationJobRequest): Promise<JobRecord>
+  startWikiLinkPlans(request: WikiLinkJobRequest): Promise<JobRecord>
+  startTitlePlans(request: TitleJobRequest): Promise<JobRecord>
+  startResearchSyntheses(request: ResearchJobRequest): Promise<JobRecord>
+  startConceptExtractions(request: ConceptJobRequest): Promise<JobRecord>
+  resume(id: string): Promise<JobRecord>
+  get(id: string): Promise<JobRecord | undefined>
+  cancel(id: string): Promise<JobRecord>
 }
 
 export type FormulaRepairJobRequest = PlanningJobRequest
@@ -44,11 +51,19 @@ interface PlanningJobRequest {
 }
 
 export interface NotemdKnowledge {
-  search(query: string): Promise<unknown>
+  search(query: string): Promise<readonly KnowledgeMatch[]>
+}
+
+export interface NotemdMutationVault extends NotemdVault {
+  applyMutationPlan(plan: WorkspaceMutationPlan, signal?: AbortSignal): Promise<WorkspaceMutationReceipt>
+  recoverIncompleteMutationPlans(signal?: AbortSignal): Promise<readonly RecoveredMutation[]>
 }
 
 export interface NotemdWorkspaceChanges {
-  recordApprovedPlan(plan: WritePlan, results: readonly WriteResult[]): Promise<WorkspaceChangeEvent | undefined>
+  recordMutationReceipt(
+    plan: WorkspaceMutationPlan,
+    receipt: WorkspaceMutationReceipt,
+  ): Promise<WorkspaceChangeEvent | undefined>
 }
 
 export interface NotemdProviderDiagnostics {
@@ -56,13 +71,15 @@ export interface NotemdProviderDiagnostics {
   discoverModels(signal?: AbortSignal): Promise<ModelDiscoveryResult>
 }
 
+export type ApprovalDecision = 'approved' | 'rejected' | 'unavailable' | 'cancelled'
+
 export interface NotemdApprovalGate {
-  request(plan: WritePlan, execution?: ToolExecutionContext): Promise<boolean>
+  request(plan: WorkspaceMutationPlan, execution?: ToolExecutionContext): Promise<ApprovalDecision>
 }
 
 export interface NotemdToolContext {
   readonly tools: NotemdToolRegistry
-  readonly notemdVault: NotemdVault
+  readonly notemdVault: NotemdMutationVault
   readonly notemdJobs: NotemdJobs
   readonly notemdWorkspaceChanges: NotemdWorkspaceChanges
   readonly notemdKnowledge?: NotemdKnowledge

@@ -4,8 +4,7 @@ import { join } from 'node:path'
 
 import { afterEach, beforeEach, expect, test } from 'vitest'
 
-import { createWorkspaceMutationPlan } from '@notemd-harness/mutation'
-import { createRevision, createWritePlan } from '@notemd-harness/vault'
+import { createContentSha256, createWorkspaceMutationPlan } from '@notemd-harness/mutation'
 
 import { LocalVault } from '../src/index.js'
 
@@ -24,7 +23,24 @@ afterEach(async () => {
 })
 
 function planFor(path: string, content: string, expectedRevision: string | 'absent') {
-  return createWritePlan([{ path, content, expectedRevision }])
+  const provenance = {
+    operationId: 'notemd.test.local-vault',
+    sourceRefs: [path],
+    evidenceRefs: [],
+  }
+  return createWorkspaceMutationPlan({
+    provenance,
+    mutations: [{
+      kind: 'write-text',
+      destination: path,
+      expectedRevision,
+      provenance,
+      conflictPolicy: 'reject',
+      mediaType: 'text/markdown',
+      content,
+      contentSha256: createContentSha256(content),
+    }],
+  })
 }
 
 test('rejects traversal and absolute paths before filesystem access', async () => {
@@ -44,11 +60,13 @@ test('rejects a path that escapes through a symlink', async () => {
 
 test('creates an absent document with an exact revision', async () => {
   const vault = await LocalVault.open(workspaceRoot)
-  const [result] = await vault.apply(planFor('notes/a.md', 'first', 'absent'))
+  const receipt = await vault.applyMutationPlan(planFor('notes/a.md', 'first', 'absent'))
+  const result = receipt.mutations[0]
 
-  expect(result).toMatchObject({ path: 'notes/a.md', status: 'created' })
+  expect(receipt.status).toBe('committed')
+  expect(result).toMatchObject({ destination: 'notes/a.md', status: 'committed' })
   expect(await readFile(join(workspaceRoot, 'notes', 'a.md'), 'utf8')).toBe('first')
-  expect((await vault.read('notes/a.md')).revision).toBe(result.revision)
+  expect((await vault.read('notes/a.md')).revision).toBe(result?.revision)
 })
 
 test('does not overwrite a changed document', async () => {
@@ -57,29 +75,30 @@ test('does not overwrite a changed document', async () => {
   const before = await vault.read('notes/a.md')
   await writeFile(join(workspaceRoot, 'notes', 'a.md'), 'newer')
 
-  const [result] = await vault.apply(planFor('notes/a.md', 'replacement', before.revision))
+  const receipt = await vault.applyMutationPlan(planFor('notes/a.md', 'replacement', before.revision))
 
-  expect(result).toMatchObject({ path: 'notes/a.md', status: 'skipped-stale' })
+  expect(receipt).toMatchObject({ status: 'conflict' })
+  expect(receipt.mutations[0]).toMatchObject({ destination: 'notes/a.md', status: 'conflict' })
   expect(await readFile(join(workspaceRoot, 'notes', 'a.md'), 'utf8')).toBe('newer')
 })
 
-test('serializes competing writes for the same revision', async () => {
+test('serializes competing mutation proposals for the same revision', async () => {
   await writeFile(join(workspaceRoot, 'notes', 'a.md'), 'before')
   const vault = await LocalVault.open(workspaceRoot)
   const before = await vault.read('notes/a.md')
 
-  const results = await Promise.all([
-    vault.apply(planFor('notes/a.md', 'first writer', before.revision)),
-    vault.apply(planFor('notes/a.md', 'second writer', before.revision)),
+  const receipts = await Promise.all([
+    vault.applyMutationPlan(planFor('notes/a.md', 'first writer', before.revision)),
+    vault.applyMutationPlan(planFor('notes/a.md', 'second writer', before.revision)),
   ])
 
-  expect(results.flat().map(({ status }) => status).sort()).toEqual(['skipped-stale', 'updated'])
+  expect(receipts.map(({ status }) => status).sort()).toEqual(['committed', 'conflict'])
   expect(['first writer', 'second writer']).toContain(
     await readFile(join(workspaceRoot, 'notes', 'a.md'), 'utf8'),
   )
 })
 
-test('serializes a mutation proposal against a legacy write plan through shared target locks', async () => {
+test('serializes independent mutation proposals through shared target locks', async () => {
   await writeFile(join(workspaceRoot, 'notes', 'a.md'), 'before')
   const vault = await LocalVault.open(workspaceRoot)
   const before = await vault.read('notes/a.md')
@@ -103,20 +122,18 @@ test('serializes a mutation proposal against a legacy write plan through shared 
         conflictPolicy: 'reject',
         mediaType: 'text/markdown',
         content: mutationContent,
-        contentSha256: createRevision(mutationContent),
+        contentSha256: createContentSha256(mutationContent),
       },
     ],
   })
 
-  const [legacyResults, mutationReceipt] = await Promise.all([
-    vault.apply(planFor('notes/a.md', 'legacy writer', before.revision)),
+  const [firstReceipt, mutationReceipt] = await Promise.all([
+    vault.applyMutationPlan(planFor('notes/a.md', 'first writer', before.revision)),
     vault.applyMutationPlan(mutationPlan),
   ])
 
-  expect([
-    [legacyResults[0]?.status, mutationReceipt.status],
-  ]).toContainEqual(['updated', 'conflict'])
-  expect(['legacy writer', mutationContent]).toContain(await readFile(join(workspaceRoot, 'notes', 'a.md'), 'utf8'))
+  expect([firstReceipt.status, mutationReceipt.status].sort()).toEqual(['committed', 'conflict'])
+  expect(['first writer', mutationContent]).toContain(await readFile(join(workspaceRoot, 'notes', 'a.md'), 'utf8'))
 })
 
 test('lists markdown while excluding internal Notemd state', async () => {

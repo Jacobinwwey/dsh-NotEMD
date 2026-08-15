@@ -1,4 +1,9 @@
-import { createWritePlan, type NotemdVault, type WritePlan } from '@notemd-harness/vault'
+import {
+  createContentSha256,
+  createWorkspaceMutationPlan,
+  type WorkspaceMutationPlan,
+} from '@notemd-harness/mutation'
+import type { NotemdVault } from '@notemd-harness/vault'
 
 import { conceptNoteContent, parseExtractedConcepts } from './concepts.js'
 import { replaceMermaidFenceBodies, normalizeFormulaDelimiters } from './markdown-transforms.js'
@@ -25,13 +30,13 @@ export interface TextTransformer {
 }
 
 export interface WorkflowPlanner {
-  planWikiLinks(path: string, signal?: AbortSignal): Promise<WritePlan>
-  planTranslation(path: string, language: string, signal?: AbortSignal): Promise<WritePlan>
-  planTitleGeneration(path: string, signal?: AbortSignal): Promise<WritePlan>
-  planResearchSynthesis(path: string, sources: readonly string[], signal?: AbortSignal): Promise<WritePlan>
-  planConceptExtraction(path: string, signal?: AbortSignal): Promise<WritePlan>
-  planMermaidRepair(path: string, signal?: AbortSignal): Promise<WritePlan>
-  planFormulaRepair(path: string): Promise<WritePlan>
+  planWikiLinks(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan>
+  planTranslation(path: string, language: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan>
+  planTitleGeneration(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan>
+  planResearchSynthesis(path: string, sources: readonly string[], signal?: AbortSignal): Promise<WorkspaceMutationPlan>
+  planConceptExtraction(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan>
+  planMermaidRepair(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan>
+  planFormulaRepair(path: string): Promise<WorkspaceMutationPlan>
 }
 
 export class NotemdWorkflowPlanner implements WorkflowPlanner {
@@ -40,43 +45,53 @@ export class NotemdWorkflowPlanner implements WorkflowPlanner {
     private readonly transformer: TextTransformer,
   ) {}
 
-  async planWikiLinks(path: string, signal?: AbortSignal): Promise<WritePlan> {
+  async planWikiLinks(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan> {
     return this.planDocumentCompletion(
       path,
+      'file.process-add-links',
       'Add precise Obsidian wiki-links where they improve navigability. Return the full Markdown document only.',
       signal,
     )
   }
 
-  async planTranslation(path: string, language: string, signal?: AbortSignal): Promise<WritePlan> {
+  async planTranslation(path: string, language: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan> {
     const document = await this.vault.read(path, signal)
     const text = await this.complete(
       'Translate Markdown faithfully. Preserve structure and return the complete translated Markdown only.',
       `Language: ${language}\n\n${document.content}`,
       signal,
     )
-    return createDocumentPlan(translationTargetPath(document.path, language), text)
+    return createDocumentPlan(translationTargetPath(document.path, language), text, {
+      operationId: 'translate.file',
+      sourceRefs: [document.path],
+      evidenceRefs: [],
+    })
   }
 
-  async planTitleGeneration(path: string, signal?: AbortSignal): Promise<WritePlan> {
+  async planTitleGeneration(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan> {
     return this.planDocumentCompletion(
       path,
+      'content.generate-from-title',
       'Generate an accurate title and return the complete Markdown document with a single leading H1.',
       signal,
     )
   }
 
-  async planResearchSynthesis(path: string, sources: readonly string[], signal?: AbortSignal): Promise<WritePlan> {
+  async planResearchSynthesis(path: string, sources: readonly string[], signal?: AbortSignal): Promise<WorkspaceMutationPlan> {
     const document = await this.vault.read(path, signal)
     const text = await this.complete(
       'Synthesize the supplied sources into the Markdown document. Return the complete Markdown only and mark uncertainty.',
       `Document:\n${document.content}\n\nSources:\n${sources.join('\n')}`,
       signal,
     )
-    return replaceDocumentPlan(document, text)
+    return replaceDocumentPlan(document, text, {
+      operationId: 'research.summarize-topic',
+      sourceRefs: [document.path],
+      evidenceRefs: [],
+    })
   }
 
-  async planConceptExtraction(path: string, signal?: AbortSignal): Promise<WritePlan> {
+  async planConceptExtraction(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan> {
     const document = await this.vault.read(path, signal)
     const text = await this.complete(
       'Extract concepts as strict JSON: {"concepts":[{"name":"...","summary":"..."}]}. Do not return Markdown.',
@@ -84,30 +99,62 @@ export class NotemdWorkflowPlanner implements WorkflowPlanner {
       signal,
     )
     const concepts = parseExtractedConcepts(text)
-    const writes = concepts.map((concept) => ({
-      path: `concepts/${concept.name}.md`,
-      content: conceptNoteContent(concept, document.path),
-      expectedRevision: 'absent' as const,
-    }))
-    return createWritePlan(writes)
+    const provenance = {
+      operationId: 'concept.extract-file',
+      sourceRefs: [document.path],
+      evidenceRefs: [],
+    }
+    return createWorkspaceMutationPlan({
+      provenance,
+      mutations: concepts.map((concept) => {
+        const content = conceptNoteContent(concept, document.path)
+        return {
+          kind: 'write-text' as const,
+          destination: `concepts/${concept.name}.md`,
+          expectedRevision: 'absent' as const,
+          provenance,
+          conflictPolicy: 'reject' as const,
+          mediaType: 'text/markdown',
+          content,
+          contentSha256: createContentSha256(content),
+        }
+      }),
+    })
   }
 
-  async planMermaidRepair(path: string, signal?: AbortSignal): Promise<WritePlan> {
+  async planMermaidRepair(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan> {
     const document = await this.vault.read(path, signal)
     const content = await replaceMermaidFenceBodies(document.content, async (body) =>
       this.complete(mermaidRepairSystemPrompt, body, signal),
     )
-    return replaceDocumentPlan(document, content)
+    return replaceDocumentPlan(document, content, {
+      operationId: 'mermaid.batch-fix',
+      sourceRefs: [document.path],
+      evidenceRefs: [],
+    })
   }
 
-  async planFormulaRepair(path: string): Promise<WritePlan> {
+  async planFormulaRepair(path: string): Promise<WorkspaceMutationPlan> {
     const document = await this.vault.read(path)
-    return replaceDocumentPlan(document, normalizeFormulaDelimiters(document.content))
+    return replaceDocumentPlan(document, normalizeFormulaDelimiters(document.content), {
+      operationId: 'formula.fix-file',
+      sourceRefs: [document.path],
+      evidenceRefs: [],
+    })
   }
 
-  private async planDocumentCompletion(path: string, system: string, signal?: AbortSignal): Promise<WritePlan> {
+  private async planDocumentCompletion(
+    path: string,
+    operationId: string,
+    system: string,
+    signal?: AbortSignal,
+  ): Promise<WorkspaceMutationPlan> {
     const document = await this.vault.read(path, signal)
-    return replaceDocumentPlan(document, await this.complete(system, document.content, signal))
+    return replaceDocumentPlan(document, await this.complete(system, document.content, signal), {
+      operationId,
+      sourceRefs: [document.path],
+      evidenceRefs: [],
+    })
   }
 
   private async complete(system: string, prompt: string, signal?: AbortSignal): Promise<string> {

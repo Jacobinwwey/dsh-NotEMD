@@ -66,8 +66,8 @@ export async function acceptDshProfile(): Promise<void> {
     const evidence = parseRunnerEvidence(result.stdout)
     assert(evidence.readPath === 'notes/architecture.md', 'The installed read Tool returned the wrong fixture path.')
     assert(evidence.approvals === 2, 'The approval bridge did not receive the expected two requests.')
-    assert(evidence.appliedStatus === 'updated', 'The approved plan was not applied through the installed ToolRuntime.')
-    assert(evidence.staleStatus === 'skipped-stale', 'A stale plan was not rejected by the vault write precondition.')
+    assert(evidence.appliedStatus === 'committed', 'The approved mutation proposal was not applied through the installed ToolRuntime.')
+    assert(evidence.staleStatus === 'conflict', 'A stale mutation proposal was not rejected by the vault write precondition.')
     assert(evidence.jobState === 'completed', 'The installed formula planning job did not complete.')
     assert(evidence.providerStatus === 'unavailable', 'The installed provider diagnostic did not fail closed without a key.')
 
@@ -256,21 +256,21 @@ const jobStarted = await invoke('notemd_job_start_formula_repair', {
 assert(typeof jobStarted.job.id === 'string', 'The formula planning job did not create a durable record.')
 const completedJob = await waitForJob(jobStarted.job.id)
 assert(completedJob.state === 'completed', 'The formula planning job ended in state ' + completedJob.state + '.')
-assert(completedJob.results[0]?.checkpoint?.plan?.id !== undefined, 'The formula planning job did not persist a plan checkpoint.')
+assert(completedJob.results[0]?.checkpoint?.proposalId !== undefined, 'The formula planning job did not persist a mutation proposal checkpoint.')
 
 const planned = await invoke('notemd_plan_formula_repair', { path: 'notes/formula.md' })
 const plan = planned.plan
-assert(Array.isArray(plan.writes) && plan.writes.length === 1, 'Formula planning did not return one write.')
-assert(plan.writes[0].content.includes('$x^2 + y^2$'), 'Formula planning did not normalize delimiters.')
+assert(Array.isArray(plan.mutations) && plan.mutations.length === 1, 'Formula planning did not return one mutation.')
+assert(plan.mutations[0]?.kind === 'write-text' && plan.mutations[0].content.includes('$x^2 + y^2$'), 'Formula planning did not normalize delimiters.')
 
 const approval = await invoke('notemd_request_plan_approval', { plan }, approvalAgent)
-assert(approval.approved === true && typeof approval.approvalId === 'string', 'The approval Tool did not issue a receipt.')
+assert(approval.status === 'success' && typeof approval.approvalId === 'string', 'The approval Tool did not issue a receipt.')
 assert(ctx.approval.requests.length === 1, 'The approval seam did not receive the plan approval request.')
 assert(!ctx.approval.requests[0].reason.includes('x^2 + y^2'), 'The approval reason exposed planned content.')
 
 const applied = await invoke('notemd_apply_approved_plan', { plan, approvalId: approval.approvalId }, approvalAgent)
-assert(applied.results[0].status === 'updated', 'The approved formula plan was not applied.')
-assert(applied.change?.origin === 'notemd-approved-plan', 'The approved formula plan did not publish a workspace change.')
+assert(applied.status === 'success' && applied.receipt.status === 'committed', 'The approved formula proposal was not applied.')
+assert(applied.change?.origin === 'notemd-mutation-receipt', 'The approved formula proposal did not publish a workspace change.')
 
 const formulaPath = join(workspaceRoot, 'notes', 'formula.md')
 const normalized = await readFile(formulaPath, 'utf8')
@@ -284,14 +284,14 @@ const staleApply = await invoke('notemd_apply_approved_plan', {
   plan: stalePlan,
   approvalId: staleApproval.approvalId,
 }, approvalAgent)
-assert(staleApply.results[0].status === 'skipped-stale', 'A stale plan overwrote the changed document.')
-assert((await readFile(formulaPath, 'utf8')).includes('manual update'), 'The stale plan changed the newer document.')
+assert(staleApply.status === 'conflict' && staleApply.receipt.status === 'conflict', 'A stale mutation proposal overwrote the changed document.')
+assert((await readFile(formulaPath, 'utf8')).includes('manual update'), 'The stale mutation proposal changed the newer document.')
 
 process.stdout.write(JSON.stringify({
   readPath: read.document.path,
   approvals: ctx.approval.requests.length,
-  appliedStatus: applied.results[0].status,
-  staleStatus: staleApply.results[0].status,
+  appliedStatus: applied.receipt.status,
+  staleStatus: staleApply.receipt.status,
   jobState: completedJob.state,
   providerStatus: provider.status,
 }) + '\n')

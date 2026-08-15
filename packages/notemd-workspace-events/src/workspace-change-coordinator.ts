@@ -1,8 +1,12 @@
 import { randomUUID } from 'node:crypto'
 
-import type { NotemdVault, Revision, WritePlan, WriteResult } from '@notemd-harness/vault'
+import type {
+  WorkspaceMutationPlan,
+  WorkspaceMutationReceipt,
+} from '@notemd-harness/mutation'
+import type { NotemdVault, Revision } from '@notemd-harness/vault'
 
-export type WorkspaceChangeOrigin = 'notemd-approved-plan' | 'external-scan'
+export type WorkspaceChangeOrigin = 'notemd-mutation-receipt' | 'external-scan'
 
 export interface WorkspaceChange {
   path: string
@@ -16,11 +20,6 @@ export interface WorkspaceChangeEvent {
   origin: WorkspaceChangeOrigin
   causationId: string
   changes: readonly WorkspaceChange[]
-}
-
-interface RevisionedWorkspaceChange extends WorkspaceChange {
-  kind: 'created' | 'updated'
-  revision: Revision
 }
 
 export interface WorkspaceChangeSource {
@@ -48,20 +47,26 @@ export class WorkspaceChangeCoordinator implements WorkspaceChangeSource {
     })
   }
 
-  async recordApprovedPlan(
-    plan: WritePlan,
-    results: readonly WriteResult[],
+  async recordMutationReceipt(
+    plan: WorkspaceMutationPlan,
+    receipt: WorkspaceMutationReceipt,
   ): Promise<WorkspaceChangeEvent | undefined> {
     return this.synchronize(async () => {
-      const changes = successfulPlanChanges(results)
+      const changes = committedMutationChanges(plan, receipt)
       if (changes.length === 0) {
         return undefined
       }
 
       for (const change of changes) {
-        this.snapshot.set(change.path, change.revision)
+        if (change.kind === 'deleted') {
+          this.snapshot.delete(change.path)
+        } else if (change.revision !== undefined) {
+          this.snapshot.set(change.path, change.revision)
+        } else {
+          return undefined
+        }
       }
-      return this.publish('notemd-approved-plan', plan.id, changes)
+      return this.publish('notemd-mutation-receipt', receipt.planId, changes)
     })
   }
 
@@ -128,13 +133,47 @@ async function readSnapshot(vault: NotemdVault, signal?: AbortSignal): Promise<M
   return snapshot
 }
 
-function successfulPlanChanges(results: readonly WriteResult[]): RevisionedWorkspaceChange[] {
-  return results.flatMap((result) => {
-    if ((result.status !== 'created' && result.status !== 'updated') || result.revision === undefined) {
+function committedMutationChanges(
+  plan: WorkspaceMutationPlan,
+  receipt: WorkspaceMutationReceipt,
+): readonly WorkspaceChange[] {
+  if (
+    receipt.status !== 'committed' ||
+    receipt.planId !== plan.id ||
+    receipt.planDigest !== plan.digest ||
+    receipt.mutations.length !== plan.mutations.length
+  ) {
+    return []
+  }
+
+  const entries = new Map(receipt.mutations.map((entry) => [entry.destination, entry]))
+  if (entries.size !== receipt.mutations.length) {
+    return []
+  }
+
+  const changes: WorkspaceChange[] = []
+  for (const mutation of plan.mutations) {
+    const entry = entries.get(mutation.destination)
+    if (entry === undefined || entry.kind !== mutation.kind || entry.status !== 'committed') {
       return []
     }
-    return [{ path: result.path, kind: result.status, revision: result.revision }]
-  })
+    if (mutation.kind === 'delete') {
+      if (entry.revision !== undefined) {
+        return []
+      }
+      changes.push({ path: mutation.destination, kind: 'deleted' })
+      continue
+    }
+    if (entry.revision === undefined) {
+      return []
+    }
+    changes.push({
+      path: mutation.destination,
+      kind: mutation.expectedRevision === 'absent' ? 'created' : 'updated',
+      revision: entry.revision,
+    })
+  }
+  return changes
 }
 
 function changesBetween(previous: Map<string, Revision>, next: Map<string, Revision>): WorkspaceChange[] {

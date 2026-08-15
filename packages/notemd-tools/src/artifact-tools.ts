@@ -1,16 +1,27 @@
 import type { DiagramSpec } from '@notemd-harness/artifacts'
 
 import type { NotemdToolContext } from './notemd-services.js'
-import { objectOutput, requiredObject, requiredString, ToolInputError, type ToolDefinitionFactory } from './tool-contract.js'
+import {
+  arraySchema,
+  artifactCapabilitySchema,
+  executeTool,
+  outcomeOutput,
+  requiredObject,
+  requiredString,
+  stringSchema,
+  ToolInputError,
+  type ToolDefinitionFactory,
+  workspaceMutationPlanSchema,
+} from './tool-contract.js'
 
 export function registerArtifactTools(context: NotemdToolContext, defineTool: ToolDefinitionFactory): void {
   context.tools.register(defineTool({
     name: 'notemd_artifact_render_status',
     description: 'Report whether a portable diagram renderer is available to this NoteMD bundle.',
     parameters: {},
-    output: objectOutput,
+    output: capabilityOutput,
     async execute() {
-      return context.notemdArtifacts.diagramRenderingCapability()
+      return capabilityOutcome(context.notemdArtifacts.diagramRenderingCapability())
     },
   }))
 
@@ -18,9 +29,9 @@ export function registerArtifactTools(context: NotemdToolContext, defineTool: To
     name: 'notemd_artifact_export_status',
     description: 'Report whether a portable document export provider is available to this NoteMD bundle.',
     parameters: {},
-    output: objectOutput,
+    output: capabilityOutput,
     async execute() {
-      return context.notemdArtifacts.documentExportCapability()
+      return capabilityOutcome(context.notemdArtifacts.documentExportCapability())
     },
   }))
 
@@ -31,10 +42,12 @@ export function registerArtifactTools(context: NotemdToolContext, defineTool: To
       sourcePath: { type: 'string', required: true, description: 'Workspace-relative source Markdown path.' },
       spec: diagramSpecParameter,
     },
-    output: objectOutput,
+    output: outcomeOutput({ plan: workspaceMutationPlanSchema }, ['plan']),
     async execute(args, execution) {
-      const source = await context.notemdVault.read(requiredString(args, 'sourcePath'), execution?.signal)
-      return { plan: context.notemdArtifacts.planDiagram(diagramSpecFrom(requiredObject(args, 'spec')), source) }
+      return executeTool(async () => {
+        const source = await context.notemdVault.read(requiredString(args, 'sourcePath'), execution?.signal)
+        return { plan: context.notemdArtifacts.planDiagram(diagramSpecFrom(requiredObject(args, 'spec')), source) }
+      })
     },
   }))
 
@@ -44,10 +57,12 @@ export function registerArtifactTools(context: NotemdToolContext, defineTool: To
     parameters: {
       artifactId: { type: 'string', required: true, description: 'Source artifact identifier.' },
     },
-    output: objectOutput,
+    output: outcomeOutput({ artifactId: stringSchema(), ownedPaths: arraySchema(stringSchema()) }, ['artifactId', 'ownedPaths']),
     async execute(args) {
-      const artifactId = requiredString(args, 'artifactId')
-      return { artifactId, ownedPaths: await context.notemdArtifacts.planCleanup(artifactId) }
+      return executeTool(async () => {
+        const artifactId = requiredString(args, 'artifactId')
+        return { artifactId, ownedPaths: await context.notemdArtifacts.planCleanup(artifactId) }
+      })
     },
   }))
 }
@@ -67,6 +82,16 @@ const diagramSpecParameter = {
     source: { type: 'string', required: true },
   },
 } as const
+
+const capabilityOutput = outcomeOutput(
+  { capability: artifactCapabilitySchema },
+  ['capability'],
+  [{ status: 'unavailable', properties: { code: stringSchema(), capability: artifactCapabilitySchema }, required: ['code', 'capability'] }],
+)
+
+function capabilityOutcome(capability: ReturnType<NotemdToolContext['notemdArtifacts']['diagramRenderingCapability']>) {
+  return { status: 'unavailable' as const, code: `${capability.capability}-unavailable`, capability }
+}
 
 function diagramSpecFrom(value: Record<string, unknown>): DiagramSpec {
   if (

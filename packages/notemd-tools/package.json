@@ -9,6 +9,7 @@
     "@notemd-harness/jobs": "workspace:*",
     "@notemd-harness/knowledge": "workspace:*",
     "@notemd-harness/llm-openai-compatible": "workspace:*",
+    "@notemd-harness/mutation": "workspace:*",
     "@notemd-harness/vault": "workspace:*",
     "@notemd-harness/workspace-events": "workspace:*",
     "@notemd-harness/workflows": "workspace:*"
@@ -21,7 +22,8 @@
   },
   "types": "./lib/index.d.ts",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "pnpm run clean:build-output && tsc -p tsconfig.json",
+    "clean:build-output": "node -e \"const fs = require('node:fs'); fs.rmSync('lib', { recursive: true, force: true }); fs.rmSync('tsconfig.tsbuildinfo', { force: true })\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --config ../../vitest.config.ts"
   }

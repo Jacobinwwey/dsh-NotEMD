@@ -6,7 +6,7 @@ import {
 } from '@notemd-harness/workspace-events'
 
 import type { NotemdWorkspaceChanges } from '@notemd-harness/tools'
-import type { WritePlan, WriteResult } from '@notemd-harness/vault'
+import type { WorkspaceMutationPlan, WorkspaceMutationReceipt } from '@notemd-harness/mutation'
 
 export interface NotemdWorkspaceChangeConfig {
   readonly scanIntervalMs?: number
@@ -34,8 +34,11 @@ export class NotemdWorkspaceChangeService extends Service implements NotemdWorks
     return this.requireCoordinator().subscribe(listener)
   }
 
-  recordApprovedPlan(plan: WritePlan, results: readonly WriteResult[]): Promise<WorkspaceChangeEvent | undefined> {
-    return this.requireCoordinator().recordApprovedPlan(plan, results)
+  recordMutationReceipt(
+    plan: WorkspaceMutationPlan,
+    receipt: WorkspaceMutationReceipt,
+  ): Promise<WorkspaceChangeEvent | undefined> {
+    return this.requireCoordinator().recordMutationReceipt(plan, receipt)
   }
 
   async scanNow(): Promise<WorkspaceChangeEvent | undefined> {

@@ -56,14 +56,19 @@ test('plans portable source files and a manifest with exact ownership', async ()
     source,
   )
 
-  const manifestWrite = plan.writes.find((write) => write.path.endsWith('/manifest.json'))
-  expect(manifestWrite).toBeDefined()
-  expect(manifestWrite?.expectedRevision).toBe('absent')
-  expect(JSON.parse(manifestWrite?.content ?? '{}')).toMatchObject({
+  const manifestMutation = plan.mutations.find(
+    (mutation) => mutation.kind === 'write-text' && mutation.destination.endsWith('/manifest.json'),
+  )
+  expect(manifestMutation).toBeDefined()
+  expect(manifestMutation?.expectedRevision).toBe('absent')
+  const manifestContent = manifestMutation?.kind === 'write-text' ? manifestMutation.content : '{}'
+  expect(JSON.parse(manifestContent)).toMatchObject({
     version: 1,
     renderer: 'source',
     sourcePath: 'notes/architecture.md',
-    ownedPaths: expect.arrayContaining(plan.writes.map((write) => write.path).filter((path) => !path.endsWith('/manifest.json'))),
+    ownedPaths: expect.arrayContaining(
+      plan.mutations.map((mutation) => mutation.destination).filter((path) => !path.endsWith('/manifest.json')),
+    ),
   })
 })
 

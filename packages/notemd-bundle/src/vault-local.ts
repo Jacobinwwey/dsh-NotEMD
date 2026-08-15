@@ -1,6 +1,7 @@
 import { Service, type Context } from '@deepseek-ai/cordis'
 import { LocalVault } from '@notemd-harness/vault-local'
-import type { NotemdVault, VaultDocument, WritePlan, WriteResult } from '@notemd-harness/vault'
+import type { RecoveredMutation, WorkspaceMutationPlan, WorkspaceMutationReceipt } from '@notemd-harness/mutation'
+import type { NotemdVault, VaultDocument } from '@notemd-harness/vault'
 
 import { workspaceRootFrom, type WorkspaceRootConfig } from './workspace-root.js'
 
@@ -25,8 +26,12 @@ export class NotemdVaultLocalService extends Service implements NotemdVault {
     return this.requireVault().read(path, signal)
   }
 
-  apply(plan: WritePlan, signal?: AbortSignal): Promise<readonly WriteResult[]> {
-    return this.requireVault().apply(plan, signal)
+  applyMutationPlan(plan: WorkspaceMutationPlan, signal?: AbortSignal): Promise<WorkspaceMutationReceipt> {
+    return this.requireVault().applyMutationPlan(plan, signal)
+  }
+
+  recoverIncompleteMutationPlans(signal?: AbortSignal): Promise<readonly RecoveredMutation[]> {
+    return this.requireVault().recoverIncompleteMutationPlans(signal)
   }
 
   private requireVault(): LocalVault {

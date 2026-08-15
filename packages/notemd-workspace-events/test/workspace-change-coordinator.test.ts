@@ -1,82 +1,146 @@
-import { expect, test } from 'vitest'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
-import { createRevision, createWritePlan, type NotemdVault, type VaultDocument } from '@notemd-harness/vault'
+import { afterEach, beforeEach, expect, test } from 'vitest'
 
-import { WorkspaceChangeCoordinator, type WorkspaceChangeEvent } from '../src/index.js'
+import {
+  createContentSha256,
+  createWorkspaceMutationPlan,
+  createWorkspaceMutationReceipt,
+  type WorkspaceMutationPlan,
+} from '@notemd-harness/mutation'
+import { createRevision } from '@notemd-harness/vault'
+import { LocalVault } from '@notemd-harness/vault-local'
 
-test('publishes only successful approved writes with plan causation', async () => {
-  const vault = new MemoryVault({ 'notes/a.md': '# A\nold\n' })
+import { WorkspaceChangeCoordinator } from '../src/index.js'
+
+let workspaceRoot = ''
+
+beforeEach(async () => {
+  workspaceRoot = await mkdtemp(join(tmpdir(), 'notemd-workspace-events-'))
+  await mkdir(join(workspaceRoot, 'notes'))
+})
+
+afterEach(async () => {
+  await rm(workspaceRoot, { recursive: true, force: true })
+})
+
+function mutationPlan(
+  expectedRevision: string | 'absent',
+  content: string,
+): WorkspaceMutationPlan {
+  return createWorkspaceMutationPlan({
+    provenance: {
+      operationId: 'notemd.test.workspace-events',
+      sourceRefs: ['notes/a.md'],
+      evidenceRefs: [],
+    },
+    mutations: [
+      {
+        kind: 'write-text',
+        destination: 'notes/a.md',
+        expectedRevision,
+        provenance: {
+          operationId: 'notemd.test.workspace-events',
+          sourceRefs: ['notes/a.md'],
+          evidenceRefs: [],
+        },
+        conflictPolicy: 'reject',
+        mediaType: 'text/markdown',
+        content,
+        contentSha256: createContentSha256(content),
+      },
+    ],
+  })
+}
+
+test('publishes metadata-only changes from a committed receipt', async () => {
+  const vault = await LocalVault.open(workspaceRoot)
   const coordinator = new WorkspaceChangeCoordinator(vault)
   await coordinator.captureSnapshot()
-  const events: WorkspaceChangeEvent[] = []
-  coordinator.subscribe((event) => events.push(event))
-  const plan = createWritePlan([{ path: 'notes/a.md', content: '# A\nnew\n', expectedRevision: createRevision('# A\nold\n') }])
+  const plan = mutationPlan('absent', '# A\nnew\n')
+  const receipt = createWorkspaceMutationReceipt({
+    planId: plan.id,
+    planDigest: plan.digest,
+    status: 'committed',
+    mutations: [
+      {
+        destination: 'notes/a.md',
+        kind: 'write-text',
+        status: 'committed',
+        revision: createRevision('# A\nnew\n'),
+      },
+    ],
+  })
 
-  const event = await coordinator.recordApprovedPlan(plan, [
-    { path: 'notes/a.md', status: 'updated', revision: createRevision('# A\nnew\n') },
-    { path: 'notes/b.md', status: 'skipped-stale' },
-  ])
+  const event = await coordinator.recordMutationReceipt(plan, receipt)
 
   expect(event).toMatchObject({
-    origin: 'notemd-approved-plan',
+    origin: 'notemd-mutation-receipt',
     causationId: plan.id,
-    changes: [{ path: 'notes/a.md', kind: 'updated', revision: createRevision('# A\nnew\n') }],
+    changes: [{ path: 'notes/a.md', kind: 'created', revision: createRevision('# A\nnew\n') }],
   })
-  expect(events).toEqual([event])
+  expect(JSON.stringify(event)).not.toContain('# A\nnew\n')
 })
 
-test('reconciles external create update and delete events from fresh revisions', async () => {
-  const vault = new MemoryVault({
-    'notes/a.md': '# A\nold\n',
-    'notes/delete.md': '# Delete\nold\n',
-  })
-  const coordinator = new WorkspaceChangeCoordinator(vault, () => 'scan-1')
+test('publishes a committed delete as a metadata-only deletion', async () => {
+  await writeFile(join(workspaceRoot, 'notes', 'a.md'), '# A\nold\n')
+  const vault = await LocalVault.open(workspaceRoot)
+  const source = await vault.read('notes/a.md')
+  const coordinator = new WorkspaceChangeCoordinator(vault)
   await coordinator.captureSnapshot()
-  vault.write('notes/a.md', '# A\nnew\n')
-  vault.write('notes/new.md', '# New\ncreated\n')
-  vault.delete('notes/delete.md')
+  const plan = createWorkspaceMutationPlan({
+    provenance: {
+      operationId: 'notemd.test.workspace-events',
+      sourceRefs: ['notes/a.md'],
+      evidenceRefs: [],
+    },
+    mutations: [
+      {
+        kind: 'delete',
+        destination: 'notes/a.md',
+        expectedRevision: source.revision,
+        provenance: {
+          operationId: 'notemd.test.workspace-events',
+          sourceRefs: ['notes/a.md'],
+          evidenceRefs: [],
+        },
+        conflictPolicy: 'reject',
+        expectedContentSha256: createContentSha256(source.content),
+      },
+    ],
+  })
+  const receipt = createWorkspaceMutationReceipt({
+    planId: plan.id,
+    planDigest: plan.digest,
+    status: 'committed',
+    mutations: [{ destination: 'notes/a.md', kind: 'delete', status: 'committed' }],
+  })
 
-  await expect(coordinator.scan()).resolves.toMatchObject({
-    origin: 'external-scan',
-    causationId: 'scan-1',
-    changes: expect.arrayContaining([
-      { path: 'notes/a.md', kind: 'updated', revision: createRevision('# A\nnew\n') },
-      { path: 'notes/new.md', kind: 'created', revision: createRevision('# New\ncreated\n') },
-      { path: 'notes/delete.md', kind: 'deleted' },
-    ]),
+  const event = await coordinator.recordMutationReceipt(plan, receipt)
+
+  expect(event).toMatchObject({
+    origin: 'notemd-mutation-receipt',
+    causationId: plan.id,
+    changes: [{ path: 'notes/a.md', kind: 'deleted' }],
   })
 })
 
-class MemoryVault implements NotemdVault {
-  private readonly documents = new Map<string, string>()
+test.each(['conflict', 'rejected', 'cancelled', 'failed'] as const)(
+  'does not publish an indexable event for a %s receipt',
+  async (status) => {
+    const vault = await LocalVault.open(workspaceRoot)
+    const coordinator = new WorkspaceChangeCoordinator(vault)
+    await coordinator.captureSnapshot()
+    const plan = mutationPlan('absent', '# A\nnew\n')
+    const receipt = createWorkspaceMutationReceipt({
+      planId: plan.id,
+      planDigest: plan.digest,
+      status,
+      mutations: [{ destination: 'notes/a.md', kind: 'write-text', status, diagnosticCode: `mutation-${status}` }],
+    })
 
-  constructor(initial: Record<string, string>) {
-    for (const [path, content] of Object.entries(initial)) {
-      this.documents.set(path, content)
-    }
-  }
-
-  async listMarkdown(): Promise<readonly string[]> {
-    return [...this.documents.keys()].sort((left, right) => left.localeCompare(right))
-  }
-
-  async read(path: string): Promise<VaultDocument> {
-    const content = this.documents.get(path)
-    if (content === undefined) {
-      throw Object.assign(new Error(`Missing ${path}`), { code: 'VAULT_NOT_FOUND' })
-    }
-    return { path, content, revision: createRevision(content) }
-  }
-
-  async apply(): Promise<readonly []> {
-    return []
-  }
-
-  write(path: string, content: string): void {
-    this.documents.set(path, content)
-  }
-
-  delete(path: string): void {
-    this.documents.delete(path)
-  }
-}
+    await expect(coordinator.recordMutationReceipt(plan, receipt)).resolves.toBeUndefined()
+  },
+)

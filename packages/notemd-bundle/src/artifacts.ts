@@ -1,6 +1,7 @@
 import { Service, type Context } from '@deepseek-ai/cordis'
 import { SourceArtifactPlanner, type ArtifactCapability, type DiagramSpec, type NotemdArtifacts } from '@notemd-harness/artifacts'
-import type { VaultDocument, WritePlan } from '@notemd-harness/vault'
+import type { WorkspaceMutationPlan } from '@notemd-harness/mutation'
+import type { VaultDocument } from '@notemd-harness/vault'
 
 export class NotemdArtifactsService extends Service implements NotemdArtifacts {
   static inject = ['notemdVault'] as const
@@ -15,7 +16,7 @@ export class NotemdArtifactsService extends Service implements NotemdArtifacts {
     this.planner = new SourceArtifactPlanner(this.ctx.notemdVault)
   }
 
-  planDiagram(spec: DiagramSpec, source: VaultDocument): WritePlan {
+  planDiagram(spec: DiagramSpec, source: VaultDocument): WorkspaceMutationPlan {
     return this.requirePlanner().planDiagram(spec, source)
   }
 

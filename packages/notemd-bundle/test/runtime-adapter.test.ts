@@ -1,17 +1,33 @@
 import { expect, test } from 'vitest'
 
-import { createWritePlan } from '@notemd-harness/vault'
+import { createContentSha256, createWorkspaceMutationPlan } from '@notemd-harness/mutation'
 
 import { ConfiguredTextTransformer, DshApprovalGate } from '../src/runtime-adapter.js'
 
-const plan = createWritePlan([
-  { path: 'notes/a.md', content: 'approved content must remain out of approval reasons', expectedRevision: 'absent' },
-])
+const planProvenance = {
+  operationId: 'notemd.test.approval-gate',
+  sourceRefs: ['notes/a.md'],
+  evidenceRefs: [],
+}
+const planContent = 'approved content must remain out of approval reasons'
+const plan = createWorkspaceMutationPlan({
+  provenance: planProvenance,
+  mutations: [{
+    kind: 'write-text',
+    destination: 'notes/a.md',
+    expectedRevision: 'absent',
+    provenance: planProvenance,
+    conflictPolicy: 'reject',
+    mediaType: 'text/markdown',
+    content: planContent,
+    contentSha256: createContentSha256(planContent),
+  }],
+})
 
 test('fails closed when DSH approval cannot be routed to an agent', async () => {
   const gate = new DshApprovalGate({})
 
-  await expect(gate.request(plan)).resolves.toBe(false)
+  await expect(gate.request(plan)).resolves.toBe('unavailable')
 })
 
 test('routes one plan approval through DSH without exposing planned content', async () => {
@@ -25,7 +41,7 @@ test('routes one plan approval through DSH without exposing planned content', as
     },
   })
 
-  await expect(gate.request(plan, { agent: { id: 'agent' }, callId: 'call-1' })).resolves.toBe(true)
+  await expect(gate.request(plan, { agent: { id: 'agent' }, callId: 'call-1' })).resolves.toBe('approved')
   expect(requests).toHaveLength(1)
   expect(requests[0]).toMatchObject({ callId: 'call-1', toolName: 'notemd_request_plan_approval' })
   expect(JSON.stringify(requests[0])).not.toContain('approved content must remain out of approval reasons')

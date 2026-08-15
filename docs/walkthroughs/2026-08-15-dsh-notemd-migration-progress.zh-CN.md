@@ -2,7 +2,7 @@
 
 > English version: [2026-08-15-dsh-notemd-migration-progress.md](2026-08-15-dsh-notemd-migration-progress.md)
 
-**状态：** standalone bundle 与 next-level runtime 基础已实现。全量迁移架构与可执行计划已在 `main` 的 `626f6e1` 发布；Task 1-3 已完成，Task 4-11 仍待实现。
+**状态：** standalone bundle 与 next-level runtime 基础已实现。全量迁移架构与可执行计划已在 `main` 的 `626f6e1` 发布；Task 1-4 已完成，Task 5-11 仍待实现。
 
 ## 1. 范围基线
 
@@ -13,12 +13,13 @@
 
 ## 2. 已核验基础
 
-- 目标已具备审批门控、修订感知的文本 `WritePlan` 路径，持久化的只规划作业，工作区变更对账，以及增量 MiniSearch 索引。
+- 目标已具备唯一的、审批门控且修订感知的 `WorkspaceMutationPlan` 路径，持久化的只规划作业、receipt 派生的工作区变更对账，以及增量 MiniSearch 索引。
 - 当前运行时已使用 Cordis `Service`、显式 `inject` 依赖，并通过 `ctx.effect()` 管理轮询扫描器和知识订阅清理。
 - 本文档更新前目标工作树处于 clean 状态。
 - Task 1 已在 `fixtures/migration/source-operation-matrix.json` 冻结源边界：29 个 operation ID、18 个 included 行、11 个 design exclusion、四个精确的 Drawnix-WIP exclusion，以及 14 个 SHA-256 固定的确定性 fixture。
 - Task 2 已增加 `@notemd-harness/mutation`，这是面向 text write、staged binary write、delete 和 metadata-only receipt 的不可变、内容寻址 proposal vocabulary。本阶段只建立 contract，不会修改工作区。
-- Task 3 已增加唯一可恢复的多目标 executor：content-free journal、plan-local staged payload、SHA-256 核验、可逆 delete、canonical lock、重试保护和 terminal staging cleanup tracking。legacy 文本路径仅在 Task 4 迁移调用方前作为共享锁兼容桥保留。
+- Task 3 已增加唯一可恢复的多目标 executor：content-free journal、plan-local staged payload、SHA-256 核验、可逆 delete、canonical lock、重试保护和 terminal staging cleanup tracking。
+- Task 4 已移除 legacy public text-write authority。approval 绑定 plan 与 staged-asset digest；Tool 只在一次性 receipt 被消费后调用 executor；job 只保留 plan identity；workspace event 只源于已核验的 committed receipt。
 
 ## 3. 已完成的代码审计
 
@@ -26,14 +27,14 @@
 
 | 当前目标区域 | 已确认现状 | 架构影响 |
 | --- | --- | --- |
-| `packages/notemd-vault/src/revision.ts` | `WritePlan` 只包含文本写入。 | 无法表达二进制 source visual、renderer output 或 managed delete。 |
-| `packages/notemd-vault-local/src/local-vault.ts` | 保留 legacy 的逐路径 `WritePlan` bridge，同时暴露共享锁的 journaled mutation application/recovery。 | Task 4 必须迁移 approval、job、event 和 Tool，之后这个临时的双入口 surface 才能收敛为一个 mutation authority。 |
+| `packages/notemd-vault/src/revision.ts` | 只暴露不可变的读取 revision；公共 `WritePlan` contract 已移除。 | 读取事实不再蕴含 mutation authority。 |
+| `packages/notemd-vault-local/src/local-vault.ts` | 以共享锁 journaled mutation application/recovery 作为唯一 local write path。 | approval、job、event 和 Tool 已收敛到一个可恢复 mutation authority。 |
 | `packages/notemd-bundle/src/runtime-adapter.ts` 与 `cordis.patch.yml` | 默认直连 OpenAI-compatible endpoint/API key。 | 默认所有权必须转移到 DSH `ctx.llm` seam；旧传输降为 opt-in。 |
 | `packages/notemd-workflows/src/index.ts` | research synthesis 接受调用方提供的文本。 | 未实现 `ctx.web` evidence consumer 前没有 native research。 |
 | `packages/notemd-knowledge/src/knowledge-index.ts` | 按整文件 MiniSearch 索引。 | 缺少源任务路径、section window、当前文件排除和检索解释。 |
 | `packages/notemd-artifacts/src/artifact-manifest.ts` | 仅 source JSON/README，`renderer: source`，render/export 始终 unavailable。 | artifact lineage 与具名 renderer/export provider 是核心缺口。 |
-| `packages/notemd-tools/src/tool-contract.ts` | 全部 Tool 共用宽松的 `objectOutput` schema。 | 扩展能力前必须形成封闭 canonical DSH Tool 结果。 |
-| `packages/notemd-jobs` 与 `packages/notemd-workspace-events` | Durable planning/checkpoint 和 metadata-only change reconciliation 已可用。 | 应保留，然后将 checkpoint/event 从 `WritePlan` 迁移到 mutation receipt。 |
+| `packages/notemd-tools/src/tool-contract.ts` | 每个具名 Tool 使用封闭 DSH author schema 和显式 outcome variant。 | DSH runtime 可以验证每个输出，不再依赖 catch-all object schema。 |
+| `packages/notemd-jobs` 与 `packages/notemd-workspace-events` | durable planning checkpoint 只保留 proposal identity/evidence；metadata-only change 由已核验 receipt 派生。 | planning 保持非权威，indexing 只观察 committed mutation。 |
 
 ## 4. 与先前方案的对账
 
@@ -42,8 +43,8 @@
 | 先前要求 | 当前证据 | 全量迁移处置 |
 | --- | --- | --- |
 | 独立 DSH bundle，显式工作区根目录、Cordis service、profile patch 与 clean-profile 验收。 | `notemd-bundle`、profile patch 和 `pnpm accept:dsh` 已存在且通过。 | 已交付并保留。新增包必须维持显式 inject、Fiber-owned effect、完整 patch config 和 packed-bundle 验收。 |
-| 修订绑定、审批门控的文本 `WritePlan` 是唯一工作区变更路径。 | `notemd-vault` 与 `LocalVault` 已约束文本修订、同目录原子替换和审批消费。 | 保留权限边界，但以一个 mutation protocol 替换纯文本公共契约。长期并存 `WritePlan` 与 `WorkspaceMutationPlan` 会形成两个可变更权威。 |
-| 持久化的只规划作业、仅元数据的工作区事件和可重建的增量知识索引。 | `notemd-jobs`、`notemd-workspace-events` 和 `notemd-knowledge` 已实现 checkpoint、显式恢复、扫描和 fresh-read 索引更新。 | 保留服务；将 checkpoint 与 causation payload 从 write plan 迁移到 mutation proposal/receipt，不能把事件误做 event-sourcing 日志。 |
+| 修订绑定、审批门控的文本 `WritePlan` 是唯一工作区变更路径。 | `notemd-vault` 只读，`LocalVault` 只通过 journaled executor 应用 canonical `WorkspaceMutationPlan`。 | 已以一个 mutation protocol 交付；长期并存 `WritePlan` 会形成两个可变更 authority。 |
+| 持久化的只规划作业、仅元数据的工作区事件和可重建的增量知识索引。 | `notemd-jobs`、`notemd-workspace-events` 和 `notemd-knowledge` 保留 proposal-only checkpoint、committed-receipt causation、scan 和 fresh-read index update。 | 已交付，且没有把 workspace event 演化为 event-sourcing log。 |
 | 通用 OpenAI-compatible adapter 默认拥有 endpoint/key 配置、诊断和模型发现。 | `ConfiguredTextTransformer` 与默认 `cordis.patch.yml` 持有 `endpoint`、`apiKeyEnv` 和 `model`。 | 默认设计已被取代。它应降为 opt-in legacy entry；正常路径消费 DSH `ctx.llm.stream()`，绝不读取传输凭据。 |
 | portable core 只需 source artifact 和真实的 unavailable render/export 状态。 | `SourceArtifactPlanner` 持久化 JSON/README 并永久返回 `unavailable`。 | 诚实但不完整。演化为版本化 source/preview/export lineage，并加入具名 capability-gated provider；不得将 SVG 称作非 SVG 目标的等价替代物。 |
 | baseline workflow planner 已覆盖可移植笔记语义。 | 已有链接、标题、翻译、概念、公式、Mermaid 和由字符串提供输入的研究摘要。 | 仅部分完成。源行为仍缺章节拆分、原文抽取、文件夹策略、协调、任务范围检索、DSH-native 研究证据以及全部真实渲染/导出 provider。 |
@@ -57,9 +58,9 @@
 | 任务 | 当前状态 | 离开该状态的关口 |
 | --- | --- | --- |
 | 1. 源行为契约 | 已完成。矩阵在 `4168a51cd19ad8c3d1e05f604b50936255461a31` 固定全部 29 个源 registry ID；18 个 included 行均引用 14 个确定性 fixture 中的一个或多个。 | 源契约不能静默扩大 Drawnix WIP exclusion 集合，也不能丢失本地检索、图表或 slide fixture 覆盖。 |
-| 2. 类型化 mutation proposal | 已完成。`@notemd-harness/mutation` 以 canonical destination 顺序、content digest、opaque staged-asset metadata 和 closed receipt 冻结 text/bytes/delete plan。 | Task 3 提供可执行 contract；Task 4 必须在调用方迁移后移除临时 legacy `WritePlan` authority。 |
-| 3. 本地 journaled executor | 已完成。`LocalMutationExecutor` 持久化 content-free metadata、stage plan payload、锁定 canonical target、核验 hash、安全回滚、单独完成 staging cleanup，并与 `LocalVault` 共享锁。 | Task 4 必须将 approval、job、event 和 closed Tool result 绑定到已核验的 mutation receipt。 |
-| 4. 审批、事件、作业与 Tool receipt | 未开始。审批、checkpoint、event 和开放 Tool schema 仍以 `WritePlan` 为中心。 | 审批绑定 plan/asset digest；只有已验证 receipt 能发布 metadata-only change；每个具名 Tool 有封闭结果 schema。 |
+| 2. 类型化 mutation proposal | 已完成。`@notemd-harness/mutation` 以 canonical destination 顺序、content digest、opaque staged-asset metadata 和 closed receipt 冻结 text/bytes/delete plan。 | 已通过 Task 4 的唯一 mutation authority 交付。 |
+| 3. 本地 journaled executor | 已完成。`LocalMutationExecutor` 持久化 content-free metadata、stage plan payload、锁定 canonical target、核验 hash、安全回滚、单独完成 staging cleanup，并与 `LocalVault` 共享锁。 | 已通过 receipt-bound approval、job、event 与 Tool 交付。 |
+| 4. 审批、事件、作业与 Tool receipt | 已完成。`WritePlan` export 和 caller 已移除；approval 绑定 proposal/asset digest；checkpoint 保存 proposal identity/evidence；只有匹配的 committed receipt 发布 event；每个 Tool 都有封闭 DSH outcome schema。 | Task 5 可在没有第二写入 authority 的前提下替换默认模型边界。 |
 | 5. DSH LLM consumer bridge | 未开始。`notemd-llm-dsh` 不存在，直连 OpenAI-compatible adapter 仍为默认。 | `ctx.llm.stream()` 路由组装、取消、终止失败和 HMR disposal 测试通过；legacy transport 不出现在默认 patch。 |
 | 6. DSH web research evidence | 未开始。研究摘要消费调用方字符串，且没有 durable evidence 包。 | 具名 discovery/synthesis 使用 `ctx.web`，保留类型化 evidence/citation，并在无 provider 时返回 capability-unavailable 而非自建 fallback。 |
 | 7. 文档语义与知识检索 | 未开始。没有 documents 包，索引仍是整文件 MiniSearch。 | AST section、稳定锚点、章节/原文/协调 proposal、文件夹策略、scope window 和可解释命中通过特征化 fixture。 |
@@ -76,12 +77,11 @@
 
 ## 7. 后续推进方向
 
-1. 开始 Task 4。将 approval、event、job 和 Tool 迁移为已核验 `WorkspaceMutationReceipt` 的发布；一旦 mutation counterpart 存在，任何调用方都不能再应用 legacy `WritePlan`。
-2. 只在全部 Task 4 调用方使用 receipt boundary 后，才移除临时 legacy public write path，完成 authority migration。
-3. 在 proposal contract 可用后完成 Task 5-6。LLM/Web bridge 必须先成为 DSH consumer，工作流才能安全持久化生成或研究结果。
-4. 在扩展 renderer 宽度前完成 Task 7。文档结构和检索证据是图表、引用和 artifact provenance 的上游输入。
-5. Task 8-10 必须按目标类别实现，不能使用 target selector。先实现 SVG-capable renderer；随后仅在具备显式 capability test 时加入 process-gated Draw.io/Drawnix/Circuitikz 和 Slidev/media exporter。
-6. 将 Task 11 留给证明，而不是乐观判断：在实现任务全部完成后运行 source-matrix conformance、生命周期/HMR 失败路径、隔离 bundle 验收和完整 release gate。
+1. 开始 Task 5。以 DSH `ctx.llm` consumer bridge 替换默认 transport adapter；保留 provider-neutral failure，并将直连 credential 排除在默认配置外。
+2. 随后完成 Task 6。research discovery/synthesis 必须消费 durable `ctx.web` evidence，不能使用未跟踪的 caller-supplied passage 或 transport fallback。
+3. 在扩展 renderer 宽度前完成 Task 7。文档结构和检索证据是图表、引用和 artifact provenance 的上游输入。
+4. Task 8-10 必须按目标类别实现，不能使用 target selector。先实现 SVG-capable renderer；随后仅在具备显式 capability test 时加入 process-gated Draw.io/Drawnix/Circuitikz 和 Slidev/media exporter。
+5. 将 Task 11 留给证明，而不是乐观判断：在实现任务全部完成后运行 source-matrix conformance、生命周期/HMR 失败路径、隔离 bundle 验收和完整 release gate。
 
 ## 8. 约束
 
@@ -132,3 +132,12 @@
 - `@notemd-harness/vault-local` 现提供 journaled executor：不可变 proposal input、staged binary asset 核验、canonical multi-target lock、same-volume replacement、quarantine delete、digest-checked recovery、retry rejection 与 metadata-only receipt。journal record 从不保存 prompt、text payload 或 binary bytes。
 - 聚焦 executor suite 覆盖 19 个测试：全部持久化崩溃状态、陈旧和并发 plan、symlink escape、staged-asset substitution、rollback integrity、外部改写、取消、幂等、idle construction 与 committed-state finalization cleanup。`LocalVault` 额外覆盖 shared-lock mutation bridge。
 - `pnpm install --lockfile-only` 更新 workspace link，随后 `pnpm install --frozen-lockfile` 完成。`pnpm --filter @notemd-harness/vault-local test` 与 `pnpm test` 均报告 20 个测试文件、85 个测试通过；在 Node `v22.19.0` / pnpm `10.7.1` 上，`pnpm typecheck`、`pnpm lint` 与 `git diff --check` 也已通过。
+
+### Task 4 验证
+
+- legacy `WritePlan` public contract 和 Tool bridge 已移除。`notemd_request_plan_approval` 解析并 canonicalize mutation proposal，只在 DSH approval 后签发 asset-bound one-time receipt；`notemd_apply_approved_plan` 在调用 journaled executor 前消费该 receipt。
+- receipt outcome 保持真实：只有匹配的 `committed` receipt 能发布 `notemd-mutation-receipt` event。conflict、rejected、cancelled、failed、recovered、mismatched 和 event-recording failure path 都返回显式 closed outcome，且不发布可索引 change。
+- schema adapter 现在输出 DSH author DSL，而非预编译 JSON Schema；嵌套必填字段使用 `required: true`。contract suite 覆盖 approval decision、invalid consumption、stale plan、staged-asset substitution、rejected delete 与 closed-schema registration。
+- 全部 legacy behavior test、runtime approval test、durable-job checkpoint test 和 clean-profile runner 都改为断言 `mutations`、proposal checkpoint identity 和 receipt state，而不是 `writes` 或 legacy per-file status。
+- 声明新 mutation dependency 后，离线 `pnpm install --offline` 修复了 workspace link。bundle verifier 现在要求 `@notemd-harness/mutation`；其 package manifest 只分发 compiled JS/declaration，build cache/source map 不会进入 tarball。
+- Node `v22.19.0` / pnpm `10.7.1` 上的最新证据：`pnpm typecheck`、`pnpm test`（21 文件、97 测试）、`pnpm lint`、`pnpm build`、`pnpm pack:bundle`、`pnpm verify:bundle` 和 `pnpm accept:dsh` 均已成功完成。

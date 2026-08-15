@@ -1,14 +1,22 @@
 import type { NotemdToolContext } from './notemd-services.js'
-import { objectOutput, requiredString, type ToolDefinitionFactory } from './tool-contract.js'
+import {
+  arraySchema,
+  executeTool,
+  knowledgeMatchSchema,
+  outcomeOutput,
+  requiredString,
+  type ToolDefinitionFactory,
+  vaultDocumentSchema,
+} from './tool-contract.js'
 
 export function registerReadTools(context: NotemdToolContext, defineTool: ToolDefinitionFactory): void {
   context.tools.register(defineTool({
     name: 'notemd_workspace_list',
     description: 'List Markdown paths in the configured NoteMD workspace.',
     parameters: {},
-    output: objectOutput,
+    output: outcomeOutput({ paths: arraySchema({ type: 'string' }) }, ['paths']),
     async execute(_args, execution) {
-      return { paths: await context.notemdVault.listMarkdown(execution?.signal) }
+      return executeTool(async () => ({ paths: await context.notemdVault.listMarkdown(execution?.signal) }))
     },
   }))
 
@@ -18,9 +26,9 @@ export function registerReadTools(context: NotemdToolContext, defineTool: ToolDe
     parameters: {
       path: { type: 'string', required: true, description: 'Workspace-relative Markdown path.' },
     },
-    output: objectOutput,
+    output: outcomeOutput({ document: vaultDocumentSchema }, ['document']),
     async execute(args, execution) {
-      return { document: await context.notemdVault.read(requiredString(args, 'path'), execution?.signal) }
+      return executeTool(async () => ({ document: await context.notemdVault.read(requiredString(args, 'path'), execution?.signal) }))
     },
   }))
 
@@ -32,9 +40,9 @@ export function registerReadTools(context: NotemdToolContext, defineTool: ToolDe
       parameters: {
         query: { type: 'string', required: true, description: 'Terms to search for.' },
       },
-      output: objectOutput,
+      output: outcomeOutput({ matches: arraySchema(knowledgeMatchSchema) }, ['matches']),
       async execute(args) {
-        return { matches: await knowledge.search(requiredString(args, 'query')) }
+        return executeTool(async () => ({ matches: await knowledge.search(requiredString(args, 'query')) }))
       },
     }))
   }

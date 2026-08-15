@@ -45,6 +45,9 @@ export class IncrementalKnowledgeSynchronizer {
 
   private async synchronize(event: WorkspaceChangeEvent): Promise<void> {
     for (const change of event.changes) {
+      if (!isMarkdownPath(change.path)) {
+        continue
+      }
       if (change.kind === 'deleted') {
         await this.index.remove(change.path)
         continue
@@ -60,6 +63,10 @@ export class IncrementalKnowledgeSynchronizer {
       }
     }
   }
+}
+
+function isMarkdownPath(path: string): boolean {
+  return path.toLocaleLowerCase().endsWith('.md') && !path.startsWith('.notemd/')
 }
 
 function isMissingVaultDocument(error: unknown): boolean {

@@ -12,6 +12,7 @@ const bundledInternalPackages = [
   '@notemd-harness/jobs',
   '@notemd-harness/knowledge',
   '@notemd-harness/llm-openai-compatible',
+  '@notemd-harness/mutation',
   '@notemd-harness/tools',
   '@notemd-harness/vault',
   '@notemd-harness/vault-local',
