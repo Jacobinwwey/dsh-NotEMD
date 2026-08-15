@@ -32,6 +32,10 @@ export class VaultPathBoundary {
     return new VaultPathBoundary(await realpath(workspaceRoot))
   }
 
+  get workspaceRoot(): string {
+    return this.canonicalRoot
+  }
+
   lockKey(relativePath: string): string {
     const resolved = this.resolveLexically(relativePath)
     return process.platform === 'win32' ? resolved.absolutePath.toLowerCase() : resolved.absolutePath

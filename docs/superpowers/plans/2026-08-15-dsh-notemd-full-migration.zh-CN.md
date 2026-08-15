@@ -103,12 +103,13 @@ prepared -> staged -> applying -> verified -> committed
 prepared | staged | applying -> recovering -> committed | rolled-back | failed
 ```
 
-- [ ] 针对每个状态转换注入崩溃；覆盖同目标冲突、规范锁顺序、路径逃逸、symlink/junction 复检、二进制写、quarantine delete、陈旧修订和幂等恢复。
-- [ ] 在 `<workspace>/.notemd/staging/<plan-id>/` 保存资产，在 `<workspace>/.notemd/mutations/` 保存 journal；二者均排除 Markdown 索引。
-- [ ] 先按规范顺序锁定全部目标，再检查修订；写入用同卷临时替换，删除在 commit cleanup 前使用可恢复 quarantine move。
-- [ ] 替换后重算 SHA-256；平台支持时 fsync journal；失败留下可诊断状态。
-- [ ] 调用方迁移后才移除 `LocalVault.apply(WritePlan)`，不能长期保留第二个公开 mutation path。
-- [ ] 运行本地 vault 测试与 `rtk tsc`，更新进度并提交 `feat: journal local workspace mutations`。
+- [x] 已为每个持久化状态转换编写崩溃注入测试，覆盖同目标冲突、规范锁、路径逃逸、symlink/junction 复检、二进制写、quarantine delete、陈旧修订、重试保护、取消、staging 完整性、外部改写保护和幂等恢复。
+- [x] plan payload 保存在 `<workspace>/.notemd/staging/<plan-id>/`，opaque asset 保存在 `.notemd/staging/assets/`，content-free journal 保存在 `<workspace>/.notemd/mutations/`；`.notemd` 仍被 Markdown 索引排除，空闲 executor 构造不再创建工作区状态。
+- [x] 已在 preflight 前按规范字典序获取锁，并与 legacy `LocalVault` 路径共享。写入使用同卷 staged replacement；删除在核验 commit 前使用可恢复 quarantine move。
+- [x] 替换后重算 SHA-256，journal 替换前 fsync 文件内容，以已记录 digest 保护 backup/quarantine 数据，失败保留可诊断 journal state，并在 terminal mutation state 后单独记录 cleanup-completion fact。
+- [x] `LocalVault.apply(WritePlan)` 仅作为临时兼容 surface 保留。`applyMutationPlan()` 与 `recoverIncompleteMutationPlans()` 共享其 target lock；调用方迁移和 legacy public write path 的移除归 Task 4 负责。
+- [x] 已在 Windows 运行 `rtk proxy pnpm.cmd --filter @notemd-harness/vault-local test`、`pnpm typecheck` 与 `pnpm lint`。
+- [x] 已用恢复证据更新成对进度文档。本阶段提交为 `feat: journal local workspace mutations`。
 
 ### Task 4：将审批、事件、作业和 Tools 迁移到 Mutation Receipt
 

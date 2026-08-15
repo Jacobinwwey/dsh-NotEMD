@@ -1,2 +1,5 @@
 export * from './local-vault.js'
+export * from './local-mutation-executor.js'
+export * from './local-mutation-journal.js'
 export * from './path-boundary.js'
+export * from './staged-asset-store.js'

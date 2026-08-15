@@ -2,7 +2,7 @@
 
 > Chinese version: [2026-08-15-dsh-notemd-migration-progress.zh-CN.md](2026-08-15-dsh-notemd-migration-progress.zh-CN.md)
 
-**Status:** The standalone-bundle and next-level-runtime foundations are implemented. The full-migration architecture and executable plan were published on `main` at `626f6e1`; Tasks 1-2 are complete and Tasks 3-11 remain pending implementation.
+**Status:** The standalone-bundle and next-level-runtime foundations are implemented. The full-migration architecture and executable plan were published on `main` at `626f6e1`; Tasks 1-3 are complete and Tasks 4-11 remain pending implementation.
 
 ## 1. Scope Baseline
 
@@ -18,6 +18,7 @@
 - The target worktree was clean before this documentation update.
 - Task 1 freezes the source boundary in `fixtures/migration/source-operation-matrix.json`: 29 operation IDs, 18 included rows, 11 design exclusions, four exact Drawnix-WIP exclusions, and 14 SHA-256-pinned deterministic fixtures.
 - Task 2 adds `@notemd-harness/mutation`, the immutable content-addressed proposal vocabulary for text writes, staged binary writes, deletes, and metadata-only receipts. It is a contract package only; no workspace mutation occurs here.
+- Task 3 adds the only recoverable multi-target executor: content-free journals, plan-local staged payloads, SHA-256 verification, reversible deletes, canonical locks, retry protection, and terminal staging cleanup tracking. The legacy text path remains only as a shared-lock compatibility bridge until Task 4 migrates callers.
 
 ## 3. Completed Code Audit
 
@@ -26,7 +27,7 @@ The source registry exposes 29 operations. Its host/provider/profile surfaces ar
 | Current target area | Confirmed state | Architecture impact |
 | --- | --- | --- |
 | `packages/notemd-vault/src/revision.ts` | `WritePlan` contains only text writes. | It cannot represent binary source visuals, renderer outputs, or managed deletes. |
-| `packages/notemd-vault-local/src/local-vault.ts` | Uses per-path locks and atomic replacement, but applies writes through `Promise.all()`. | Strong single-file behavior must become journaled, canonical-order multi-target mutation execution. |
+| `packages/notemd-vault-local/src/local-vault.ts` | Retains the legacy per-path `WritePlan` bridge and now exposes shared-lock journaled mutation application/recovery. | Task 4 must migrate approval, jobs, events, and Tools so this temporary dual entry surface can collapse to one mutation authority. |
 | `packages/notemd-bundle/src/runtime-adapter.ts` and `cordis.patch.yml` | Direct OpenAI-compatible endpoint/API-key config is the default. | Default ownership must move to the DSH `ctx.llm` seam; legacy transport becomes opt-in. |
 | `packages/notemd-workflows/src/index.ts` | Research synthesis accepts supplied passages. | Native research is absent until a `ctx.web` evidence consumer exists. |
 | `packages/notemd-knowledge/src/knowledge-index.ts` | Whole-file MiniSearch indexing. | It lacks source task paths, section windows, current-file exclusion, and retrieval explanation. |
@@ -53,11 +54,11 @@ The architectural correction is intentionally narrow: it preserves working relia
 
 The table records code state, not planned completion. A passing baseline release gate proves the existing bundle is installable; it does not prove a capability family has migrated.
 
-| Task | State at `6672f54` | Gate to leave the state |
+| Task | Current state | Gate to leave the state |
 | --- | --- | --- |
 | 1. Source behavior contract | Complete. The matrix pins all 29 source registry IDs at `4168a51cd19ad8c3d1e05f604b50936255461a31`; each of 18 included rows references one or more of 14 deterministic fixtures. | The source contract cannot silently expand its Drawnix WIP exclusion set or lose local retrieval, diagram, or slide fixture coverage. |
-| 2. Typed mutation proposals | Complete. `@notemd-harness/mutation` freezes text/bytes/delete plans with canonical destination ordering, content digests, opaque staged-asset metadata, and closed receipts. | Task 3 must make this the only executable mutation contract, without retaining a second `WritePlan` application path. |
-| 3. Local journaled executor | Not started. Local writes are independent `Promise.all()` operations with no batch journal or recovery. | Crash-point, canonical-lock, binary, delete/quarantine, path-boundary, and idempotent recovery tests pass on Windows. |
+| 2. Typed mutation proposals | Complete. `@notemd-harness/mutation` freezes text/bytes/delete plans with canonical destination ordering, content digests, opaque staged-asset metadata, and closed receipts. | Task 3 supplies the executable contract; Task 4 must remove the temporary legacy `WritePlan` authority after callers migrate. |
+| 3. Local journaled executor | Complete. `LocalMutationExecutor` journals content-free metadata, stages plan payloads, locks canonical targets, verifies hashes, rolls back safely, finalizes staging separately, and shares locks with `LocalVault`. | Task 4 must bind approvals, jobs, events, and closed Tool results to verified mutation receipts. |
 | 4. Approval, events, jobs, and Tool receipts | Not started. Approvals, checkpoints, events, and open Tool schemas still center on `WritePlan`. | Approval binds plan and asset digests; verified receipts alone publish metadata-only changes; each named Tool has a closed result schema. |
 | 5. DSH LLM consumer bridge | Not started. `notemd-llm-dsh` is absent and the direct OpenAI-compatible adapter remains default. | `ctx.llm.stream()` route assembly, cancellation, terminal failure, and HMR disposal tests pass; legacy transport is absent from default patches. |
 | 6. DSH web research evidence | Not started. Research synthesis consumes caller-provided strings and no durable evidence package exists. | Named discovery/synthesis operations use `ctx.web`, retain typed evidence and citations, and return capability-unavailable without transport fallback. |
@@ -75,8 +76,8 @@ The table records code state, not planned completion. A passing baseline release
 
 ## 7. Next Direction
 
-1. Begin Task 3. The local executor must apply only `WorkspaceMutationPlan`; do not port chapter cleanup, binary artifacts, or exporter output to `WritePlan`.
-2. Treat Tasks 3-4 as the remaining authority migration, with one public mutation protocol after callers migrate.
+1. Begin Task 4. Migrate approvals, events, jobs, and Tools to verified `WorkspaceMutationReceipt` publication; do not let any caller apply a legacy `WritePlan` after its mutation counterpart exists.
+2. Finish the authority migration by removing the temporary legacy public write path only after all Task 4 callers use the receipt boundary.
 3. Complete Tasks 5-6 after the proposal contract is available. The LLM and web bridges must be DSH consumers before workflows start persisting generated or researched outputs.
 4. Complete Task 7 before renderer breadth. Document structure and retrieval evidence are upstream inputs to diagrams, citations, and artifact provenance.
 5. Implement Tasks 8-10 by target class, never through a target selector. SVG-capable renderers come first; process-gated Draw.io/Drawnix/Circuitikz and Slidev/media exporters follow only with explicit capability tests.
@@ -125,3 +126,9 @@ This publication records architecture, planning, audit, and baseline verificatio
 - `@notemd-harness/mutation` contains the new proposal vocabulary: versioned content-addressed plans, `write-text`, `write-bytes`, and `delete` variants, opaque staged asset references, and metadata-only receipts.
 - The contract test observed its initial missing-export red state, empty-text-content and malformed-JSON-boundary red states, and a closed-receipt-vocabulary red state with validation removed, then passed with validation restored: `pnpm exec vitest run --config vitest.config.ts packages/notemd-mutation/test/mutation-plan.test.ts` reported 1 file and 11 tests passing.
 - `pnpm --filter @notemd-harness/mutation test`, `pnpm typecheck`, and `pnpm lint` completed successfully. After the boundary-input correction, `pnpm test` reported 19 files and 65 tests passing; `git diff --check` found no whitespace errors before staging.
+
+### Task 3 Verification
+
+- `@notemd-harness/vault-local` now supplies a journaled executor with immutable proposal input, staged binary asset verification, canonical multi-target locking, same-volume replacement, quarantine deletes, digest-checked recovery, retry rejection, and metadata-only receipts. Journal records never contain prompts, text payloads, or binary bytes.
+- The focused executor suite covers 19 tests: all persisted crash states, stale and concurrent plans, symlink escape, staged-asset substitution, rollback integrity, external changes, cancellation, idempotence, idle construction, and committed-state finalization cleanup. `LocalVault` adds a shared-lock mutation bridge test.
+- `pnpm install --lockfile-only` updated the workspace link, then `pnpm install --frozen-lockfile` completed. `pnpm --filter @notemd-harness/vault-local test` and `pnpm test` both reported 20 test files and 85 tests passing; `pnpm typecheck`, `pnpm lint`, and `git diff --check` also passed on Node `v22.19.0` / pnpm `10.7.1`.

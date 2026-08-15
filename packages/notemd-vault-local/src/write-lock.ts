@@ -21,4 +21,31 @@ export class TargetWriteLocks {
       }
     }
   }
+
+  async runAll<T>(targets: readonly string[], operation: () => Promise<T>): Promise<T> {
+    const orderedTargets = [...new Set(targets)].sort(compareTargets)
+    return this.acquireInOrder(orderedTargets, 0, operation)
+  }
+
+  private async acquireInOrder<T>(
+    orderedTargets: readonly string[],
+    index: number,
+    operation: () => Promise<T>,
+  ): Promise<T> {
+    const target = orderedTargets[index]
+    if (target === undefined) {
+      return operation()
+    }
+    return this.run(target, () => this.acquireInOrder(orderedTargets, index + 1, operation))
+  }
+}
+
+function compareTargets(left: string, right: string): number {
+  if (left < right) {
+    return -1
+  }
+  if (left > right) {
+    return 1
+  }
+  return 0
 }

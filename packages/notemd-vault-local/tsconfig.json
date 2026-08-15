@@ -6,6 +6,6 @@
     "outDir": "lib",
     "tsBuildInfoFile": "lib/.tsbuildinfo"
   },
-  "references": [{ "path": "../notemd-vault" }],
+  "references": [{ "path": "../notemd-vault" }, { "path": "../notemd-mutation" }],
   "include": ["src/**/*.ts"]
 }

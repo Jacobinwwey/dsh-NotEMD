@@ -118,13 +118,13 @@ prepared -> staged -> applying -> verified -> committed
 prepared | staged | applying -> recovering -> committed | rolled-back | failed
 ```
 
-- [ ] Write crash-injection tests at every transition, plus same-target conflict, canonical lock ordering, path escape, symlink/junction recheck, binary write, quarantine delete, stale revision, and idempotent recovery tests.
-- [ ] Stage bytes below `<workspace>/.notemd/staging/<plan-id>/`; store journal records below `<workspace>/.notemd/mutations/`. Exclude both directories from Markdown indexing.
-- [ ] Lock all destinations in normalized lexical order before checking revisions. Apply each single-file write by same-volume temporary replacement and each deletion by reversible quarantine move until commit cleanup.
-- [ ] Recompute SHA-256 after replacement, fsync journal transitions where the platform supports it, and leave diagnosable journal state on any failure.
-- [ ] Replace `LocalVault.apply(WritePlan)` only after callers migrate; do not retain a second public mutation path.
-- [ ] Run `rtk proxy pnpm.cmd --filter @notemd-harness/vault-local test` and `rtk tsc` on Windows.
-- [ ] Update progress records with recovery evidence and commit `feat: journal local workspace mutations`.
+- [x] Wrote crash-injection tests for every persisted transition, same-target conflict, canonical locking, path escape, symlink/junction recheck, binary write, quarantine delete, stale revisions, retry protection, cancellation, staging integrity, external-change protection, and idempotent recovery.
+- [x] Stage plan payloads below `<workspace>/.notemd/staging/<plan-id>/`, keep opaque assets below `.notemd/staging/assets/`, and persist content-free journals below `<workspace>/.notemd/mutations/`; `.notemd` remains excluded from Markdown indexing and idle executor construction creates no workspace state.
+- [x] Acquire normalized lexical locks before preflight and share them with the legacy `LocalVault` path. Writes use same-volume staged replacement; deletes use reversible quarantine moves until a verified commit.
+- [x] Recompute SHA-256 after replacement, fsync file contents before journal replacement, protect backups/quarantine data with recorded digests, retain diagnostic journal state on failures, and record a separate cleanup-completion fact after terminal mutation state.
+- [x] Retained `LocalVault.apply(WritePlan)` as a temporary compatibility surface only. `applyMutationPlan()` and `recoverIncompleteMutationPlans()` share its target locks; Task 4 owns caller migration and removal of the legacy public write path.
+- [x] Ran `rtk proxy pnpm.cmd --filter @notemd-harness/vault-local test`, `pnpm typecheck`, and `pnpm lint` on Windows.
+- [x] Updated paired progress records with recovery evidence. The phase commit is `feat: journal local workspace mutations`.
 
 ### Task 4: Migrate Approval, Events, Jobs, and Tools to Mutation Receipts
 

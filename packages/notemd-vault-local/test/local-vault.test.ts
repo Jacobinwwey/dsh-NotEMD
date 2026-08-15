@@ -4,7 +4,8 @@ import { join } from 'node:path'
 
 import { afterEach, beforeEach, expect, test } from 'vitest'
 
-import { createWritePlan } from '@notemd-harness/vault'
+import { createWorkspaceMutationPlan } from '@notemd-harness/mutation'
+import { createRevision, createWritePlan } from '@notemd-harness/vault'
 
 import { LocalVault } from '../src/index.js'
 
@@ -76,6 +77,46 @@ test('serializes competing writes for the same revision', async () => {
   expect(['first writer', 'second writer']).toContain(
     await readFile(join(workspaceRoot, 'notes', 'a.md'), 'utf8'),
   )
+})
+
+test('serializes a mutation proposal against a legacy write plan through shared target locks', async () => {
+  await writeFile(join(workspaceRoot, 'notes', 'a.md'), 'before')
+  const vault = await LocalVault.open(workspaceRoot)
+  const before = await vault.read('notes/a.md')
+  const mutationContent = 'mutation writer'
+  const mutationPlan = createWorkspaceMutationPlan({
+    provenance: {
+      operationId: 'notemd.test.shared-lock',
+      sourceRefs: ['notes/a.md'],
+      evidenceRefs: [],
+    },
+    mutations: [
+      {
+        kind: 'write-text',
+        destination: 'notes/a.md',
+        expectedRevision: before.revision,
+        provenance: {
+          operationId: 'notemd.test.shared-lock',
+          sourceRefs: ['notes/a.md'],
+          evidenceRefs: [],
+        },
+        conflictPolicy: 'reject',
+        mediaType: 'text/markdown',
+        content: mutationContent,
+        contentSha256: createRevision(mutationContent),
+      },
+    ],
+  })
+
+  const [legacyResults, mutationReceipt] = await Promise.all([
+    vault.apply(planFor('notes/a.md', 'legacy writer', before.revision)),
+    vault.applyMutationPlan(mutationPlan),
+  ])
+
+  expect([
+    [legacyResults[0]?.status, mutationReceipt.status],
+  ]).toContainEqual(['updated', 'conflict'])
+  expect(['legacy writer', mutationContent]).toContain(await readFile(join(workspaceRoot, 'notes', 'a.md'), 'utf8'))
 })
 
 test('lists markdown while excluding internal Notemd state', async () => {

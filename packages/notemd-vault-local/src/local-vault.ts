@@ -2,6 +2,11 @@ import { randomUUID } from 'node:crypto'
 import { chmod, open, readdir, readFile, rename, rm, stat } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 
+import type {
+  RecoveredMutation,
+  WorkspaceMutationPlan,
+  WorkspaceMutationReceipt,
+} from '@notemd-harness/mutation'
 import {
   createRevision,
   type NotemdVault,
@@ -13,6 +18,7 @@ import {
   type WriteStatus,
 } from '@notemd-harness/vault'
 
+import { LocalMutationExecutor } from './local-mutation-executor.js'
 import { VaultBoundaryError, VaultPathBoundary } from './path-boundary.js'
 import { TargetWriteLocks } from './write-lock.js'
 
@@ -26,15 +32,20 @@ export class VaultFileError extends Error {
 }
 
 export class LocalVault implements NotemdVault {
-  private readonly locks = new TargetWriteLocks()
-
   private constructor(
     private readonly boundary: VaultPathBoundary,
     private readonly workspaceRoot: string,
+    private readonly locks: TargetWriteLocks,
+    private readonly mutationExecutor: LocalMutationExecutor,
   ) {}
 
   static async open(workspaceRoot: string): Promise<LocalVault> {
-    return new LocalVault(await VaultPathBoundary.open(workspaceRoot), workspaceRoot)
+    const boundary = await VaultPathBoundary.open(workspaceRoot)
+    const locks = new TargetWriteLocks()
+    const mutationExecutor = await LocalMutationExecutor.open(boundary.workspaceRoot, {
+      targetWriteLocks: locks,
+    })
+    return new LocalVault(boundary, boundary.workspaceRoot, locks, mutationExecutor)
   }
 
   async listMarkdown(signal?: AbortSignal): Promise<readonly string[]> {
@@ -68,6 +79,17 @@ export class LocalVault implements NotemdVault {
 
   async apply(plan: WritePlan, signal?: AbortSignal): Promise<readonly WriteResult[]> {
     return Promise.all(plan.writes.map((write) => this.applyWrite(write, signal)))
+  }
+
+  async applyMutationPlan(
+    plan: WorkspaceMutationPlan,
+    signal?: AbortSignal,
+  ): Promise<WorkspaceMutationReceipt> {
+    return this.mutationExecutor.apply(plan, signal)
+  }
+
+  async recoverIncompleteMutationPlans(signal?: AbortSignal): Promise<readonly RecoveredMutation[]> {
+    return this.mutationExecutor.recover(signal)
   }
 
   private async applyWrite(write: PlannedWrite, signal?: AbortSignal): Promise<WriteResult> {

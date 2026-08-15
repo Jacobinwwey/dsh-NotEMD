@@ -118,6 +118,9 @@ importers:
 
   packages/notemd-vault-local:
     dependencies:
+      '@notemd-harness/mutation':
+        specifier: workspace:*
+        version: link:../notemd-mutation
       '@notemd-harness/vault':
         specifier: workspace:*
         version: link:../notemd-vault
