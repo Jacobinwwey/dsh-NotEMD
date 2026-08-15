@@ -21,6 +21,15 @@ export interface OpenAiCompletionRequest {
   timeoutMs?: number
 }
 
+export interface OpenAiProviderRequest {
+  endpoint: string
+  model: string
+  apiKey?: string
+  headers?: Readonly<Record<string, string>>
+  timeoutMs?: number
+  modelsEndpoint?: string
+}
+
 export interface TextCompletion {
   text: string
   model: string
@@ -29,6 +38,31 @@ export interface TextCompletion {
     outputTokens: number
   }
 }
+
+export type ProviderDiagnosticResult =
+  | {
+    status: 'available'
+    endpoint: string
+    model: string
+    elapsedMs: number
+    usage?: TextCompletion['usage']
+  }
+  | {
+    status: 'unavailable'
+    endpoint: string
+    model: string
+    elapsedMs: number
+    error: { code: LlmError['code']; retryable: boolean; message: string }
+  }
+
+export interface DiscoveredModel {
+  id: string
+  ownedBy?: string
+}
+
+export type ModelDiscoveryResult =
+  | { status: 'available'; endpoint: string; models: readonly DiscoveredModel[] }
+  | { status: 'unavailable'; endpoint: string; reason: 'LLM_CANCELLED' | 'LLM_HTTP' | 'LLM_STREAM_MALFORMED' | 'LLM_TIMEOUT' | 'LLM_TRANSPORT' | 'MODEL_DISCOVERY_UNSUPPORTED' }
 
 export type StreamFinishReason = 'stop' | 'length' | 'tool-calls'
 
@@ -80,6 +114,69 @@ export class OpenAiCompatibleAdapter {
       this.cache.set(cacheKey, completion, this.cacheTtlMs, this.now())
     }
     return completion
+  }
+
+  async diagnoseProvider(request: OpenAiProviderRequest, signal?: AbortSignal): Promise<ProviderDiagnosticResult> {
+    const endpoint = redactProviderEndpoint(request.endpoint)
+    const startedAt = this.now()
+    try {
+      validateProviderRequest(request)
+      const response = await this.request({
+        ...providerRequestForCompletion(request),
+        messages: [
+          { role: 'system', content: 'Return exactly the word ok.' },
+          { role: 'user', content: 'Run the configured provider diagnostic.' },
+        ],
+      }, false, signal)
+      const completion = parseCompletion(await readJson(response))
+      return {
+        status: 'available',
+        endpoint,
+        model: request.model,
+        elapsedMs: this.now() - startedAt,
+        ...(completion.usage === undefined ? {} : { usage: completion.usage }),
+      }
+    } catch (error) {
+      const normalized = normalizeDiagnosticError(error)
+      return {
+        status: 'unavailable',
+        endpoint,
+        model: request.model,
+        elapsedMs: this.now() - startedAt,
+        error: {
+          code: normalized.code,
+          retryable: normalized.retryable,
+          message: publicDiagnosticMessage(normalized.code),
+        },
+      }
+    }
+  }
+
+  async discoverModels(request: OpenAiProviderRequest, signal?: AbortSignal): Promise<ModelDiscoveryResult> {
+    let modelsEndpoint: string | undefined
+    try {
+      validateProviderRequest(request)
+      modelsEndpoint = modelsEndpointFor(request)
+      if (modelsEndpoint === undefined) {
+        return {
+          status: 'unavailable',
+          endpoint: redactProviderEndpoint(request.endpoint),
+          reason: 'MODEL_DISCOVERY_UNSUPPORTED',
+        }
+      }
+      const response = await this.requestModels(modelsEndpoint, request, signal)
+      return {
+        status: 'available',
+        endpoint: redactProviderEndpoint(modelsEndpoint),
+        models: parseModels(await readJson(response)),
+      }
+    } catch (error) {
+      return {
+        status: 'unavailable',
+        endpoint: redactProviderEndpoint(modelsEndpoint ?? request.modelsEndpoint ?? request.endpoint),
+        reason: normalizeDiagnosticError(error).code,
+      }
+    }
   }
 
   async *stream(request: OpenAiCompletionRequest, signal?: AbortSignal): AsyncGenerator<StreamChunk> {
@@ -148,6 +245,23 @@ export class OpenAiCompatibleAdapter {
     stream: boolean,
     externalSignal?: AbortSignal,
   ): Promise<Response> {
+    return this.send(request.endpoint, requestInit(request, stream), request.timeoutMs, externalSignal)
+  }
+
+  private async requestModels(
+    endpoint: string,
+    request: OpenAiProviderRequest,
+    externalSignal?: AbortSignal,
+  ): Promise<Response> {
+    return this.send(endpoint, { method: 'GET', headers: requestHeaders(request) }, request.timeoutMs, externalSignal)
+  }
+
+  private async send(
+    endpoint: string,
+    init: RequestInit,
+    timeoutMs: number | undefined,
+    externalSignal?: AbortSignal,
+  ): Promise<Response> {
     const controller = new AbortController()
     let timeout: ReturnType<typeof setTimeout> | undefined
     const abortFromCaller = (): void => controller.abort(externalSignal?.reason)
@@ -158,15 +272,14 @@ export class OpenAiCompatibleAdapter {
         externalSignal.addEventListener('abort', abortFromCaller, { once: true })
       }
     }
-    if (request.timeoutMs !== undefined) {
-      timeout = setTimeout(() => controller.abort(new Error('LLM request timed out.')), request.timeoutMs)
+    if (timeoutMs !== undefined) {
+      timeout = setTimeout(() => controller.abort(new Error('LLM request timed out.')), timeoutMs)
     }
 
     try {
-      const response = await this.fetchImplementation(request.endpoint, requestInit(request, stream, controller.signal))
+      const response = await this.fetchImplementation(endpoint, { ...init, signal: controller.signal })
       if (!response.ok) {
-        const body = await response.text().catch(() => '')
-        throw new LlmError('LLM_HTTP', `LLM request failed with HTTP ${response.status}: ${body.slice(0, 500)}`, response.status >= 500)
+        throw new LlmError('LLM_HTTP', `LLM request failed with HTTP ${response.status}.`, response.status >= 500)
       }
       return response
     } catch (error) {
@@ -191,11 +304,8 @@ export class OpenAiCompatibleAdapter {
   }
 }
 
-function requestInit(request: OpenAiCompletionRequest, stream: boolean, signal: AbortSignal): RequestInit {
-  const headers: Record<string, string> = { 'content-type': 'application/json', ...request.headers }
-  if (request.apiKey !== undefined) {
-    headers.authorization = `Bearer ${request.apiKey}`
-  }
+function requestInit(request: OpenAiCompletionRequest, stream: boolean): RequestInit {
+  const headers = requestHeaders(request)
   const body: Record<string, unknown> = {
     model: request.model,
     messages: request.messages,
@@ -207,7 +317,15 @@ function requestInit(request: OpenAiCompletionRequest, stream: boolean, signal: 
   if (stream) {
     body.stream_options = { include_usage: true }
   }
-  return { method: 'POST', headers, body: JSON.stringify(body), signal }
+  return { method: 'POST', headers, body: JSON.stringify(body) }
+}
+
+function requestHeaders(request: Pick<OpenAiProviderRequest, 'apiKey' | 'headers'>): Record<string, string> {
+  const headers: Record<string, string> = { 'content-type': 'application/json', ...request.headers }
+  if (request.apiKey !== undefined) {
+    headers.authorization = `Bearer ${request.apiKey}`
+  }
+  return headers
 }
 
 function cacheIdentity(request: OpenAiCompletionRequest): Record<string, unknown> {
@@ -224,20 +342,116 @@ function cacheIdentity(request: OpenAiCompletionRequest): Record<string, unknown
 }
 
 function validateRequest(request: OpenAiCompletionRequest): void {
+  validateProviderRequest(request)
+  if (request.messages.length === 0) {
+    throw new LlmError('LLM_TRANSPORT', 'LLM requests require a model and at least one message.', false)
+  }
+}
+
+function validateProviderRequest(request: OpenAiProviderRequest): void {
+  validateHttpEndpoint(request.endpoint)
+  if (request.modelsEndpoint !== undefined) {
+    validateHttpEndpoint(request.modelsEndpoint)
+  }
+  if (request.model.trim().length === 0) {
+    throw new LlmError('LLM_TRANSPORT', 'LLM requests require a model.', false)
+  }
+  if (request.timeoutMs !== undefined && (!Number.isFinite(request.timeoutMs) || request.timeoutMs <= 0)) {
+    throw new LlmError('LLM_TRANSPORT', 'LLM request timeout must be a positive number.', false)
+  }
+}
+
+function validateHttpEndpoint(endpointValue: string): void {
   try {
-    const endpoint = new URL(request.endpoint)
+    const endpoint = new URL(endpointValue)
     if (endpoint.protocol !== 'http:' && endpoint.protocol !== 'https:') {
       throw new Error('unsupported protocol')
     }
   } catch {
     throw new LlmError('LLM_TRANSPORT', 'LLM endpoint must be an HTTP(S) URL.', false)
   }
-  if (request.model.trim().length === 0 || request.messages.length === 0) {
-    throw new LlmError('LLM_TRANSPORT', 'LLM requests require a model and at least one message.', false)
+}
+
+function providerRequestForCompletion(request: OpenAiProviderRequest): Omit<OpenAiCompletionRequest, 'messages'> {
+  return {
+    endpoint: request.endpoint,
+    model: request.model,
+    ...(request.apiKey === undefined ? {} : { apiKey: request.apiKey }),
+    ...(request.headers === undefined ? {} : { headers: request.headers }),
+    ...(request.timeoutMs === undefined ? {} : { timeoutMs: request.timeoutMs }),
   }
-  if (request.timeoutMs !== undefined && (!Number.isFinite(request.timeoutMs) || request.timeoutMs <= 0)) {
-    throw new LlmError('LLM_TRANSPORT', 'LLM request timeout must be a positive number.', false)
+}
+
+function modelsEndpointFor(request: OpenAiProviderRequest): string | undefined {
+  if (request.modelsEndpoint !== undefined) {
+    return request.modelsEndpoint
   }
+
+  const completionEndpoint = new URL(request.endpoint)
+  const completionSuffix = '/chat/completions'
+  if (!completionEndpoint.pathname.endsWith(completionSuffix)) {
+    return undefined
+  }
+  completionEndpoint.pathname = `${completionEndpoint.pathname.slice(0, -completionSuffix.length)}/models`
+  completionEndpoint.username = ''
+  completionEndpoint.password = ''
+  completionEndpoint.search = ''
+  completionEndpoint.hash = ''
+  return completionEndpoint.toString()
+}
+
+export function redactProviderEndpoint(endpointValue: string): string {
+  try {
+    const endpoint = new URL(endpointValue)
+    endpoint.username = ''
+    endpoint.password = ''
+    endpoint.search = ''
+    endpoint.hash = ''
+    return endpoint.toString()
+  } catch {
+    return 'invalid-endpoint'
+  }
+}
+
+function normalizeDiagnosticError(error: unknown): LlmError {
+  if (error instanceof LlmError) {
+    return error
+  }
+  if (isAbortError(error)) {
+    return new LlmError('LLM_CANCELLED', 'LLM request was cancelled.', false)
+  }
+  return new LlmError('LLM_TRANSPORT', diagnostic(error), true)
+}
+
+function publicDiagnosticMessage(code: LlmError['code']): string {
+  switch (code) {
+    case 'LLM_CANCELLED':
+      return 'Provider diagnostic was cancelled.'
+    case 'LLM_HTTP':
+      return 'Provider rejected the diagnostic request.'
+    case 'LLM_STREAM_MALFORMED':
+      return 'Provider returned an invalid response.'
+    case 'LLM_TIMEOUT':
+      return 'Provider diagnostic timed out.'
+    case 'LLM_TRANSPORT':
+      return 'Provider transport is unavailable.'
+  }
+}
+
+function parseModels(payload: unknown): readonly DiscoveredModel[] {
+  const object = requireObject(payload, 'LLM model discovery response must be an object.')
+  if (!Array.isArray(object.data)) {
+    throw new LlmError('LLM_STREAM_MALFORMED', 'LLM model discovery response has no model array.', false)
+  }
+  return object.data.flatMap((candidate) => {
+    if (!isObject(candidate) || typeof candidate.id !== 'string') {
+      return []
+    }
+    return [{
+      id: candidate.id,
+      ...(typeof candidate.owned_by === 'string' ? { ownedBy: candidate.owned_by } : {}),
+    }]
+  })
 }
 
 async function readJson(response: Response): Promise<unknown> {

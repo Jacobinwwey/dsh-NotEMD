@@ -43,10 +43,13 @@ export function registerWriteTools(context: NotemdToolContext, defineTool: ToolD
         return rejectedPlan(plan, 'Approval receipt is unknown, expired, consumed, or does not match this plan.')
       }
 
+      const results = await context.notemdVault.apply(plan, execution?.signal)
+      const change = await context.notemdWorkspaceChanges.recordApprovedPlan(plan, results)
       return {
         planId: plan.id,
         digest: plan.digest,
-        results: await context.notemdVault.apply(plan, execution?.signal),
+        results,
+        ...(change === undefined ? {} : { change }),
       }
     },
   }))

@@ -8,7 +8,9 @@
     "@notemd-harness/artifacts": "workspace:*",
     "@notemd-harness/jobs": "workspace:*",
     "@notemd-harness/knowledge": "workspace:*",
+    "@notemd-harness/llm-openai-compatible": "workspace:*",
     "@notemd-harness/vault": "workspace:*",
+    "@notemd-harness/workspace-events": "workspace:*",
     "@notemd-harness/workflows": "workspace:*"
   },
   "exports": {

@@ -13,6 +13,7 @@
     { "path": "../notemd-llm-openai-compatible" },
     { "path": "../notemd-tools" },
     { "path": "../notemd-vault-local" },
+    { "path": "../notemd-workspace-events" },
     { "path": "../notemd-workflows" }
   ],
   "include": ["src/**/*.ts"]

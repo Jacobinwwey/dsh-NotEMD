@@ -6,6 +6,7 @@ export interface JobTargetExecution {
 }
 
 export type JobTargetExecutor = (execution: JobTargetExecution) => Promise<JobTargetResult>
+export type JobTargetObserver = (result: JobTargetResult) => Promise<void>
 
 export class BoundedJobRunner {
   constructor(private readonly concurrency: number) {
@@ -17,6 +18,15 @@ export class BoundedJobRunner {
   async run(
     targets: readonly string[],
     execute: JobTargetExecutor,
+    signal: AbortSignal = new AbortController().signal,
+  ): Promise<readonly JobTargetResult[]> {
+    return this.runWithObserver(targets, execute, async () => undefined, signal)
+  }
+
+  async runWithObserver(
+    targets: readonly string[],
+    execute: JobTargetExecutor,
+    observe: JobTargetObserver,
     signal: AbortSignal = new AbortController().signal,
   ): Promise<readonly JobTargetResult[]> {
     const results: Array<JobTargetResult | undefined> = new Array(targets.length)
@@ -34,16 +44,19 @@ export class BoundedJobRunner {
           return
         }
 
+        let result: JobTargetResult
         try {
           const outcome = await execute({ target, signal })
-          results[index] = signal.aborted
+          result = signal.aborted
             ? { target, status: 'cancelled' }
             : resultForTarget(target, outcome)
         } catch (error) {
-          results[index] = signal.aborted || isAbortError(error)
+          result = signal.aborted || isAbortError(error)
             ? { target, status: 'cancelled' }
             : { target, status: 'failed', detail: diagnostic(error) }
         }
+        await observe(result)
+        results[index] = result
       }
     }
 
@@ -54,10 +67,12 @@ export class BoundedJobRunner {
 }
 
 function resultForTarget(target: string, outcome: JobTargetResult): JobTargetResult {
-  if (outcome.detail === undefined) {
-    return { target, status: outcome.status }
+  return {
+    target,
+    status: outcome.status,
+    ...(outcome.detail === undefined ? {} : { detail: outcome.detail }),
+    ...(outcome.checkpoint === undefined ? {} : { checkpoint: outcome.checkpoint }),
   }
-  return { target, status: outcome.status, detail: outcome.detail }
 }
 
 function isAbortError(error: unknown): boolean {

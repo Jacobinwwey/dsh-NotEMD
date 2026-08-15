@@ -52,3 +52,104 @@ test('does not send an LLM request when the configured key environment variable 
   await expect(transformer.complete({ system: 'system', prompt: 'prompt' })).rejects.toMatchObject({ code: 'LLM_TRANSPORT' })
   expect(calls).toBe(0)
 })
+
+test('reports missing provider credentials as an unavailable diagnostic without transport work', async () => {
+  let calls = 0
+  const transformer = new ConfiguredTextTransformer(
+    {
+      endpoint: 'https://example.test/v1/chat/completions?trace=secret-query',
+      model: 'test-model',
+      apiKeyEnv: 'NOTEMD_TEST_API_KEY',
+      timeoutMs: 1_000,
+    },
+    { complete: async () => ({ model: 'test-model', text: 'unused' }) },
+    () => undefined,
+  )
+  const diagnostics = {
+    diagnoseProvider: async () => {
+      calls += 1
+      return { status: 'available' as const, endpoint: 'https://example.test/v1/chat/completions', model: 'test-model', elapsedMs: 1 }
+    },
+    discoverModels: async () => {
+      calls += 1
+      return { status: 'available' as const, endpoint: 'https://example.test/v1/models', models: [{ id: 'test-model' }] }
+    },
+  }
+
+  const result = await transformer.diagnoseProvider(diagnostics)
+
+  expect(result).toMatchObject({
+    status: 'unavailable',
+    endpoint: 'https://example.test/v1/chat/completions',
+    model: 'test-model',
+    error: { code: 'LLM_TRANSPORT', retryable: false },
+  })
+  expect(JSON.stringify(result)).not.toContain('secret-query')
+  expect(calls).toBe(0)
+})
+
+test('reports missing provider credentials as unavailable model discovery without transport work', async () => {
+  let calls = 0
+  const transformer = new ConfiguredTextTransformer(
+    {
+      endpoint: 'https://example.test/v1/chat/completions?trace=secret-query',
+      model: 'test-model',
+      apiKeyEnv: 'NOTEMD_TEST_API_KEY',
+      timeoutMs: 1_000,
+    },
+    { complete: async () => ({ model: 'test-model', text: 'unused' }) },
+    () => undefined,
+  )
+  const diagnostics = {
+    diagnoseProvider: async () => {
+      calls += 1
+      return { status: 'available' as const, endpoint: 'https://example.test/v1/chat/completions', model: 'test-model', elapsedMs: 1 }
+    },
+    discoverModels: async () => {
+      calls += 1
+      return { status: 'available' as const, endpoint: 'https://example.test/v1/models', models: [{ id: 'test-model' }] }
+    },
+  }
+
+  const result = await transformer.discoverModels(diagnostics)
+
+  expect(result).toEqual({
+    status: 'unavailable',
+    endpoint: 'https://example.test/v1/chat/completions',
+    reason: 'LLM_TRANSPORT',
+  })
+  expect(calls).toBe(0)
+})
+
+test('reuses the configured provider credentials for diagnostics and model discovery', async () => {
+  const requests: Array<Record<string, unknown>> = []
+  const transformer = new ConfiguredTextTransformer(
+    {
+      endpoint: 'https://example.test/v1/chat/completions',
+      model: 'test-model',
+      apiKeyEnv: 'NOTEMD_TEST_API_KEY',
+      timeoutMs: 1_000,
+      modelsEndpoint: 'https://example.test/v1/models',
+    },
+    { complete: async () => ({ model: 'test-model', text: 'unused' }) },
+    () => 'secret-token',
+  )
+  const diagnostics = {
+    diagnoseProvider: async (request: Record<string, unknown>) => {
+      requests.push(request)
+      return { status: 'available' as const, endpoint: 'https://example.test/v1/chat/completions', model: 'test-model', elapsedMs: 1 }
+    },
+    discoverModels: async (request: Record<string, unknown>) => {
+      requests.push(request)
+      return { status: 'available' as const, endpoint: 'https://example.test/v1/models', models: [{ id: 'test-model' }] }
+    },
+  }
+
+  await transformer.diagnoseProvider(diagnostics)
+  await transformer.discoverModels(diagnostics)
+
+  expect(requests).toEqual([
+    expect.objectContaining({ apiKey: 'secret-token', endpoint: 'https://example.test/v1/chat/completions', model: 'test-model' }),
+    expect.objectContaining({ apiKey: 'secret-token', endpoint: 'https://example.test/v1/chat/completions', modelsEndpoint: 'https://example.test/v1/models' }),
+  ])
+})

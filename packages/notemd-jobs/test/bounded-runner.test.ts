@@ -20,6 +20,7 @@ test('returns the original persisted record for the same idempotency key', async
   const jobs = await FileJobStore.open(workspaceRoot)
   const input = { language: 'Chinese', operation: 'translate' }
   const first = await jobs.start({
+    workflow: 'translation',
     idempotencyKey: 'translate:notes/a.md:de',
     input,
     targets: ['notes/a.md'],
@@ -27,12 +28,14 @@ test('returns the original persisted record for the same idempotency key', async
   input.language = 'mutated after submission'
 
   const second = await jobs.start({
+    workflow: 'translation',
     idempotencyKey: 'translate:notes/a.md:de',
     input: { language: 'German', operation: 'translate' },
     targets: ['notes/a.md'],
   })
   const reloaded = await FileJobStore.open(workspaceRoot)
   const afterReload = await reloaded.start({
+    workflow: 'translation',
     idempotencyKey: 'translate:notes/a.md:de',
     input: { language: 'German', operation: 'translate' },
     targets: ['notes/a.md'],

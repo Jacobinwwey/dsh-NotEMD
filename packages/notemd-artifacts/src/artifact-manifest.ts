@@ -13,6 +13,12 @@ export interface ArtifactManifest {
   ownedPaths: readonly string[]
 }
 
+export interface ArtifactCapability {
+  capability: 'diagram-rendering' | 'document-export'
+  status: 'unavailable'
+  reason: string
+}
+
 export class ArtifactManifestError extends Error {
   readonly code = 'ARTIFACT_MANIFEST_INVALID'
 
@@ -25,6 +31,8 @@ export class ArtifactManifestError extends Error {
 export interface NotemdArtifacts {
   planDiagram(spec: DiagramSpec, source: VaultDocument): WritePlan
   planCleanup(artifactId: string): Promise<readonly string[]>
+  diagramRenderingCapability(): ArtifactCapability
+  documentExportCapability(): ArtifactCapability
 }
 
 export class SourceArtifactPlanner implements NotemdArtifacts {
@@ -70,6 +78,22 @@ export class SourceArtifactPlanner implements NotemdArtifacts {
         return []
       }
       throw error
+    }
+  }
+
+  diagramRenderingCapability(): ArtifactCapability {
+    return {
+      capability: 'diagram-rendering',
+      status: 'unavailable',
+      reason: 'No portable diagram renderer is configured.',
+    }
+  }
+
+  documentExportCapability(): ArtifactCapability {
+    return {
+      capability: 'document-export',
+      status: 'unavailable',
+      reason: 'No portable document export provider is configured.',
     }
   }
 }

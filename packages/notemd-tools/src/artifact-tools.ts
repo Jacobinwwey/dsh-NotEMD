@@ -5,6 +5,26 @@ import { objectOutput, requiredObject, requiredString, ToolInputError, type Tool
 
 export function registerArtifactTools(context: NotemdToolContext, defineTool: ToolDefinitionFactory): void {
   context.tools.register(defineTool({
+    name: 'notemd_artifact_render_status',
+    description: 'Report whether a portable diagram renderer is available to this NoteMD bundle.',
+    parameters: {},
+    output: objectOutput,
+    async execute() {
+      return context.notemdArtifacts.diagramRenderingCapability()
+    },
+  }))
+
+  context.tools.register(defineTool({
+    name: 'notemd_artifact_export_status',
+    description: 'Report whether a portable document export provider is available to this NoteMD bundle.',
+    parameters: {},
+    output: objectOutput,
+    async execute() {
+      return context.notemdArtifacts.documentExportCapability()
+    },
+  }))
+
+  context.tools.register(defineTool({
     name: 'notemd_plan_source_artifact',
     description: 'Create a reviewable source-artifact plan from a diagram specification and one source note.',
     parameters: {

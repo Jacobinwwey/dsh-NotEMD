@@ -65,6 +65,9 @@ importers:
       '@notemd-harness/workflows':
         specifier: workspace:*
         version: link:../notemd-workflows
+      '@notemd-harness/workspace-events':
+        specifier: workspace:*
+        version: link:../notemd-workspace-events
       minisearch:
         specifier: ^7.1.2
         version: 7.2.0
@@ -76,6 +79,9 @@ importers:
       '@notemd-harness/vault':
         specifier: workspace:*
         version: link:../notemd-vault
+      '@notemd-harness/workspace-events':
+        specifier: workspace:*
+        version: link:../notemd-workspace-events
       minisearch:
         specifier: ^7.1.2
         version: 7.2.0
@@ -93,12 +99,18 @@ importers:
       '@notemd-harness/knowledge':
         specifier: workspace:*
         version: link:../notemd-knowledge
+      '@notemd-harness/llm-openai-compatible':
+        specifier: workspace:*
+        version: link:../notemd-llm-openai-compatible
       '@notemd-harness/vault':
         specifier: workspace:*
         version: link:../notemd-vault
       '@notemd-harness/workflows':
         specifier: workspace:*
         version: link:../notemd-workflows
+      '@notemd-harness/workspace-events':
+        specifier: workspace:*
+        version: link:../notemd-workspace-events
 
   packages/notemd-vault: {}
 
@@ -109,6 +121,12 @@ importers:
         version: link:../notemd-vault
 
   packages/notemd-workflows:
+    dependencies:
+      '@notemd-harness/vault':
+        specifier: workspace:*
+        version: link:../notemd-vault
+
+  packages/notemd-workspace-events:
     dependencies:
       '@notemd-harness/vault':
         specifier: workspace:*

@@ -25,6 +25,21 @@ test('never deletes an artifact absent from its manifest', async () => {
   await expect(artifacts.planCleanup('unknown-id')).resolves.toEqual([])
 })
 
+test('reports renderer and export gaps as explicit unavailable capabilities', async () => {
+  const artifacts = new SourceArtifactPlanner(await LocalVault.open(workspaceRoot))
+
+  expect(artifacts.diagramRenderingCapability()).toEqual({
+    capability: 'diagram-rendering',
+    status: 'unavailable',
+    reason: 'No portable diagram renderer is configured.',
+  })
+  expect(artifacts.documentExportCapability()).toEqual({
+    capability: 'document-export',
+    status: 'unavailable',
+    reason: 'No portable document export provider is configured.',
+  })
+})
+
 test('plans portable source files and a manifest with exact ownership', async () => {
   await writeFile(join(workspaceRoot, 'notes', 'architecture.md'), '# Architecture')
   const vault = await LocalVault.open(workspaceRoot)

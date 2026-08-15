@@ -6,9 +6,6 @@
     "outDir": "lib",
     "tsBuildInfoFile": "lib/.tsbuildinfo"
   },
-  "references": [
-    { "path": "../notemd-vault" },
-    { "path": "../notemd-workspace-events" }
-  ],
+  "references": [{ "path": "../notemd-vault" }],
   "include": ["src/**/*.ts"]
 }

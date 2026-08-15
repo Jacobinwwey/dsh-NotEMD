@@ -31,10 +31,36 @@ test('registers authority-separated read, plan, write, artifact, and job tools',
         planMermaidRepair: async () => plan,
         planFormulaRepair: async () => plan,
       },
-      notemdArtifacts: { planDiagram: () => plan, planCleanup: async () => [] },
+      notemdArtifacts: {
+        planDiagram: () => plan,
+        planCleanup: async () => [],
+        diagramRenderingCapability: () => ({ capability: 'diagram-rendering', status: 'unavailable', reason: 'not configured' }),
+        documentExportCapability: () => ({ capability: 'document-export', status: 'unavailable', reason: 'not configured' }),
+      },
+      notemdTextTransformer: {
+        diagnoseProvider: async () => ({ status: 'available', endpoint: 'https://example.test/v1/chat/completions', model: 'test-model', elapsedMs: 1 }),
+        discoverModels: async () => ({ status: 'available', endpoint: 'https://example.test/v1/models', models: [{ id: 'test-model' }] }),
+      },
       notemdJobs: {
+        startFormulaRepairs: async () => ({ id: 'job-formula' }),
+        startMermaidRepairs: async () => ({ id: 'job-mermaid' }),
+        startTranslations: async () => ({ id: 'job-translation' }),
+        startWikiLinkPlans: async () => ({ id: 'job-links' }),
+        startTitlePlans: async () => ({ id: 'job-title' }),
+        startResearchSyntheses: async () => ({ id: 'job-research' }),
+        startConceptExtractions: async () => ({ id: 'job-concepts' }),
+        resume: async () => ({ id: 'job', state: 'running' }),
         get: async () => undefined,
         cancel: async () => ({ id: 'job', state: 'cancelled' }),
+      },
+      notemdWorkspaceChanges: {
+        recordApprovedPlan: async (candidate) => ({
+          id: 'notemd-change-1',
+          occurredAt: '2026-08-15T00:00:00.000Z',
+          origin: 'notemd-approved-plan',
+          causationId: candidate.id,
+          changes: [{ path: 'notes/a.md', kind: 'updated', revision: 'rev-b' }],
+        }),
       },
       notemdApprovalLedger: {
         issue: async (candidate) => {
@@ -58,6 +84,12 @@ test('registers authority-separated read, plan, write, artifact, and job tools',
   expect(toolNames).toContain('notemd_apply_approved_plan')
   expect(toolNames).toContain('notemd_artifact_cleanup')
   expect(toolNames).toContain('notemd_job_status')
+  expect(toolNames).toContain('notemd_job_start_formula_repair')
+  expect(toolNames).toContain('notemd_job_resume')
+  expect(toolNames).toContain('notemd_provider_diagnostic')
+  expect(toolNames).toContain('notemd_provider_models')
+  expect(toolNames).toContain('notemd_artifact_render_status')
+  expect(toolNames).toContain('notemd_artifact_export_status')
   expect(toolNames).not.toContain('notemd_run')
 
   const planTool = registered.find((tool) => tool.name === 'notemd_plan_translation')
@@ -71,6 +103,7 @@ test('registers authority-separated read, plan, write, artifact, and job tools',
   const approval = await approvalTool.execute({ plan })
   await expect(applyTool.execute({ approvalId: approval.approvalId, plan })).resolves.toMatchObject({
     results: [{ status: 'updated' }],
+    change: { origin: 'notemd-approved-plan', causationId: plan.id },
   })
   expect(appliedPlan).toEqual(plan)
 })
@@ -101,10 +134,30 @@ test('rejects an unapproved plan before it reaches the vault', async () => {
         planMermaidRepair: async () => plan,
         planFormulaRepair: async () => plan,
       },
-      notemdArtifacts: { planDiagram: () => plan, planCleanup: async () => [] },
+      notemdArtifacts: {
+        planDiagram: () => plan,
+        planCleanup: async () => [],
+        diagramRenderingCapability: () => ({ capability: 'diagram-rendering', status: 'unavailable', reason: 'not configured' }),
+        documentExportCapability: () => ({ capability: 'document-export', status: 'unavailable', reason: 'not configured' }),
+      },
+      notemdTextTransformer: {
+        diagnoseProvider: async () => ({ status: 'available', endpoint: 'https://example.test/v1/chat/completions', model: 'test-model', elapsedMs: 1 }),
+        discoverModels: async () => ({ status: 'available', endpoint: 'https://example.test/v1/models', models: [{ id: 'test-model' }] }),
+      },
       notemdJobs: {
+        startFormulaRepairs: async () => ({ id: 'job-formula' }),
+        startMermaidRepairs: async () => ({ id: 'job-mermaid' }),
+        startTranslations: async () => ({ id: 'job-translation' }),
+        startWikiLinkPlans: async () => ({ id: 'job-links' }),
+        startTitlePlans: async () => ({ id: 'job-title' }),
+        startResearchSyntheses: async () => ({ id: 'job-research' }),
+        startConceptExtractions: async () => ({ id: 'job-concepts' }),
+        resume: async () => ({ id: 'job', state: 'running' }),
         get: async () => undefined,
         cancel: async () => ({ id: 'job', state: 'cancelled' }),
+      },
+      notemdWorkspaceChanges: {
+        recordApprovedPlan: async () => undefined,
       },
       notemdApprovalLedger: {
         issue: async () => {

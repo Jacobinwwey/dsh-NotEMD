@@ -1,12 +1,13 @@
 import { Service, type Context } from '@deepseek-ai/cordis'
-import { VaultKnowledgeIndex, type KnowledgeMatch } from '@notemd-harness/knowledge'
+import { IncrementalKnowledgeSynchronizer, VaultKnowledgeIndex, type KnowledgeMatch } from '@notemd-harness/knowledge'
 
 import type { NotemdKnowledge } from '@notemd-harness/tools'
 
 export class NotemdKnowledgeService extends Service implements NotemdKnowledge {
-  static inject = ['notemdVault'] as const
+  static inject = ['notemdVault', 'notemdWorkspaceChanges'] as const
 
   private index: VaultKnowledgeIndex | undefined
+  private synchronizer: IncrementalKnowledgeSynchronizer | undefined
 
   constructor(ctx: Context) {
     super(ctx, 'notemdKnowledge')
@@ -15,7 +16,12 @@ export class NotemdKnowledgeService extends Service implements NotemdKnowledge {
   protected async [Service.init](): Promise<void> {
     const index = new VaultKnowledgeIndex(this.ctx.notemdVault)
     await index.rebuild()
+    const synchronizer = new IncrementalKnowledgeSynchronizer(index, this.ctx.notemdVault, this.ctx.notemdWorkspaceChanges)
+    synchronizer.start()
     this.index = index
+    this.synchronizer = synchronizer
+    this.ctx.effect(() => () => synchronizer.dispose(), 'notemdKnowledge.workspaceChanges')
+    this.ctx.notemdWorkspaceChanges.startWatching()
   }
 
   search(query: string): Promise<readonly KnowledgeMatch[]> {

@@ -10,7 +10,7 @@
 | --- | --- |
 | Node.js | `22.19.0` |
 | workspace pnpm | `10.7.1` |
-| Vitest 测试套件 | `13` 个测试文件 / `39` 个测试 |
+| Vitest 测试套件 | `16` 个测试文件 / `50` 个测试 |
 | DeepSeek Harness | `0.1.0-rc.5` source checkout |
 | DSH 安装器 pnpm | `11.7.0` |
 | Cordis peer 契约 | `@deepseek-ai/cordis` `4.0.1` |
@@ -49,12 +49,22 @@ pnpm dsh --help
 1. 构建并打包 bundle，验证 tarball 含有编译后的 bridge 模块、DSH patch 和所有未发布内部 workspace 依赖，同时排除源码、测试、map、构建元数据、状态和环境文件。
 2. 在固定 DSH source checkout 中执行 `pnpm dsh plugin --profile notemd-acceptance add <tarball>`。
 3. 写入仅属于 profile 的 overlay，通过 `NOTEMD_ACCEPTANCE_WORKSPACE` 提供完整 vault、job 和 approval 配置。
-4. 执行 `pnpm dsh --profile notemd-acceptance --dump-config`，断言 vault、Tool 与 workflows 行均从已安装 bundle 解析。
-5. 通过真实 Cordis 和 `ToolRuntime` 加载已安装 bundle，读取 `notes/architecture.md`，生成确定性公式修复计划，请求一次性审批，应用计划并验证规范化结果。
-6. 再生成一份计划，在规划后修改其源文件，批准旧计划，并验证写入结果为 `skipped-stale`，且新内容保持不变。
-7. 在 `finally` 块中删除临时 DSH home 与工作区。
+4. 执行 `pnpm dsh --profile notemd-acceptance --dump-config`，断言 vault、workspace-change、Tool 与 workflows 行均从已安装 bundle 解析。
+5. 通过真实 Cordis 和 `ToolRuntime` 加载已安装 bundle，读取 `notes/architecture.md`，验证缺失 provider key 时 fail-closed，并验证渲染与导出状态明确为不可用。
+6. 启动具名公式修复作业，等待其持久化的计划 checkpoint；然后生成确定性公式修复计划，请求一次性审批，应用计划，并验证规范化结果及其 approved-plan 工作区变更元数据。
+7. 再生成一份计划，在规划后修改其源文件，批准旧计划，并验证写入结果为 `skipped-stale`，且新内容保持不变。
+8. 在 `finally` 块中删除临时 DSH home 与工作区。
 
 测试中的自动审批 provider 只返回 `allowed-once`，用于验证 DSH 审批 seam，而不把交互浏览器会话设为 CI 前置条件。它还验证 bundle 的审批原因没有暴露计划内容。交互式 answerer 行为仍由 DSH 部署负责。
+
+## 运行证据与限制
+
+- 已批准写入遵循 `read -> immutable plan -> approval -> vault.apply -> workspace event`；事件只包含元数据。knowledge 包另有测试验证变更会先重新读取 Vault，再替换索引内容。
+- 新的具名作业异步调度。崩溃恢复的作业保持 `queued`，必须显式调用 `notemd_job_resume`；checkpoint 只记录计划，绝不成为写入授权。
+- 工作区协调是有序轮询，而不是文件系统 watcher。默认间隔为 `5000` ms，合法范围 `250` 至 `60000` ms；每轮成本是一遍 Markdown 列举与 revision 读取。
+- 每个工作区只运行一个 bundle 进程。文件型作业 store 与内存事件订阅均不提供跨进程 lease 或事件投递保证。
+- Provider 模型发现只是 advisory。只有 completion endpoint 精确以 `/chat/completions` 结尾时才会推导 `/models`；其他拓扑必须配置 `modelsEndpoint`。
+- 核心 bundle 中的渲染和文档导出状态明确为 `unavailable`。本验证不会安装或声称支持任何不受支持的本地 renderer。
 
 ## 刻意排除项
 

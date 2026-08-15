@@ -1,5 +1,5 @@
 import { Service, type Context } from '@deepseek-ai/cordis'
-import { SourceArtifactPlanner, type DiagramSpec, type NotemdArtifacts } from '@notemd-harness/artifacts'
+import { SourceArtifactPlanner, type ArtifactCapability, type DiagramSpec, type NotemdArtifacts } from '@notemd-harness/artifacts'
 import type { VaultDocument, WritePlan } from '@notemd-harness/vault'
 
 export class NotemdArtifactsService extends Service implements NotemdArtifacts {
@@ -21,6 +21,14 @@ export class NotemdArtifactsService extends Service implements NotemdArtifacts {
 
   planCleanup(artifactId: string): Promise<readonly string[]> {
     return this.requirePlanner().planCleanup(artifactId)
+  }
+
+  diagramRenderingCapability(): ArtifactCapability {
+    return this.requirePlanner().diagramRenderingCapability()
+  }
+
+  documentExportCapability(): ArtifactCapability {
+    return this.requirePlanner().documentExportCapability()
   }
 
   private requirePlanner(): SourceArtifactPlanner {

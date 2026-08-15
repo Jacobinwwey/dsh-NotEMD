@@ -17,6 +17,10 @@
       "types": "./lib/jobs.d.ts",
       "default": "./lib/jobs.js"
     },
+    "./workspace-changes": {
+      "types": "./lib/workspace-changes.d.ts",
+      "default": "./lib/workspace-changes.js"
+    },
     "./knowledge": {
       "types": "./lib/knowledge.d.ts",
       "default": "./lib/knowledge.js"
@@ -64,6 +68,7 @@
     "@notemd-harness/tools": "workspace:*",
     "@notemd-harness/vault": "workspace:*",
     "@notemd-harness/vault-local": "workspace:*",
+    "@notemd-harness/workspace-events": "workspace:*",
     "@notemd-harness/workflows": "workspace:*",
     "minisearch": "^7.1.2"
   },
@@ -75,6 +80,7 @@
     "@notemd-harness/tools",
     "@notemd-harness/vault",
     "@notemd-harness/vault-local",
+    "@notemd-harness/workspace-events",
     "@notemd-harness/workflows"
   ],
   "scripts": {

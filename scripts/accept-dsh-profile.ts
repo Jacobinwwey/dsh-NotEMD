@@ -43,6 +43,7 @@ export async function acceptDshProfile(): Promise<void> {
 
     const config = await runPnpm(dshSourceRoot, ['dsh', '--profile', profileName, '--dump-config'], environment)
     assertContains(config.stdout, 'notemd-vault', 'DSH config dump does not contain the vault provider.')
+    assertContains(config.stdout, 'notemd-workspace-changes', 'DSH config dump does not contain the workspace change provider.')
     assertContains(config.stdout, 'notemd-tools', 'DSH config dump does not contain the Tool provider.')
     assertContains(config.stdout, '@jacobinwwey/notemd-deepseek-harness/workflows', 'DSH config dump does not resolve the workflows module.')
 
@@ -67,6 +68,8 @@ export async function acceptDshProfile(): Promise<void> {
     assert(evidence.approvals === 2, 'The approval bridge did not receive the expected two requests.')
     assert(evidence.appliedStatus === 'updated', 'The approved plan was not applied through the installed ToolRuntime.')
     assert(evidence.staleStatus === 'skipped-stale', 'A stale plan was not rejected by the vault write precondition.')
+    assert(evidence.jobState === 'completed', 'The installed formula planning job did not complete.')
+    assert(evidence.providerStatus === 'unavailable', 'The installed provider diagnostic did not fail closed without a key.')
 
     process.stdout.write('Clean DeepSeek Harness profile acceptance passed.\n')
   } finally {
@@ -123,6 +126,8 @@ function parseRunnerEvidence(stdout: string): {
   readonly approvals: number
   readonly appliedStatus: string
   readonly staleStatus: string
+  readonly jobState: string
+  readonly providerStatus: string
 } {
   const line = stdout.trim().split(/\r?\n/u).at(-1)
   if (line === undefined) {
@@ -133,6 +138,8 @@ function parseRunnerEvidence(stdout: string): {
     readonly approvals: number
     readonly appliedStatus: string
     readonly staleStatus: string
+    readonly jobState: string
+    readonly providerStatus: string
   }
 }
 
@@ -155,6 +162,7 @@ const profileOverlay = `- id: notemd-vault
 - id: notemd-jobs
   config:
     workspaceRoot: !!js process.env.NOTEMD_ACCEPTANCE_WORKSPACE
+    concurrency: 2
 
 - id: notemd-approval
   config:
@@ -175,6 +183,7 @@ import NotemdJobsService from '@jacobinwwey/notemd-deepseek-harness/jobs'
 import NotemdKnowledgeService from '@jacobinwwey/notemd-deepseek-harness/knowledge'
 import NotemdTextTransformerService from '@jacobinwwey/notemd-deepseek-harness/llm'
 import NotemdVaultLocalService from '@jacobinwwey/notemd-deepseek-harness/vault-local'
+import NotemdWorkspaceChangeService from '@jacobinwwey/notemd-deepseek-harness/workspace-changes'
 import NotemdWorkflowsService from '@jacobinwwey/notemd-deepseek-harness/workflows'
 import { NotemdApprovalGateService, NotemdApprovalLedgerService } from '@jacobinwwey/notemd-deepseek-harness/approval'
 import { apply as applyTools, inject as toolsInject } from '@jacobinwwey/notemd-deepseek-harness/tools'
@@ -200,11 +209,9 @@ await ctx.plugin(SystemPrompt, {})
 await ctx.plugin(ToolRuntime, { mode: 'native' })
 await ctx.plugin(AllowOnceApprovalService)
 await ctx.plugin(NotemdVaultLocalService, { workspaceRoot })
-await ctx.plugin(NotemdJobsService, { workspaceRoot })
 await ctx.plugin(NotemdApprovalLedgerService, { workspaceRoot, approvalTtlMs: 300000 })
 await ctx.plugin(NotemdApprovalGateService)
-await ctx.plugin(NotemdKnowledgeService)
-await ctx.plugin(NotemdArtifactsService)
+await ctx.plugin(NotemdWorkspaceChangeService, { scanIntervalMs: 5000 })
 await ctx.plugin(NotemdTextTransformerService, {
   endpoint: 'https://api.deepseek.com/v1/chat/completions',
   model: 'deepseek-chat',
@@ -212,6 +219,9 @@ await ctx.plugin(NotemdTextTransformerService, {
   timeoutMs: 1000,
 })
 await ctx.plugin(NotemdWorkflowsService)
+await ctx.plugin(NotemdJobsService, { workspaceRoot, concurrency: 2 })
+await ctx.plugin(NotemdKnowledgeService)
+await ctx.plugin(NotemdArtifactsService)
 await ctx.plugin(Object.assign(applyTools, { inject: toolsInject }))
 
 let callNumber = 0
@@ -232,6 +242,22 @@ async function invoke(name, arguments_, agent) {
 const read = await invoke('notemd_workspace_read', { path: 'notes/architecture.md' })
 assert(read.document.path === 'notes/architecture.md', 'The read Tool did not return the fixture document.')
 
+const provider = await invoke('notemd_provider_diagnostic', {})
+assert(provider.status === 'unavailable', 'The provider diagnostic should fail closed without an acceptance API key.')
+const renderStatus = await invoke('notemd_artifact_render_status', {})
+const exportStatus = await invoke('notemd_artifact_export_status', {})
+assert(renderStatus.status === 'unavailable', 'The core bundle unexpectedly claimed a portable diagram renderer.')
+assert(exportStatus.status === 'unavailable', 'The core bundle unexpectedly claimed a portable export provider.')
+
+const jobStarted = await invoke('notemd_job_start_formula_repair', {
+  idempotencyKey: 'acceptance-formula-repair',
+  targets: ['notes/formula.md'],
+})
+assert(typeof jobStarted.job.id === 'string', 'The formula planning job did not create a durable record.')
+const completedJob = await waitForJob(jobStarted.job.id)
+assert(completedJob.state === 'completed', 'The formula planning job ended in state ' + completedJob.state + '.')
+assert(completedJob.results[0]?.checkpoint?.plan?.id !== undefined, 'The formula planning job did not persist a plan checkpoint.')
+
 const planned = await invoke('notemd_plan_formula_repair', { path: 'notes/formula.md' })
 const plan = planned.plan
 assert(Array.isArray(plan.writes) && plan.writes.length === 1, 'Formula planning did not return one write.')
@@ -244,6 +270,7 @@ assert(!ctx.approval.requests[0].reason.includes('x^2 + y^2'), 'The approval rea
 
 const applied = await invoke('notemd_apply_approved_plan', { plan, approvalId: approval.approvalId }, approvalAgent)
 assert(applied.results[0].status === 'updated', 'The approved formula plan was not applied.')
+assert(applied.change?.origin === 'notemd-approved-plan', 'The approved formula plan did not publish a workspace change.')
 
 const formulaPath = join(workspaceRoot, 'notes', 'formula.md')
 const normalized = await readFile(formulaPath, 'utf8')
@@ -265,7 +292,23 @@ process.stdout.write(JSON.stringify({
   approvals: ctx.approval.requests.length,
   appliedStatus: applied.results[0].status,
   staleStatus: staleApply.results[0].status,
+  jobState: completedJob.state,
+  providerStatus: provider.status,
 }) + '\n')
+
+async function waitForJob(id) {
+  const deadline = Date.now() + 5000
+  let latestState = 'missing'
+  while (Date.now() < deadline) {
+    const status = await invoke('notemd_job_status', { jobId: id })
+    if (status.job !== null) {
+      latestState = status.job.state
+      if (['completed', 'cancelled', 'failed'].includes(status.job.state)) return status.job
+    }
+    await new Promise(resolve => setTimeout(resolve, 10))
+  }
+  throw new Error('The formula planning job did not settle within 5000ms; last state: ' + latestState + '.')
+}
 
 function assert(condition, message) {
   if (!condition) throw new Error(message)

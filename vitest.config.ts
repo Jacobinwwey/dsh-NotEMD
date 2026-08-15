@@ -22,6 +22,9 @@ export default defineConfig({
       '@notemd-harness/vault-local': fileURLToPath(
         new URL('./packages/notemd-vault-local/src/index.ts', import.meta.url),
       ),
+      '@notemd-harness/workspace-events': fileURLToPath(
+        new URL('./packages/notemd-workspace-events/src/index.ts', import.meta.url),
+      ),
       '@notemd-harness/workflows': fileURLToPath(
         new URL('./packages/notemd-workflows/src/index.ts', import.meta.url),
       ),

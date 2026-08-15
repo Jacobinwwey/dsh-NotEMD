@@ -10,7 +10,9 @@
     { "path": "../notemd-artifacts" },
     { "path": "../notemd-jobs" },
     { "path": "../notemd-knowledge" },
+    { "path": "../notemd-llm-openai-compatible" },
     { "path": "../notemd-vault" },
+    { "path": "../notemd-workspace-events" },
     { "path": "../notemd-workflows" }
   ],
   "include": ["src/**/*.ts"]

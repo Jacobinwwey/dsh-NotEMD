@@ -15,6 +15,7 @@ const bundledInternalPackages = [
   '@notemd-harness/tools',
   '@notemd-harness/vault',
   '@notemd-harness/vault-local',
+  '@notemd-harness/workspace-events',
   '@notemd-harness/workflows',
 ] as const
 
@@ -72,6 +73,7 @@ function assertTarballLayout(entries: readonly string[]): void {
     'package/lib/index.js',
     'package/lib/index.d.ts',
     'package/lib/vault-local.js',
+    'package/lib/workspace-changes.js',
     'package/lib/jobs.js',
     'package/lib/knowledge.js',
     'package/lib/artifacts.js',

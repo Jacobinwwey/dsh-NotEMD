@@ -16,4 +16,5 @@ export {
   name as toolsPluginName,
 } from './tools.js'
 export * from './vault-local.js'
+export * from './workspace-changes.js'
 export * from './workflows.js'

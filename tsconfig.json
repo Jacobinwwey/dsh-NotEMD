@@ -3,6 +3,7 @@
   "references": [
     { "path": "./packages/notemd-vault" },
     { "path": "./packages/notemd-vault-local" },
+    { "path": "./packages/notemd-workspace-events" },
     { "path": "./packages/notemd-jobs" },
     { "path": "./packages/notemd-knowledge" },
     { "path": "./packages/notemd-workflows" },

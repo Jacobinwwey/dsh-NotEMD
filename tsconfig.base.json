@@ -19,6 +19,7 @@
     "paths": {
       "@notemd-harness/vault": ["packages/notemd-vault/src/index.ts"],
       "@notemd-harness/vault-local": ["packages/notemd-vault-local/src/index.ts"],
+      "@notemd-harness/workspace-events": ["packages/notemd-workspace-events/src/index.ts"],
       "@notemd-harness/jobs": ["packages/notemd-jobs/src/index.ts"],
       "@notemd-harness/knowledge": ["packages/notemd-knowledge/src/index.ts"],
       "@notemd-harness/workflows": ["packages/notemd-workflows/src/index.ts"],

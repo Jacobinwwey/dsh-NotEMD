@@ -6,21 +6,21 @@
       config:
         workspaceRoot: !!js process.cwd()
 
-    - id: notemd-jobs
-      name: '@jacobinwwey/notemd-deepseek-harness/jobs'
-      inject: [notemdVault]
-      config:
-        workspaceRoot: !!js process.cwd()
-
     - id: notemd-approval
       name: '@jacobinwwey/notemd-deepseek-harness/approval'
       config:
         workspaceRoot: !!js process.cwd()
         approvalTtlMs: 300000
 
+    - id: notemd-workspace-changes
+      name: '@jacobinwwey/notemd-deepseek-harness/workspace-changes'
+      inject: [notemdVault]
+      config:
+        scanIntervalMs: 5000
+
     - id: notemd-knowledge
       name: '@jacobinwwey/notemd-deepseek-harness/knowledge'
-      inject: [notemdVault]
+      inject: [notemdVault, notemdWorkspaceChanges]
 
     - id: notemd-artifacts
       name: '@jacobinwwey/notemd-deepseek-harness/artifacts'
@@ -38,7 +38,14 @@
       name: '@jacobinwwey/notemd-deepseek-harness/workflows'
       inject: [notemdVault, notemdTextTransformer]
 
+    - id: notemd-jobs
+      name: '@jacobinwwey/notemd-deepseek-harness/jobs'
+      inject: [notemdWorkflows]
+      config:
+        workspaceRoot: !!js process.cwd()
+        concurrency: 2
+
     - id: notemd-tools
       name: '@jacobinwwey/notemd-deepseek-harness/tools'
       inject:
-        [tools, notemdVault, notemdJobs, notemdKnowledge, notemdWorkflows, notemdArtifacts, notemdApprovalLedger, notemdApprovalGate]
+        [tools, notemdVault, notemdJobs, notemdWorkspaceChanges, notemdKnowledge, notemdTextTransformer, notemdWorkflows, notemdArtifacts, notemdApprovalLedger, notemdApprovalGate]

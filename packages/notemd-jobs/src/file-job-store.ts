@@ -9,22 +9,26 @@ export interface JobTargetResult {
   target: string
   status: 'completed' | 'cancelled' | 'failed'
   detail?: string
+  checkpoint?: JsonValue
 }
 
-export type JobState = 'queued' | 'running' | 'completed' | 'cancelled' | 'failed'
+export type JobState = 'queued' | 'running' | 'cancelling' | 'completed' | 'cancelled' | 'failed'
 
 export interface JobRecord<I extends JsonValue = JsonValue> {
   id: string
+  workflow: string
   idempotencyKey: string
   input: Readonly<I>
   targets: readonly string[]
   state: JobState
+  attempt: number
   results: readonly JobTargetResult[]
   createdAt: string
   updatedAt: string
 }
 
 export interface JobStartRequest<I extends JsonValue = JsonValue> {
+  workflow: string
   idempotencyKey: string
   input: I
   targets: readonly string[]
@@ -32,7 +36,7 @@ export interface JobStartRequest<I extends JsonValue = JsonValue> {
 
 export class JobStoreError extends Error {
   constructor(
-    readonly code: 'JOB_NOT_FOUND' | 'JOB_RECORD_INVALID',
+    readonly code: 'JOB_NOT_FOUND' | 'JOB_RECORD_INVALID' | 'JOB_STATE_INVALID' | 'JOB_WORKFLOW_MISMATCH',
     message: string,
   ) {
     super(message)
@@ -52,6 +56,7 @@ export class FileJobStore<I extends JsonValue = JsonValue> {
   }
 
   async start(request: JobStartRequest<I>): Promise<JobRecord<I>> {
+    const workflow = normalizeWorkflow(request.workflow)
     const input = cloneJson(request.input)
     const targets = normalizeTargets(request.targets)
 
@@ -68,10 +73,12 @@ export class FileJobStore<I extends JsonValue = JsonValue> {
       const timestamp = new Date().toISOString()
       const record: JobRecord<I> = {
         id: `notemd-job-${randomUUID()}`,
+        workflow,
         idempotencyKey: request.idempotencyKey,
         input,
         targets,
         state: 'queued',
+        attempt: 0,
         results: [],
         createdAt: timestamp,
         updatedAt: timestamp,
@@ -98,12 +105,107 @@ export class FileJobStore<I extends JsonValue = JsonValue> {
       if (record.state !== 'queued') {
         return record
       }
-      return { ...record, state: 'running', updatedAt: new Date().toISOString() }
+      return startExecution(record)
+    })
+  }
+
+  async beginExecution(id: string, workflow: string): Promise<JobRecord<I>> {
+    const normalizedWorkflow = normalizeWorkflow(workflow)
+    return this.update(id, (record) => {
+      if (record.workflow !== normalizedWorkflow) {
+        throw new JobStoreError('JOB_WORKFLOW_MISMATCH', `Job ${id} belongs to workflow ${record.workflow}.`)
+      }
+      if (record.state !== 'queued') {
+        throw new JobStoreError('JOB_STATE_INVALID', `Job ${id} cannot begin from ${record.state}.`)
+      }
+      return startExecution(record)
+    })
+  }
+
+  async recordTargetCheckpoint(id: string, result: JobTargetResult): Promise<JobRecord<I>> {
+    const safeResult = normalizeTargetResult(result)
+    return this.update(id, (record) => {
+      if (record.state !== 'running' && record.state !== 'cancelling') {
+        throw new JobStoreError('JOB_STATE_INVALID', `Job ${id} cannot record a checkpoint from ${record.state}.`)
+      }
+      if (!record.targets.includes(safeResult.target)) {
+        throw new JobStoreError('JOB_RECORD_INVALID', `Job ${id} checkpoint targets an unknown path.`)
+      }
+      if (record.results.some((known) => known.target === safeResult.target)) {
+        return record
+      }
+      return {
+        ...record,
+        results: [...record.results, safeResult],
+        updatedAt: new Date().toISOString(),
+      }
+    })
+  }
+
+  async finishExecution(id: string): Promise<JobRecord<I>> {
+    return this.update(id, (record) => {
+      if (isTerminal(record.state)) {
+        return record
+      }
+      if (record.state !== 'running' && record.state !== 'cancelling') {
+        throw new JobStoreError('JOB_STATE_INVALID', `Job ${id} cannot finish from ${record.state}.`)
+      }
+
+      const remainingTargets = pendingTargets(record)
+      if (record.state === 'running' && remainingTargets.length > 0) {
+        throw new JobStoreError('JOB_STATE_INVALID', `Job ${id} has uncheckpointed targets.`)
+      }
+      const results = record.state === 'cancelling'
+        ? [...record.results, ...remainingTargets.map((target) => ({ target, status: 'cancelled' as const }))]
+        : record.results
+      const state = record.state === 'cancelling'
+        ? 'cancelled'
+        : results.some((result) => result.status === 'failed')
+          ? 'failed'
+          : results.some((result) => result.status === 'cancelled')
+            ? 'cancelled'
+            : 'completed'
+      return { ...record, state, results, updatedAt: new Date().toISOString() }
+    })
+  }
+
+  async failExecution(id: string, detail: string): Promise<JobRecord<I>> {
+    return this.update(id, (record) => {
+      if (isTerminal(record.state)) {
+        return record
+      }
+      return {
+        ...record,
+        state: 'failed',
+        results: [...record.results, ...pendingTargets(record).map((target) => ({ target, status: 'failed' as const, detail }))],
+        updatedAt: new Date().toISOString(),
+      }
+    })
+  }
+
+  async recoverInterrupted(): Promise<readonly JobRecord<I>[]> {
+    return this.synchronize(async () => {
+      const records = await this.readAll()
+      const recovered: JobRecord<I>[] = []
+
+      for (const record of records) {
+        const next = record.state === 'running'
+          ? { ...record, state: 'queued' as const, updatedAt: new Date().toISOString() }
+          : record.state === 'cancelling'
+            ? { ...record, state: 'cancelled' as const, updatedAt: new Date().toISOString() }
+            : record
+        if (next !== record) {
+          await this.persist(next)
+          recovered.push(cloneRecord(next) as JobRecord<I>)
+        }
+      }
+
+      return recovered
     })
   }
 
   async complete(id: string, results: readonly JobTargetResult[]): Promise<JobRecord<I>> {
-    const safeResults = results.map(cloneTargetResult)
+    const safeResults = normalizeResults(results)
     return this.update(id, (record) => {
       if (isTerminal(record.state)) {
         return record
@@ -120,10 +222,14 @@ export class FileJobStore<I extends JsonValue = JsonValue> {
 
   async cancel(id: string): Promise<JobRecord<I>> {
     return this.update(id, (record) => {
-      if (isTerminal(record.state)) {
+      if (isTerminal(record.state) || record.state === 'cancelling') {
         return record
       }
-      return { ...record, state: 'cancelled', updatedAt: new Date().toISOString() }
+      return {
+        ...record,
+        state: record.state === 'running' ? 'cancelling' : 'cancelled',
+        updatedAt: new Date().toISOString(),
+      }
     })
   }
 
@@ -220,26 +326,47 @@ export class FileJobStore<I extends JsonValue = JsonValue> {
   }
 }
 
+export function pendingTargets(record: Pick<JobRecord, 'targets' | 'results'>): readonly string[] {
+  const completedTargets = new Set(record.results.map((result) => result.target))
+  return record.targets.filter((target) => !completedTargets.has(target))
+}
+
+function startExecution(record: JobRecord<JsonValue>): JobRecord<JsonValue> {
+  return {
+    ...record,
+    state: 'running',
+    attempt: record.attempt + 1,
+    updatedAt: new Date().toISOString(),
+  }
+}
+
 function parseJobRecord(value: unknown, path: string): JobRecord<JsonValue> {
   if (!isObject(value)) {
     throw invalidRecord(path)
   }
 
   const id = stringProperty(value, 'id', path)
+  const workflowValue = value.workflow
+  const workflow = workflowValue === undefined ? 'legacy-unknown' : normalizeWorkflow(stringProperty(value, 'workflow', path))
   const idempotencyKey = stringProperty(value, 'idempotencyKey', path)
   const input = value.input
   assertJsonValue(input)
   const targets = normalizeTargets(arrayProperty(value, 'targets', path))
   const state = stateProperty(value, path)
-  const resultsValue = arrayProperty(value, 'results', path)
-  const results = resultsValue.map((result) => parseTargetResult(result, path))
+  const attempt = attemptProperty(value, path)
+  const results = normalizeResults(arrayProperty(value, 'results', path).map((result) => parseTargetResult(result, path)))
+  if (results.some((result) => !targets.includes(result.target))) {
+    throw invalidRecord(path)
+  }
 
   return {
     id,
+    workflow,
     idempotencyKey,
     input,
     targets,
     state,
+    attempt,
     results,
     createdAt: stringProperty(value, 'createdAt', path),
     updatedAt: stringProperty(value, 'updatedAt', path),
@@ -256,27 +383,62 @@ function parseTargetResult(value: unknown, path: string): JobTargetResult {
     throw invalidRecord(path)
   }
   const detail = value.detail
-  if (detail === undefined) {
-    return { target, status }
-  }
-  if (typeof detail !== 'string') {
+  if (detail !== undefined && typeof detail !== 'string') {
     throw invalidRecord(path)
   }
-  return { target, status, detail }
+  const checkpoint = value.checkpoint
+  if (checkpoint !== undefined) {
+    try {
+      assertJsonValue(checkpoint)
+    } catch {
+      throw invalidRecord(path)
+    }
+  }
+  return normalizeTargetResult({ target, status, ...(detail === undefined ? {} : { detail }), ...(checkpoint === undefined ? {} : { checkpoint }) })
 }
 
 function normalizeTargets(targets: readonly unknown[]): readonly string[] {
   if (targets.some((target) => typeof target !== 'string' || target.length === 0)) {
     throw new RangeError('Job targets must be non-empty strings.')
   }
+  if (new Set(targets).size !== targets.length) {
+    throw new RangeError('Job targets must not contain duplicates.')
+  }
   return Object.freeze([...targets] as string[])
 }
 
-function cloneTargetResult(result: JobTargetResult): JobTargetResult {
-  if (result.detail === undefined) {
-    return { target: result.target, status: result.status }
+function normalizeWorkflow(workflow: string): string {
+  if (!/^[a-z][a-z0-9-]{0,79}$/u.test(workflow)) {
+    throw new RangeError('Job workflow names must be lowercase kebab-case identifiers.')
   }
-  return { target: result.target, status: result.status, detail: result.detail }
+  return workflow
+}
+
+function normalizeResults(results: readonly JobTargetResult[]): readonly JobTargetResult[] {
+  const normalized = results.map(normalizeTargetResult)
+  if (new Set(normalized.map((result) => result.target)).size !== normalized.length) {
+    throw new JobStoreError('JOB_RECORD_INVALID', 'Job results must contain at most one checkpoint per target.')
+  }
+  return normalized
+}
+
+function normalizeTargetResult(result: JobTargetResult): JobTargetResult {
+  if (typeof result.target !== 'string' || result.target.length === 0) {
+    throw new JobStoreError('JOB_RECORD_INVALID', 'Job result targets must be non-empty strings.')
+  }
+  if (result.status !== 'completed' && result.status !== 'cancelled' && result.status !== 'failed') {
+    throw new JobStoreError('JOB_RECORD_INVALID', 'Job result status is invalid.')
+  }
+  if (result.detail !== undefined && typeof result.detail !== 'string') {
+    throw new JobStoreError('JOB_RECORD_INVALID', 'Job result detail must be a string.')
+  }
+  const checkpoint = result.checkpoint === undefined ? undefined : cloneJson(result.checkpoint)
+  return {
+    target: result.target,
+    status: result.status,
+    ...(result.detail === undefined ? {} : { detail: result.detail }),
+    ...(checkpoint === undefined ? {} : { checkpoint }),
+  }
 }
 
 function cloneJson<T extends JsonValue>(value: T): T {
@@ -284,13 +446,19 @@ function cloneJson<T extends JsonValue>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T
 }
 
+function cloneTargetResult(result: JobTargetResult): JobTargetResult {
+  return normalizeTargetResult(result)
+}
+
 function cloneRecord(record: JobRecord<JsonValue>): JobRecord<JsonValue> {
   return {
     id: record.id,
+    workflow: record.workflow,
     idempotencyKey: record.idempotencyKey,
     input: cloneJson(record.input),
     targets: [...record.targets],
     state: record.state,
+    attempt: record.attempt,
     results: record.results.map(cloneTargetResult),
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
@@ -351,10 +519,28 @@ function stringProperty(value: Record<string, unknown>, key: string, path: strin
 
 function stateProperty(value: Record<string, unknown>, path: string): JobState {
   const state = value.state
-  if (state === 'queued' || state === 'running' || state === 'completed' || state === 'cancelled' || state === 'failed') {
+  if (
+    state === 'queued' ||
+    state === 'running' ||
+    state === 'cancelling' ||
+    state === 'completed' ||
+    state === 'cancelled' ||
+    state === 'failed'
+  ) {
     return state
   }
   throw invalidRecord(path)
+}
+
+function attemptProperty(value: Record<string, unknown>, path: string): number {
+  const attempt = value.attempt
+  if (attempt === undefined) {
+    return 0
+  }
+  if (typeof attempt !== 'number' || !Number.isSafeInteger(attempt) || attempt < 0) {
+    throw invalidRecord(path)
+  }
+  return attempt
 }
 
 function invalidRecord(path: string): JobStoreError {
