@@ -28,11 +28,12 @@
 
     - id: notemd-llm
       name: '@jacobinwwey/notemd-deepseek-harness/llm'
+      inject: [llm]
       config:
-        endpoint: !!js process.env.NOTEMD_OPENAI_ENDPOINT ?? 'https://api.deepseek.com/v1/chat/completions'
-        model: !!js process.env.NOTEMD_OPENAI_MODEL ?? 'deepseek-chat'
-        apiKeyEnv: NOTEMD_API_KEY
-        timeoutMs: 30000
+        provider: deepseek
+        model: deepseek-chat
+        maxTokens: 4096
+        promptPolicyId: notemd.default.v1
 
     - id: notemd-workflows
       name: '@jacobinwwey/notemd-deepseek-harness/workflows'

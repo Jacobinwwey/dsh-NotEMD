@@ -1,8 +1,12 @@
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+
 import { expect, test } from 'vitest'
 
 import { createContentSha256, createWorkspaceMutationPlan } from '@notemd-harness/mutation'
 
-import { ConfiguredTextTransformer, DshApprovalGate } from '../src/runtime-adapter.js'
+import { DshApprovalGate } from '../src/runtime-adapter.js'
+import { ConfiguredTextTransformer } from '../src/legacy-text-transformer.js'
 
 const planProvenance = {
   operationId: 'notemd.test.approval-gate',
@@ -22,6 +26,14 @@ const plan = createWorkspaceMutationPlan({
     content: planContent,
     contentSha256: createContentSha256(planContent),
   }],
+})
+
+test('injects the DSH LLM service and does not expose duplicate provider diagnostics', () => {
+  const source = readFileSync(fileURLToPath(new URL('../src/llm.ts', import.meta.url)), 'utf8')
+
+  expect(source).toContain("static inject = ['llm'] as const")
+  expect(source).not.toContain('diagnoseProvider')
+  expect(source).not.toContain('discoverModels')
 })
 
 test('fails closed when DSH approval cannot be routed to an agent', async () => {

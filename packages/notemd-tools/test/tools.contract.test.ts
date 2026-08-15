@@ -119,6 +119,7 @@ interface RegisteredContext {
 interface FixtureOptions {
   readonly approvalDecision?: 'approved' | 'rejected' | 'unavailable' | 'cancelled'
   readonly consumeApproval?: boolean
+  readonly dshOnlyTransformer?: boolean
 }
 
 function registerFixture(
@@ -157,10 +158,13 @@ function registerFixture(
       diagramRenderingCapability: () => ({ capability: 'diagram-rendering', status: 'unavailable', reason: 'not configured' }),
       documentExportCapability: () => ({ capability: 'document-export', status: 'unavailable', reason: 'not configured' }),
     },
-    notemdTextTransformer: {
-      diagnoseProvider: async () => ({ status: 'available', endpoint: 'https://example.test/v1/chat/completions', model: 'test-model', elapsedMs: 1 }),
-      discoverModels: async () => ({ status: 'available', endpoint: 'https://example.test/v1/models', models: [{ id: 'test-model' }] }),
-    },
+    notemdTextTransformer: options.dshOnlyTransformer
+      ? { complete: async () => ({ model: 'dsh-model', text: 'unused' }) }
+      : {
+          complete: async () => ({ model: 'legacy-model', text: 'unused' }),
+          diagnoseProvider: async () => ({ status: 'available', endpoint: 'https://example.test/v1/chat/completions', model: 'test-model', elapsedMs: 1 }),
+          discoverModels: async () => ({ status: 'available', endpoint: 'https://example.test/v1/models', models: [{ id: 'test-model' }] }),
+        },
     notemdJobs: {
       startFormulaRepairs: async () => ({ id: 'job-formula' }),
       startMermaidRepairs: async () => ({ id: 'job-mermaid' }),
@@ -295,6 +299,14 @@ test('registers named tools with closed canonical result schemas', () => {
   expect(names).not.toContain('notemd_run')
   expect(context.registered.every((tool) => schemaIsClosed(tool.output.schema))).toBe(true)
   expect(context.registered.every((tool) => schemaUsesDshValueDsl(tool.output.schema))).toBe(true)
+})
+
+test('does not register legacy provider tools for a DSH-only transformer', () => {
+  const context = registerFixture(textPlan(), receiptFor(textPlan(), 'committed'), { dshOnlyTransformer: true })
+  const names = context.registered.map((tool) => tool.name)
+
+  expect(names).not.toContain('notemd_provider_diagnostic')
+  expect(names).not.toContain('notemd_provider_models')
 })
 
 function schemaIsClosed(schema: unknown): boolean {

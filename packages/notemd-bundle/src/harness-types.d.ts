@@ -9,6 +9,7 @@ declare module '@deepseek-ai/cordis' {
         readonly signal?: AbortSignal
       }): Promise<unknown>
     }
+    readonly llm: import('@notemd-harness/llm-dsh').DshLlmRuntime
     readonly notemdVault: import('@notemd-harness/vault').NotemdVault
     readonly notemdJobs: import('@notemd-harness/tools').NotemdJobs
     readonly notemdWorkspaceChanges: import('./workspace-changes.js').NotemdWorkspaceChangeService

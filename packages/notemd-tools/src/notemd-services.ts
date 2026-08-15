@@ -9,7 +9,7 @@ import type {
 } from '@notemd-harness/mutation'
 import type { NotemdVault } from '@notemd-harness/vault'
 import type { WorkspaceChangeEvent } from '@notemd-harness/workspace-events'
-import type { WorkflowPlanner } from '@notemd-harness/workflows'
+import type { TextTransformer, WorkflowPlanner } from '@notemd-harness/workflows'
 
 import type { ApprovalLedger } from './approval-ledger.js'
 import type { ToolExecutionContext, ToolRegistrationSpec } from './tool-contract.js'
@@ -83,7 +83,7 @@ export interface NotemdToolContext {
   readonly notemdJobs: NotemdJobs
   readonly notemdWorkspaceChanges: NotemdWorkspaceChanges
   readonly notemdKnowledge?: NotemdKnowledge
-  readonly notemdTextTransformer: NotemdProviderDiagnostics
+  readonly notemdTextTransformer: TextTransformer
   readonly notemdWorkflows: WorkflowPlanner
   readonly notemdArtifacts: NotemdArtifacts
   readonly notemdApprovalLedger: ApprovalLedger

@@ -1,41 +1,26 @@
 import { Service, type Context } from '@deepseek-ai/cordis'
-import {
-  OpenAiCompatibleAdapter,
-  type ModelDiscoveryResult,
-  type ProviderDiagnosticResult,
-  type TextCompletion,
-} from '@notemd-harness/llm-openai-compatible'
-import type { TextTransformer } from '@notemd-harness/workflows'
+import { DshTextTransformer, type NotemdLlmRoute } from '@notemd-harness/llm-dsh'
+import type { TextCompletion, TextTransformer } from '@notemd-harness/workflows'
 
-import { ConfiguredTextTransformer, type ConfiguredTextTransformerConfig, type ProviderObservabilityAdapter } from './runtime-adapter.js'
+/** DSH owns provider credentials and transport; NoteMD owns only this route policy. */
+export type NotemdLlmConfig = NotemdLlmRoute
 
-export type NotemdLlmConfig = ConfiguredTextTransformerConfig
+export class NotemdTextTransformerService extends Service implements TextTransformer {
+  static inject = ['llm'] as const
 
-export interface NotemdProviderDiagnostics {
-  diagnoseProvider(signal?: AbortSignal): Promise<ProviderDiagnosticResult>
-  discoverModels(signal?: AbortSignal): Promise<ModelDiscoveryResult>
-}
-
-export class NotemdTextTransformerService extends Service implements TextTransformer, NotemdProviderDiagnostics {
-  private readonly adapter: OpenAiCompatibleAdapter
-  private readonly transformer: ConfiguredTextTransformer
+  private readonly transformer: DshTextTransformer
 
   constructor(ctx: Context, config: NotemdLlmConfig) {
     super(ctx, 'notemdTextTransformer')
-    this.adapter = new OpenAiCompatibleAdapter()
-    this.transformer = new ConfiguredTextTransformer(config, this.adapter)
+    this.transformer = new DshTextTransformer(ctx.llm, config)
+  }
+
+  protected async [Service.init](): Promise<void> {
+    this.ctx.effect(() => () => this.transformer.dispose(), 'notemdTextTransformer.dshConsumer')
   }
 
   complete(request: { system: string; prompt: string; signal?: AbortSignal }): Promise<TextCompletion> {
     return this.transformer.complete(request)
-  }
-
-  diagnoseProvider(signal?: AbortSignal): Promise<ProviderDiagnosticResult> {
-    return this.transformer.diagnoseProvider(this.adapter as ProviderObservabilityAdapter, signal)
-  }
-
-  discoverModels(signal?: AbortSignal): Promise<ModelDiscoveryResult> {
-    return this.transformer.discoverModels(this.adapter as ProviderObservabilityAdapter, signal)
   }
 }
 

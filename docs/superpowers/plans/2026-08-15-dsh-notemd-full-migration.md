@@ -178,12 +178,12 @@ interface DshTextTransformer extends TextTransformer {
 }
 ```
 
-- [ ] Inject `llm` explicitly. Assemble text through DSH's `StreamChunk` protocol and reject terminal error/aborted finishes with provider-neutral NoteMD failures.
-- [ ] Keep route policy schema-limited to provider, model, output limits, and prompt policy identifiers. Do not add endpoint, API key, header, transport retry, or model discovery fields.
-- [ ] Move OpenAI-compatible diagnostics/discovery behind a separate legacy plugin entry that is absent from default patches.
-- [ ] Test text block assembly, usage ordering, cancellation, malformed terminal streams, route selection, and HMR disposal of registered consumers.
-- [ ] Run `rtk proxy pnpm.cmd --filter @notemd-harness/llm-dsh test`, `rtk proxy pnpm.cmd --filter @jacobinwwey/notemd-deepseek-harness test`, and `rtk tsc`.
-- [ ] Update progress records and commit `feat: consume DSH LLM routes by default`.
+- [x] Injected `llm` explicitly. `DshTextTransformer` assembles DSH `StreamChunk` text blocks and maps terminal error/aborted outcomes to provider-neutral NoteMD failures.
+- [x] Closed route policy to provider, model, `maxTokens`, and `promptPolicyId`; runtime validation rejects unknown legacy transport fields rather than silently discarding them.
+- [x] Moved OpenAI-compatible diagnostics/discovery behind the explicit `./llm-openai-compatible-legacy` entry, which is absent from the default patch.
+- [x] Tested text assembly, usage, cancellation, malformed and post-terminal streams, route selection, and owner disposal of active consumers.
+- [x] Ran strict TypeScript, the complete Vitest suite (22 files, 109 tests), ESLint, package build, bundle packing/verification, and clean DSH-profile acceptance on Node `v22.19.0` / pnpm `10.7.1`.
+- [x] Updated paired progress records and committed Task 5 as `feat: consume DSH LLM routes by default`.
 
 ### Task 6: Add Native Research Evidence Through `ctx.web`
 

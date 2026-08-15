@@ -17,6 +17,9 @@ export default defineConfig({
       '@notemd-harness/knowledge': fileURLToPath(
         new URL('./packages/notemd-knowledge/src/index.ts', import.meta.url),
       ),
+      '@notemd-harness/llm-dsh': fileURLToPath(
+        new URL('./packages/notemd-llm-dsh/src/index.ts', import.meta.url),
+      ),
       '@notemd-harness/llm-openai-compatible': fileURLToPath(
         new URL('./packages/notemd-llm-openai-compatible/src/index.ts', import.meta.url),
       ),

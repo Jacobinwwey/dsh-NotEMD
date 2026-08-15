@@ -69,7 +69,7 @@ export async function acceptDshProfile(): Promise<void> {
     assert(evidence.appliedStatus === 'committed', 'The approved mutation proposal was not applied through the installed ToolRuntime.')
     assert(evidence.staleStatus === 'conflict', 'A stale mutation proposal was not rejected by the vault write precondition.')
     assert(evidence.jobState === 'completed', 'The installed formula planning job did not complete.')
-    assert(evidence.providerStatus === 'unavailable', 'The installed provider diagnostic did not fail closed without a key.')
+    assert(evidence.legacyProviderToolMissing, 'The default DSH bridge registered a legacy provider diagnostic Tool.')
 
     process.stdout.write('Clean DeepSeek Harness profile acceptance passed.\n')
   } finally {
@@ -127,7 +127,7 @@ function parseRunnerEvidence(stdout: string): {
   readonly appliedStatus: string
   readonly staleStatus: string
   readonly jobState: string
-  readonly providerStatus: string
+  readonly legacyProviderToolMissing: boolean
 } {
   const line = stdout.trim().split(/\r?\n/u).at(-1)
   if (line === undefined) {
@@ -139,7 +139,7 @@ function parseRunnerEvidence(stdout: string): {
     readonly appliedStatus: string
     readonly staleStatus: string
     readonly jobState: string
-    readonly providerStatus: string
+    readonly legacyProviderToolMissing: boolean
   }
 }
 
@@ -176,7 +176,7 @@ import { join } from 'node:path'
 import { Context, Service } from '@deepseek-ai/cordis'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
-import { CallId } from '@deepseek-ai/dsh-llm'
+import LlmRuntime, { CallId } from '@deepseek-ai/dsh-llm'
 
 import NotemdArtifactsService from '@jacobinwwey/notemd-deepseek-harness/artifacts'
 import NotemdJobsService from '@jacobinwwey/notemd-deepseek-harness/jobs'
@@ -205,6 +205,7 @@ const workspaceRoot = process.env.NOTEMD_ACCEPTANCE_WORKSPACE
 assert(typeof workspaceRoot === 'string' && workspaceRoot.length > 0, 'The acceptance workspace is unavailable.')
 
 const ctx = new Context()
+await ctx.plugin(LlmRuntime)
 await ctx.plugin(SystemPrompt, {})
 await ctx.plugin(ToolRuntime, { mode: 'native' })
 await ctx.plugin(AllowOnceApprovalService)
@@ -213,10 +214,10 @@ await ctx.plugin(NotemdApprovalLedgerService, { workspaceRoot, approvalTtlMs: 30
 await ctx.plugin(NotemdApprovalGateService)
 await ctx.plugin(NotemdWorkspaceChangeService, { scanIntervalMs: 5000 })
 await ctx.plugin(NotemdTextTransformerService, {
-  endpoint: 'https://api.deepseek.com/v1/chat/completions',
+  provider: 'deepseek',
   model: 'deepseek-chat',
-  apiKeyEnv: 'NOTEMD_ACCEPTANCE_UNUSED_KEY',
-  timeoutMs: 1000,
+  maxTokens: 1024,
+  promptPolicyId: 'notemd.acceptance.v1',
 })
 await ctx.plugin(NotemdWorkflowsService)
 await ctx.plugin(NotemdJobsService, { workspaceRoot, concurrency: 2 })
@@ -242,8 +243,8 @@ async function invoke(name, arguments_, agent) {
 const read = await invoke('notemd_workspace_read', { path: 'notes/architecture.md' })
 assert(read.document.path === 'notes/architecture.md', 'The read Tool did not return the fixture document.')
 
-const provider = await invoke('notemd_provider_diagnostic', {})
-assert(provider.status === 'unavailable', 'The provider diagnostic should fail closed without an acceptance API key.')
+const legacyProviderToolMissing = await toolIsMissing('notemd_provider_diagnostic')
+assert(legacyProviderToolMissing, 'The default DSH bridge unexpectedly registered a legacy provider diagnostic Tool.')
 const renderStatus = await invoke('notemd_artifact_render_status', {})
 const exportStatus = await invoke('notemd_artifact_export_status', {})
 assert(renderStatus.status === 'unavailable', 'The core bundle unexpectedly claimed a portable diagram renderer.')
@@ -293,8 +294,22 @@ process.stdout.write(JSON.stringify({
   appliedStatus: applied.receipt.status,
   staleStatus: staleApply.receipt.status,
   jobState: completedJob.state,
-  providerStatus: provider.status,
+  legacyProviderToolMissing,
 }) + '\n')
+
+async function toolIsMissing(name) {
+  try {
+    const result = await ctx.tools.execute({
+      callId: CallId('notemd-acceptance-' + ++callNumber),
+      name,
+      arguments: {},
+      signal: AbortSignal.timeout(10000),
+    })
+    return result.isError === true
+  } catch {
+    return true
+  }
+}
 
 async function waitForJob(id) {
   const deadline = Date.now() + 5000

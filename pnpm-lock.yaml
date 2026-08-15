@@ -53,6 +53,9 @@ importers:
       '@notemd-harness/knowledge':
         specifier: workspace:*
         version: link:../notemd-knowledge
+      '@notemd-harness/llm-dsh':
+        specifier: workspace:*
+        version: link:../notemd-llm-dsh
       '@notemd-harness/llm-openai-compatible':
         specifier: workspace:*
         version: link:../notemd-llm-openai-compatible
@@ -95,6 +98,12 @@ importers:
       minisearch:
         specifier: ^7.1.2
         version: 7.2.0
+
+  packages/notemd-llm-dsh:
+    dependencies:
+      '@notemd-harness/workflows':
+        specifier: workspace:*
+        version: link:../notemd-workflows
 
   packages/notemd-llm-openai-compatible: {}
 

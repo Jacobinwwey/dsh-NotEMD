@@ -1,0 +1,25 @@
+{
+  "name": "@notemd-harness/llm-dsh",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "files": [
+    "lib/**/*.d.ts",
+    "lib/**/*.js"
+  ],
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    }
+  },
+  "types": "./lib/index.d.ts",
+  "dependencies": {
+    "@notemd-harness/workflows": "workspace:*"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config ../../vitest.config.ts"
+  }
+}

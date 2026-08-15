@@ -9,6 +9,7 @@
     { "path": "./packages/notemd-knowledge" },
     { "path": "./packages/notemd-workflows" },
     { "path": "./packages/notemd-artifacts" },
+    { "path": "./packages/notemd-llm-dsh" },
     { "path": "./packages/notemd-llm-openai-compatible" },
     { "path": "./packages/notemd-tools" },
     { "path": "./packages/notemd-bundle" }

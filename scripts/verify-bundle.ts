@@ -11,6 +11,7 @@ const bundledInternalPackages = [
   '@notemd-harness/artifacts',
   '@notemd-harness/jobs',
   '@notemd-harness/knowledge',
+  '@notemd-harness/llm-dsh',
   '@notemd-harness/llm-openai-compatible',
   '@notemd-harness/mutation',
   '@notemd-harness/tools',
@@ -79,6 +80,7 @@ function assertTarballLayout(entries: readonly string[]): void {
     'package/lib/knowledge.js',
     'package/lib/artifacts.js',
     'package/lib/llm.js',
+    'package/lib/llm-openai-compatible-legacy.js',
     'package/lib/tools.js',
   ]
 

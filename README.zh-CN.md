@@ -11,10 +11,11 @@
 | 工作区内容 | `notemdVault` | 规范化后的路径必须仍在配置根目录内；每次写入必须携带精确版本或 `absent` 前置条件。 |
 | 计划 | `notemdWorkflows` 与 `notemdArtifacts` | 计划是不可变、内容寻址的值；规划不写入。 |
 | 审批 | `notemdApprovalGate` 与 `notemdApprovalLedger` | 用户授权绑定到单一计划摘要，且只能消费一次；没有审批服务时必须拒绝。 |
-| 修改 | `notemd_apply_approved_plan` | 每个目标都返回 `created`、`updated`、`skipped-stale`、`rejected`、`cancelled` 或 `failed`。 |
-| 工作区变更 | `notemdWorkspaceChanges` | Vault 返回结果后，已批准写入才会发出仅含元数据的变更；周期性协调负责观察外部编辑。 |
+| 修改 | `notemd_apply_approved_plan` | 应用产生封闭且绑定 revision 的 `WorkspaceMutationReceipt`；它是唯一的本地工作区写入 authority。 |
+| 工作区变更 | `notemdWorkspaceChanges` | 只有匹配的 `committed` receipt 才会发出仅含元数据的变更；周期性协调负责观察外部编辑。 |
 | 派生状态 | `notemdKnowledge` | 索引消费工作区变更，并始终重新读取 Vault，绝不信任事件载荷中的内容。 |
 | 持久化规划作业 | `notemdJobs` | 具名工作流将计划 checkpoint 写入 `<workspace>/.notemd/jobs/`；作业绝不应用计划。 |
+| LLM 路由 | DSH `llm` | NoteMD 只提供 provider/model route policy；凭据、adapter 与 transport 由 DSH 所有。 |
 
 该包刻意不是 Obsidian 兼容层。UI、预览、原生渲染器、Slidev/PPTX/PDF 导出、Tectonic 与桌面进程集成都属于独立的可选 provider。基线只生成可移植源工件，并对缺失的可选能力返回明确结果。
 
@@ -62,13 +63,15 @@ bundle 默认把 `process.cwd()` 作为工作区根目录。生产 profile 必�
 
 - id: notemd-llm
   config:
-    endpoint: !!js process.env.NOTEMD_OPENAI_ENDPOINT ?? 'https://api.deepseek.com/v1/chat/completions'
-    model: !!js process.env.NOTEMD_OPENAI_MODEL ?? 'deepseek-chat'
-    apiKeyEnv: NOTEMD_API_KEY
-    timeoutMs: 30000
+    provider: deepseek
+    model: deepseek-chat
+    maxTokens: 4096
+    promptPolicyId: notemd.default.v1
 ```
 
-`NOTEMD_API_KEY` 只会在执行需要模型的工作流时读取。公式规范化等确定性工作流不需要 LLM key。不要在 `cordis.patch.yml`、fixture 或工作区状态中保存密钥。
+默认 `notemd-llm` entry 注入 DSH 的 `llm` service。其封闭 route policy 只允许 `provider`、`model`、`maxTokens` 与 `promptPolicyId`；endpoint、key、header、transport retry 或 model-discovery field 会被拒绝，不会被静默忽略。凭据、provider adapter 与 provider 选择应在 DSH 中配置；NoteMD 不会读取或持久化它们。
+
+`@jacobinwwey/notemd-deepseek-harness/llm-openai-compatible-legacy` 是仅供迁移期使用的显式 entry，面向暂时不能使用 DSH LLM routing 的部署。它拥有旧的 OpenAI-compatible diagnostic/discovery 行为。legacy profile 必须以此模块替换默认 `notemd-llm` entry，不能并存加载，因为两者都提供 `notemdTextTransformer`。默认 bundle patch 不会加载 legacy entry。
 
 ## Tool 调用序列
 
@@ -82,13 +85,13 @@ notemd_plan_* -> notemd_request_plan_approval -> notemd_apply_approved_plan
 
 ## 运行语义
 
-修改边界固定为：`read -> immutable WritePlan -> approval -> vault.apply -> workspace event -> index synchronization`。只有 Vault 成功返回的 `created` 与 `updated` 会产生已批准计划变更；`skipped-stale`、`rejected`、`cancelled` 与 `failed` 绝不能被伪装成可索引内容变更。
+修改边界固定为：`read -> immutable WorkspaceMutationPlan -> approval -> mutation executor -> matching committed receipt -> workspace event -> index synchronization`。conflict、rejected、cancelled、failed、recovered 或不一致 receipt 绝不能被伪装成可索引内容变更。
 
 具名 `notemd_job_start_*` Tool 会持久化仅规划的作业，并异步调度新的工作。每个目标的 checkpoint 记录生成的计划，但不会授权或应用该计划。进程重启后，中断的 `running` 作业会转为 `queued`，并保持静止，直到显式调用 `notemd_job_resume`；终态作业不会重启。一个工作区只能运行一个 bundle 进程：当前文件型 store 没有跨进程 lease 协议。
 
 `notemdWorkspaceChanges` 在初始化时捕获快照，之后通过有序轮询协调。默认 `5000` ms，合法范围为 `250` 至 `60000` ms。每次扫描要列出 Markdown 路径并读取 revision，成本与工作区 Markdown 文件规模成正比。它刻意不是文件系统 watcher，也不是分布式变更流。事件只携带路径、revision、来源、因果 id 与时间戳，绝不携带笔记内容或凭据。
 
-`notemd_provider_diagnostic` 会发起最小的已配置 provider 请求，可能消耗 provider 配额。`notemd_provider_models` 只是 advisory：只有 completion endpoint 精确以 `/chat/completions` 结尾时才会推导 `/models`；否则必须配置 `modelsEndpoint`。发现结果为 `unavailable` 并不证明 completion 不可用。两个 Tool 都会脱敏凭据、query string、响应体与 completion 文本。
+默认 DSH route 不会注册 `notemd_provider_diagnostic` 或 `notemd_provider_models`，因为 DSH 拥有 provider configuration 与 observability。这两个迁移期 Tool 只在显式 legacy transport entry 替换默认 LLM entry 后才会出现。
 
 `notemd_artifact_render_status` 与 `notemd_artifact_export_status` 在核心 bundle 中返回结构化 `unavailable`。源工件仍然是可审查的计划；渲染器和导出器只能通过独立声明的 provider 安装。
 

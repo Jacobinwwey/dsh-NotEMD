@@ -2,7 +2,7 @@
 
 > English version: [2026-08-15-dsh-notemd-migration-progress.md](2026-08-15-dsh-notemd-migration-progress.md)
 
-**状态：** standalone bundle 与 next-level runtime 基础已实现。全量迁移架构与可执行计划已在 `main` 的 `626f6e1` 发布；Task 1-4 已完成，Task 5-11 仍待实现。
+**状态：** standalone bundle 与 next-level runtime 基础已实现。全量迁移架构与可执行计划已在 `main` 的 `626f6e1` 发布；Task 1-5 已完成，下一项为 Task 6。
 
 ## 1. 范围基线
 
@@ -20,6 +20,7 @@
 - Task 2 已增加 `@notemd-harness/mutation`，这是面向 text write、staged binary write、delete 和 metadata-only receipt 的不可变、内容寻址 proposal vocabulary。本阶段只建立 contract，不会修改工作区。
 - Task 3 已增加唯一可恢复的多目标 executor：content-free journal、plan-local staged payload、SHA-256 核验、可逆 delete、canonical lock、重试保护和 terminal staging cleanup tracking。
 - Task 4 已移除 legacy public text-write authority。approval 绑定 plan 与 staged-asset digest；Tool 只在一次性 receipt 被消费后调用 executor；job 只保留 plan identity；workspace event 只源于已核验的 committed receipt。
+- Task 5 已将 `ctx.llm` 设为默认 LLM seam。`@notemd-harness/llm-dsh` 通过封闭 route policy 消费 DSH stream，旧 OpenAI-compatible transport 只作为显式 legacy entry 保留。
 
 ## 3. 已完成的代码审计
 
@@ -29,7 +30,7 @@
 | --- | --- | --- |
 | `packages/notemd-vault/src/revision.ts` | 只暴露不可变的读取 revision；公共 `WritePlan` contract 已移除。 | 读取事实不再蕴含 mutation authority。 |
 | `packages/notemd-vault-local/src/local-vault.ts` | 以共享锁 journaled mutation application/recovery 作为唯一 local write path。 | approval、job、event 和 Tool 已收敛到一个可恢复 mutation authority。 |
-| `packages/notemd-bundle/src/runtime-adapter.ts` 与 `cordis.patch.yml` | 默认直连 OpenAI-compatible endpoint/API key。 | 默认所有权必须转移到 DSH `ctx.llm` seam；旧传输降为 opt-in。 |
+| `packages/notemd-llm-dsh/src/dsh-text-transformer.ts` 与 `cordis.patch.yml` | 默认 bridge 注入 `ctx.llm`、消费 DSH `StreamChunk`，只接受 provider/model/output/prompt route policy。 | DSH 拥有凭据与 transport；只有显式 legacy subpath 保留 OpenAI-compatible diagnostic/discovery。 |
 | `packages/notemd-workflows/src/index.ts` | research synthesis 接受调用方提供的文本。 | 未实现 `ctx.web` evidence consumer 前没有 native research。 |
 | `packages/notemd-knowledge/src/knowledge-index.ts` | 按整文件 MiniSearch 索引。 | 缺少源任务路径、section window、当前文件排除和检索解释。 |
 | `packages/notemd-artifacts/src/artifact-manifest.ts` | 仅 source JSON/README，`renderer: source`，render/export 始终 unavailable。 | artifact lineage 与具名 renderer/export provider 是核心缺口。 |
@@ -45,7 +46,7 @@
 | 独立 DSH bundle，显式工作区根目录、Cordis service、profile patch 与 clean-profile 验收。 | `notemd-bundle`、profile patch 和 `pnpm accept:dsh` 已存在且通过。 | 已交付并保留。新增包必须维持显式 inject、Fiber-owned effect、完整 patch config 和 packed-bundle 验收。 |
 | 修订绑定、审批门控的文本 `WritePlan` 是唯一工作区变更路径。 | `notemd-vault` 只读，`LocalVault` 只通过 journaled executor 应用 canonical `WorkspaceMutationPlan`。 | 已以一个 mutation protocol 交付；长期并存 `WritePlan` 会形成两个可变更 authority。 |
 | 持久化的只规划作业、仅元数据的工作区事件和可重建的增量知识索引。 | `notemd-jobs`、`notemd-workspace-events` 和 `notemd-knowledge` 保留 proposal-only checkpoint、committed-receipt causation、scan 和 fresh-read index update。 | 已交付，且没有把 workspace event 演化为 event-sourcing log。 |
-| 通用 OpenAI-compatible adapter 默认拥有 endpoint/key 配置、诊断和模型发现。 | `ConfiguredTextTransformer` 与默认 `cordis.patch.yml` 持有 `endpoint`、`apiKeyEnv` 和 `model`。 | 默认设计已被取代。它应降为 opt-in legacy entry；正常路径消费 DSH `ctx.llm.stream()`，绝不读取传输凭据。 |
+| 通用 OpenAI-compatible adapter 默认拥有 endpoint/key 配置、诊断和模型发现。 | 默认 patch 只配置 `provider`、`model`、`maxTokens` 与 `promptPolicyId`；`DshTextTransformer` 拒绝未知 route field，并消费 `ctx.llm.stream()`。 | 默认设计已被取代；旧 transport 和 diagnostic 仅保留在 opt-in legacy entry。 |
 | portable core 只需 source artifact 和真实的 unavailable render/export 状态。 | `SourceArtifactPlanner` 持久化 JSON/README 并永久返回 `unavailable`。 | 诚实但不完整。演化为版本化 source/preview/export lineage，并加入具名 capability-gated provider；不得将 SVG 称作非 SVG 目标的等价替代物。 |
 | baseline workflow planner 已覆盖可移植笔记语义。 | 已有链接、标题、翻译、概念、公式、Mermaid 和由字符串提供输入的研究摘要。 | 仅部分完成。源行为仍缺章节拆分、原文抽取、文件夹策略、协调、任务范围检索、DSH-native 研究证据以及全部真实渲染/导出 provider。 |
 
@@ -61,7 +62,7 @@
 | 2. 类型化 mutation proposal | 已完成。`@notemd-harness/mutation` 以 canonical destination 顺序、content digest、opaque staged-asset metadata 和 closed receipt 冻结 text/bytes/delete plan。 | 已通过 Task 4 的唯一 mutation authority 交付。 |
 | 3. 本地 journaled executor | 已完成。`LocalMutationExecutor` 持久化 content-free metadata、stage plan payload、锁定 canonical target、核验 hash、安全回滚、单独完成 staging cleanup，并与 `LocalVault` 共享锁。 | 已通过 receipt-bound approval、job、event 与 Tool 交付。 |
 | 4. 审批、事件、作业与 Tool receipt | 已完成。`WritePlan` export 和 caller 已移除；approval 绑定 proposal/asset digest；checkpoint 保存 proposal identity/evidence；只有匹配的 committed receipt 发布 event；每个 Tool 都有封闭 DSH outcome schema。 | Task 5 可在没有第二写入 authority 的前提下替换默认模型边界。 |
-| 5. DSH LLM consumer bridge | 未开始。`notemd-llm-dsh` 不存在，直连 OpenAI-compatible adapter 仍为默认。 | `ctx.llm.stream()` 路由组装、取消、终止失败和 HMR disposal 测试通过；legacy transport 不出现在默认 patch。 |
+| 5. DSH LLM consumer bridge | 已完成。`@notemd-harness/llm-dsh` 注入 DSH `llm`，从 `StreamChunk` 生成 provider-neutral completion，拒绝封闭 policy 之外的字段，并随 Cordis owner disposal 终止 active call。 | 已交付。默认 patch 不含 endpoint/key/transport 配置，也不注册 legacy provider Tool。 |
 | 6. DSH web research evidence | 未开始。研究摘要消费调用方字符串，且没有 durable evidence 包。 | 具名 discovery/synthesis 使用 `ctx.web`，保留类型化 evidence/citation，并在无 provider 时返回 capability-unavailable 而非自建 fallback。 |
 | 7. 文档语义与知识检索 | 未开始。没有 documents 包，索引仍是整文件 MiniSearch。 | AST section、稳定锚点、章节/原文/协调 proposal、文件夹策略、scope window 和可解释命中通过特征化 fixture。 |
 | 8. Artifact lineage 与 SVG renderer | 未开始。artifact 仅有 source JSON/README，尚无 renderer 包。 | 版本化 spec 与 source/preview/export lineage 仅通过独立具名 provider 为适用目标支持 sanitized SVG。 |
@@ -77,11 +78,10 @@
 
 ## 7. 后续推进方向
 
-1. 开始 Task 5。以 DSH `ctx.llm` consumer bridge 替换默认 transport adapter；保留 provider-neutral failure，并将直连 credential 排除在默认配置外。
-2. 随后完成 Task 6。research discovery/synthesis 必须消费 durable `ctx.web` evidence，不能使用未跟踪的 caller-supplied passage 或 transport fallback。
-3. 在扩展 renderer 宽度前完成 Task 7。文档结构和检索证据是图表、引用和 artifact provenance 的上游输入。
-4. Task 8-10 必须按目标类别实现，不能使用 target selector。先实现 SVG-capable renderer；随后仅在具备显式 capability test 时加入 process-gated Draw.io/Drawnix/Circuitikz 和 Slidev/media exporter。
-5. 将 Task 11 留给证明，而不是乐观判断：在实现任务全部完成后运行 source-matrix conformance、生命周期/HMR 失败路径、隔离 bundle 验收和完整 release gate。
+1. 随后完成 Task 6。research discovery/synthesis 必须消费 durable `ctx.web` evidence，不能使用未跟踪的 caller-supplied passage 或 transport fallback。
+2. 在扩展 renderer 宽度前完成 Task 7。文档结构和检索证据是图表、引用和 artifact provenance 的上游输入。
+3. Task 8-10 必须按目标类别实现，不能使用 target selector。先实现 SVG-capable renderer；随后仅在具备显式 capability test 时加入 process-gated Draw.io/Drawnix/Circuitikz 和 Slidev/media exporter。
+4. 将 Task 11 留给证明，而不是乐观判断：在实现任务全部完成后运行 source-matrix conformance、生命周期/HMR 失败路径、隔离 bundle 验收和完整 release gate。
 
 ## 8. 约束
 
@@ -141,3 +141,9 @@
 - 全部 legacy behavior test、runtime approval test、durable-job checkpoint test 和 clean-profile runner 都改为断言 `mutations`、proposal checkpoint identity 和 receipt state，而不是 `writes` 或 legacy per-file status。
 - 声明新 mutation dependency 后，离线 `pnpm install --offline` 修复了 workspace link。bundle verifier 现在要求 `@notemd-harness/mutation`；其 package manifest 只分发 compiled JS/declaration，build cache/source map 不会进入 tarball。
 - Node `v22.19.0` / pnpm `10.7.1` 上的最新证据：`pnpm typecheck`、`pnpm test`（21 文件、97 测试）、`pnpm lint`、`pnpm build`、`pnpm pack:bundle`、`pnpm verify:bundle` 和 `pnpm accept:dsh` 均已成功完成。
+
+### Task 5 验证
+
+- `@notemd-harness/llm-dsh` 将 DSH `StreamChunk` 转为 NoteMD text completion。它校验封闭 route policy，只保留中立 failure class，拒绝 malformed/post-terminal stream，传播 cancellation，并在 Cordis owner disposal 时终止 active call。
+- 默认 `notemd-llm` service 声明静态 `llm` injection，只配置 `provider`、`model`、`maxTokens` 与 `promptPolicyId`。endpoint、API key、header、retry 与 discovery field 不能进入默认 route policy。OpenAI-compatible service 只由 `./llm-openai-compatible-legacy` 暴露；默认 Tool registration 不含其 diagnostic。
+- Node `v22.19.0` / pnpm `10.7.1` 上的新鲜证据：`pnpm typecheck`、`pnpm test`（22 文件、109 测试）、`pnpm lint`、`pnpm build`、`pnpm pack:bundle`、`pnpm verify:bundle` 和 `pnpm accept:dsh` 均成功完成。acceptance runner 将 packed bundle 安装到 clean DSH profile，加载 `LlmRuntime`，并断言默认 bridge 不存在 legacy provider Tool。

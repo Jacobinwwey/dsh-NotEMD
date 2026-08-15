@@ -10,6 +10,7 @@
     { "path": "../notemd-artifacts" },
     { "path": "../notemd-jobs" },
     { "path": "../notemd-knowledge" },
+    { "path": "../notemd-llm-dsh" },
     { "path": "../notemd-llm-openai-compatible" },
     { "path": "../notemd-mutation" },
     { "path": "../notemd-tools" },

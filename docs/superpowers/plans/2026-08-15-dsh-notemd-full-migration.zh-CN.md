@@ -146,11 +146,12 @@ interface NotemdLlmRoute {
 }
 ```
 
-- [ ] 显式 `inject: ['llm']`，用 DSH `StreamChunk` 组装文本；terminal error/aborted 转为 provider-neutral NoteMD error。
-- [ ] route policy 只含 provider、model、output limit、prompt policy identifier；禁止 endpoint、API key、header、transport retry、model discovery。
-- [ ] OpenAI-compatible 诊断/发现移入不出现在默认 patch 的独立 legacy plugin entry。
-- [ ] 测试文本组装、usage 顺序、取消、异常 stream、route 选择和 HMR disposal。
-- [ ] 运行 llm-dsh/bundle 测试与 typecheck，更新进度并提交 `feat: consume DSH LLM routes by default`。
+- [x] 显式注入 `llm`。`DshTextTransformer` 组装 DSH `StreamChunk` text block，并将 terminal error/aborted 映射为 provider-neutral NoteMD failure。
+- [x] 将 route policy 封闭为 provider、model、`maxTokens` 与 `promptPolicyId`；运行时校验会拒绝未知 legacy transport field，而非静默丢弃。
+- [x] 将 OpenAI-compatible diagnostic/discovery 移至显式 `./llm-openai-compatible-legacy` entry；它不出现在默认 patch。
+- [x] 已测试 text assembly、usage、cancellation、malformed/post-terminal stream、route selection 与 owner disposal of active consumer。
+- [x] 已在 Node `v22.19.0` / pnpm `10.7.1` 上运行 strict TypeScript、完整 Vitest（22 files、109 tests）、ESLint、package build、bundle pack/verify 与 clean DSH-profile acceptance。
+- [x] 已更新成对 progress record，并以 `feat: consume DSH LLM routes by default` 提交 Task 5。
 
 ### Task 6：通过 `ctx.web` 增加 Native Research Evidence
 
