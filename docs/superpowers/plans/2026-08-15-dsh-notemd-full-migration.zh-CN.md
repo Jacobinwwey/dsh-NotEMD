@@ -82,11 +82,12 @@ interface WorkspaceMutationExecutor {
 }
 ```
 
-- [ ] 先写 plan digest、重复 destination、text/bytes digest、delete precondition、staged reference 与不可变快照的失败测试。
-- [ ] 实现 discriminated mutation；共同字段为 destination、expected revision、provenance、conflict policy，写入变体额外拥有 media type 和 content digest。
-- [ ] `StagedAssetRef` 仅包含 opaque id、byte length、MIME 和 SHA-256，禁止把二进制放进 DSH Tool result。
-- [ ] 定义封闭 receipt vocabulary：`committed`、`conflict`、`rejected`、`cancelled`、`failed`、`recovered`，逐 mutation 记录不含 secret/prompt/raw bytes。
-- [ ] 运行 `rtk proxy pnpm.cmd --filter @notemd-harness/mutation test`、`rtk tsc`，更新进度并提交 `feat: add typed workspace mutation proposals`。
+- [x] 已编写并观察到 plan digest、重复 destination、text/bytes digest、empty text payload、malformed JSON boundary value、delete precondition、staged reference、不可变快照和封闭 receipt state 的失败测试。
+- [x] 已实现不可变的 discriminated mutation。每个 entry 拥有 destination、expected revision、provenance 与 reject conflict policy；写入变体额外拥有 canonical media type 和 content SHA-256。
+- [x] 已实现 `StagedAssetRef`，仅携带 opaque identifier、byte length、media type 和 SHA-256；不含二进制 payload，且不能命名 staging path。
+- [x] 已定义封闭 receipt vocabulary：`committed`、`conflict`、`rejected`、`cancelled`、`failed`、`recovered`；receipt entry 只复制 allowlisted metadata，绝不含 secret、prompt、text 或 bytes。
+- [x] 已运行 mutation package test、根 project-reference TypeScript build 和 workspace test gate。
+- [x] 已在进度文档记录 mutation boundary 与验证证据；提交 `feat: add typed workspace mutation proposals`。
 
 ### Task 3：实现本地 Journaled Mutation Executor
 

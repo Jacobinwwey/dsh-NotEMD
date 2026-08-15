@@ -2,7 +2,7 @@
 
 > English version: [2026-08-15-dsh-notemd-migration-progress.md](2026-08-15-dsh-notemd-migration-progress.md)
 
-**状态：** standalone bundle 与 next-level runtime 基础已实现。全量迁移架构与可执行计划已在 `main` 的 `626f6e1` 发布；Task 1（源行为契约）已完成，Task 2-11 仍待实现。
+**状态：** standalone bundle 与 next-level runtime 基础已实现。全量迁移架构与可执行计划已在 `main` 的 `626f6e1` 发布；Task 1-2 已完成，Task 3-11 仍待实现。
 
 ## 1. 范围基线
 
@@ -17,6 +17,7 @@
 - 当前运行时已使用 Cordis `Service`、显式 `inject` 依赖，并通过 `ctx.effect()` 管理轮询扫描器和知识订阅清理。
 - 本文档更新前目标工作树处于 clean 状态。
 - Task 1 已在 `fixtures/migration/source-operation-matrix.json` 冻结源边界：29 个 operation ID、18 个 included 行、11 个 design exclusion、四个精确的 Drawnix-WIP exclusion，以及 14 个 SHA-256 固定的确定性 fixture。
+- Task 2 已增加 `@notemd-harness/mutation`，这是面向 text write、staged binary write、delete 和 metadata-only receipt 的不可变、内容寻址 proposal vocabulary。本阶段只建立 contract，不会修改工作区。
 
 ## 3. 已完成的代码审计
 
@@ -55,7 +56,7 @@
 | 任务 | `6672f54` 时的状态 | 离开该状态的关口 |
 | --- | --- | --- |
 | 1. 源行为契约 | 已完成。矩阵在 `4168a51cd19ad8c3d1e05f604b50936255461a31` 固定全部 29 个源 registry ID；18 个 included 行均引用 14 个确定性 fixture 中的一个或多个。 | 源契约不能静默扩大 Drawnix WIP exclusion 集合，也不能丢失本地检索、图表或 slide fixture 覆盖。 |
-| 2. 类型化 mutation proposal | 未开始。`notemd-mutation` 尚不存在。 | 不可变 text/bytes/delete plan、staged asset reference、digest 和封闭 receipt 通过契约测试。 |
+| 2. 类型化 mutation proposal | 已完成。`@notemd-harness/mutation` 以 canonical destination 顺序、content digest、opaque staged-asset metadata 和 closed receipt 冻结 text/bytes/delete plan。 | Task 3 必须让它成为唯一可执行 mutation contract，不得保留第二条 `WritePlan` application path。 |
 | 3. 本地 journaled executor | 未开始。本地写入是彼此独立的 `Promise.all()` 操作，没有 batch journal 或恢复。 | 在 Windows 上通过崩溃点、规范锁、二进制、delete/quarantine、路径边界和幂等恢复测试。 |
 | 4. 审批、事件、作业与 Tool receipt | 未开始。审批、checkpoint、event 和开放 Tool schema 仍以 `WritePlan` 为中心。 | 审批绑定 plan/asset digest；只有已验证 receipt 能发布 metadata-only change；每个具名 Tool 有封闭结果 schema。 |
 | 5. DSH LLM consumer bridge | 未开始。`notemd-llm-dsh` 不存在，直连 OpenAI-compatible adapter 仍为默认。 | `ctx.llm.stream()` 路由组装、取消、终止失败和 HMR disposal 测试通过；legacy transport 不出现在默认 patch。 |
@@ -74,8 +75,8 @@
 
 ## 7. 后续推进方向
 
-1. 开始 Task 2。不要把章节清理、二进制 artifact 或 exporter output 移入 `WritePlan`；那会造成二次重写并削弱审批因果关系。
-2. 将 Task 2-4 视为一段权限迁移；调用方迁移完成后只保留一个 public mutation protocol。
+1. 开始 Task 3。本地 executor 必须只应用 `WorkspaceMutationPlan`；不要把章节清理、二进制 artifact 或 exporter output 移入 `WritePlan`。
+2. 将 Task 3-4 视为剩余的权限迁移；调用方迁移完成后只保留一个 public mutation protocol。
 3. 在 proposal contract 可用后完成 Task 5-6。LLM/Web bridge 必须先成为 DSH consumer，工作流才能安全持久化生成或研究结果。
 4. 在扩展 renderer 宽度前完成 Task 7。文档结构和检索证据是图表、引用和 artifact provenance 的上游输入。
 5. Task 8-10 必须按目标类别实现，不能使用 target selector。先实现 SVG-capable renderer；随后仅在具备显式 capability test 时加入 process-gated Draw.io/Drawnix/Circuitikz 和 Slidev/media exporter。
@@ -118,3 +119,9 @@
 - 分类：18 个 `included` operation、11 个 `excluded-by-design` operation，以及精确四个 `excluded-wip` Drawnix 路径。14 个 fixture input 均已固定 SHA-256，其中显式包含 local-retrieval、diagram-source 和 slide-source。
 - `pnpm exec vitest run --config vitest.config.ts packages/notemd-workflows/test/source-contracts.test.ts packages/notemd-artifacts/test/source-artifact-contracts.test.ts`：2 个文件、4 个测试通过。
 - `pnpm test`：18 个文件、54 个测试通过。`pnpm typecheck` 成功完成；staging 前 `git diff --check` 无空白错误。
+
+### Task 2 验证
+
+- `@notemd-harness/mutation` 包含新的 proposal vocabulary：versioned content-addressed plan、`write-text`、`write-bytes`、`delete` 变体、opaque staged asset reference 和 metadata-only receipt。
+- 契约测试已观察到初始 missing-export red state、empty-text-content 与 malformed-JSON-boundary red state，并在临时移除验证时观察到 closed-receipt-vocabulary red state；恢复验证后，`pnpm exec vitest run --config vitest.config.ts packages/notemd-mutation/test/mutation-plan.test.ts` 报告 1 个文件、11 个测试通过。
+- `pnpm --filter @notemd-harness/mutation test`、`pnpm typecheck` 与 `pnpm lint` 已成功完成。boundary-input correction 后，`pnpm test` 报告 19 个文件、65 个测试通过；staging 前 `git diff --check` 未发现空白错误。

@@ -9,6 +9,7 @@ import {
 test('declares every baseline migration package exactly once', () => {
   expect(workspacePackageNames()).toEqual([
     '@notemd-harness/vault',
+    '@notemd-harness/mutation',
     '@notemd-harness/vault-local',
     '@notemd-harness/workspace-events',
     '@notemd-harness/jobs',

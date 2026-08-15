@@ -92,12 +92,12 @@ interface WorkspaceMutationExecutor {
 }
 ```
 
-- [ ] Write failing tests for deterministic digesting, duplicate destination rejection, text/bytes digest validation, delete preconditions, malformed staged references, and immutable plan snapshots.
-- [ ] Implement the discriminated mutations. Common fields are destination, expected revision, provenance, and conflict policy; write variants additionally own media type and content digest.
-- [ ] Implement `StagedAssetRef` as an opaque id plus byte length, media type, and SHA-256. Never encode binary payloads inside DSH Tool results.
-- [ ] Define a closed receipt vocabulary: `committed`, `conflict`, `rejected`, `cancelled`, `failed`, and `recovered`; attach per-mutation records without raw secret, prompt, or byte payloads.
-- [ ] Run `rtk proxy pnpm.cmd --filter @notemd-harness/mutation test` and `rtk tsc`.
-- [ ] Update progress records with the new mutation boundary and commit `feat: add typed workspace mutation proposals`.
+- [x] Wrote and observed failing tests for deterministic digesting, duplicate destinations, text/bytes digest validation, empty text payloads, malformed JSON boundary values, delete preconditions, malformed staged references, immutable snapshots, and closed receipt states.
+- [x] Implemented immutable discriminated mutations. Every entry owns a destination, expected revision, provenance, and rejecting conflict policy; write variants add canonical media type and content SHA-256.
+- [x] Implemented `StagedAssetRef` with an opaque identifier, byte length, media type, and SHA-256. It carries no binary payload and cannot name a staging path.
+- [x] Defined the closed receipt vocabulary `committed`, `conflict`, `rejected`, `cancelled`, `failed`, and `recovered`; receipt entries copy only allowlisted metadata, never secrets, prompts, text, or bytes.
+- [x] Ran the mutation package test, root project-reference TypeScript build, and workspace test gate.
+- [x] Updated progress records with the mutation boundary and verification evidence; commit `feat: add typed workspace mutation proposals`.
 
 ### Task 3: Build the Local Journaled Mutation Executor
 

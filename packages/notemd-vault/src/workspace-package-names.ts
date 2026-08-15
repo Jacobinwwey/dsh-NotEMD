@@ -1,6 +1,7 @@
 export function workspacePackageNames(): readonly string[] {
   return [
     '@notemd-harness/vault',
+    '@notemd-harness/mutation',
     '@notemd-harness/vault-local',
     '@notemd-harness/workspace-events',
     '@notemd-harness/jobs',

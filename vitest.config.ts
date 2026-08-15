@@ -7,6 +7,9 @@ export default defineConfig({
   root: workspaceRoot,
   resolve: {
     alias: {
+      '@notemd-harness/mutation': fileURLToPath(
+        new URL('./packages/notemd-mutation/src/index.ts', import.meta.url),
+      ),
       '@notemd-harness/artifacts': fileURLToPath(
         new URL('./packages/notemd-artifacts/src/index.ts', import.meta.url),
       ),

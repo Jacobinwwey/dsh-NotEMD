@@ -88,6 +88,8 @@ importers:
 
   packages/notemd-llm-openai-compatible: {}
 
+  packages/notemd-mutation: {}
+
   packages/notemd-tools:
     dependencies:
       '@notemd-harness/artifacts':
