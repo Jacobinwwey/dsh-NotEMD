@@ -7,9 +7,7 @@
     "tsBuildInfoFile": "tsconfig.tsbuildinfo"
   },
   "references": [
-    { "path": "../notemd-documents" },
     { "path": "../notemd-mutation" },
-    { "path": "../notemd-research" },
     { "path": "../notemd-vault" }
   ],
   "include": ["src/**/*.ts"]

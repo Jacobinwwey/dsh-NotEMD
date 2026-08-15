@@ -44,6 +44,90 @@ export class NotemdWorkflowsService extends Service implements WorkflowPlanner {
     return this.requirePlanner().planFormulaRepair(path)
   }
 
+  planChapterSplit(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan> {
+    return this.requirePlanner().planChapterSplit(path, signal)
+  }
+
+  planOriginalTextExtraction(
+    ...args: Parameters<WorkflowPlanner['planOriginalTextExtraction']>
+  ): ReturnType<WorkflowPlanner['planOriginalTextExtraction']> {
+    return this.requirePlanner().planOriginalTextExtraction(...args)
+  }
+
+  planMergedOriginalTextExtraction(
+    ...args: Parameters<WorkflowPlanner['planMergedOriginalTextExtraction']>
+  ): ReturnType<WorkflowPlanner['planMergedOriginalTextExtraction']> {
+    return this.requirePlanner().planMergedOriginalTextExtraction(...args)
+  }
+
+  planWikiLinksInFolder(folderPath: string, signal?: AbortSignal): Promise<readonly WorkspaceMutationPlan[]> {
+    return this.requirePlanner().planWikiLinksInFolder(folderPath, signal)
+  }
+
+  planTitlesInFolder(folderPath: string, signal?: AbortSignal): Promise<readonly WorkspaceMutationPlan[]> {
+    return this.requirePlanner().planTitlesInFolder(folderPath, signal)
+  }
+
+  planTranslationsInFolder(
+    folderPath: string,
+    language: string,
+    signal?: AbortSignal,
+  ): Promise<readonly WorkspaceMutationPlan[]> {
+    return this.requirePlanner().planTranslationsInFolder(folderPath, language, signal)
+  }
+
+  planConceptsInFolder(folderPath: string, signal?: AbortSignal): Promise<readonly WorkspaceMutationPlan[]> {
+    return this.requirePlanner().planConceptsInFolder(folderPath, signal)
+  }
+
+  planMermaidRepairsInFolder(folderPath: string, signal?: AbortSignal): Promise<readonly WorkspaceMutationPlan[]> {
+    return this.requirePlanner().planMermaidRepairsInFolder(folderPath, signal)
+  }
+
+  planFormulaRepairsInFolder(folderPath: string): Promise<readonly WorkspaceMutationPlan[]> {
+    return this.requirePlanner().planFormulaRepairsInFolder(folderPath)
+  }
+
+  planChapterSplitsInFolder(folderPath: string, signal?: AbortSignal): Promise<readonly WorkspaceMutationPlan[]> {
+    return this.requirePlanner().planChapterSplitsInFolder(folderPath, signal)
+  }
+
+  planOriginalTextExtractionsInFolder(
+    ...args: Parameters<WorkflowPlanner['planOriginalTextExtractionsInFolder']>
+  ): ReturnType<WorkflowPlanner['planOriginalTextExtractionsInFolder']> {
+    return this.requirePlanner().planOriginalTextExtractionsInFolder(...args)
+  }
+
+  planMergedOriginalTextExtractionsInFolder(
+    ...args: Parameters<WorkflowPlanner['planMergedOriginalTextExtractionsInFolder']>
+  ): ReturnType<WorkflowPlanner['planMergedOriginalTextExtractionsInFolder']> {
+    return this.requirePlanner().planMergedOriginalTextExtractionsInFolder(...args)
+  }
+
+  checkFileDuplicates(
+    ...args: Parameters<WorkflowPlanner['checkFileDuplicates']>
+  ): ReturnType<WorkflowPlanner['checkFileDuplicates']> {
+    return this.requirePlanner().checkFileDuplicates(...args)
+  }
+
+  findConceptDuplicates(
+    ...args: Parameters<WorkflowPlanner['findConceptDuplicates']>
+  ): ReturnType<WorkflowPlanner['findConceptDuplicates']> {
+    return this.requirePlanner().findConceptDuplicates(...args)
+  }
+
+  planConceptDedupe(
+    ...args: Parameters<WorkflowPlanner['planConceptDedupe']>
+  ): ReturnType<WorkflowPlanner['planConceptDedupe']> {
+    return this.requirePlanner().planConceptDedupe(...args)
+  }
+
+  planExtractAndGenerate(
+    ...args: Parameters<WorkflowPlanner['planExtractAndGenerate']>
+  ): ReturnType<WorkflowPlanner['planExtractAndGenerate']> {
+    return this.requirePlanner().planExtractAndGenerate(...args)
+  }
+
   private requirePlanner(): NotemdWorkflowPlanner {
     if (this.planner === undefined) {
       throw new Error('NoteMD workflow service is not initialized.')

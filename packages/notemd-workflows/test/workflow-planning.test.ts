@@ -6,7 +6,11 @@ import { afterEach, beforeEach, expect, test } from 'vitest'
 
 import { LocalVault } from '@notemd-harness/vault-local'
 
-import { NotemdWorkflowPlanner, type TextTransformer } from '../src/index.js'
+import {
+  NotemdWorkflowPlanner,
+  sourceSiblingOriginalTextOutput,
+  type TextTransformer,
+} from '../src/index.js'
 
 class ScriptedTransformer implements TextTransformer {
   readonly requests: Array<{ system: string; prompt: string }> = []
@@ -50,6 +54,26 @@ test('plans Mermaid replacement only inside a mermaid fence', async () => {
   expect(mutation?.kind === 'write-text' ? mutation.content : '').toContain('outside prose remains unchanged')
   expect(mutation?.kind === 'write-text' ? mutation.content : '').toContain('closing prose remains unchanged')
   expect(transformer.requests[0]?.prompt).toBe('broken diagram')
+})
+
+test('supplies shared section anchors to link and concept transformations', async () => {
+  await writeFile(join(workspaceRoot, 'notes', 'architecture.md'), [
+    '# Architecture',
+    '',
+    '## Canonical Lock Ordering',
+    'Atomic writes protect visibility.',
+  ].join('\n'))
+  const transformer = new ScriptedTransformer([
+    '# Architecture\n\n## Canonical Lock Ordering\n[[Atomic Writes]] protect visibility.',
+    '{"concepts":[{"name":"Atomic Writes","summary":"Visibility-safe writes."}]}',
+  ])
+  const workflows = new NotemdWorkflowPlanner(await LocalVault.open(workspaceRoot), transformer)
+
+  await workflows.planWikiLinks('notes/architecture.md')
+  await workflows.planConceptExtraction('notes/architecture.md')
+
+  expect(transformer.requests[0]?.prompt).toContain('canonical-lock-ordering')
+  expect(transformer.requests[1]?.prompt).toContain('canonical-lock-ordering')
 })
 
 test('creates a concept note with an absent precondition', async () => {
@@ -167,4 +191,102 @@ test('plans research synthesis from durable evidence records rather than caller-
   expect(plan.mutations[0]).toMatchObject({ kind: 'write-text', destination: 'notes/research.md' })
   expect(transformer.requests[0]?.prompt).toContain('evidence:revision-aware-mutations')
   expect(transformer.requests[0]?.prompt).toContain('Recoverability requires a durable journal')
+})
+
+test('plans chapter split output and manifest ownership as one mutation proposal', async () => {
+  await writeFile(join(workspaceRoot, 'notes', 'handbook.md'), [
+    '# Handbook',
+    '',
+    '## Planning',
+    'Plan immutably.',
+    '',
+    '## Execution',
+    'Apply approved work only.',
+  ].join('\n'))
+  const workflows = new NotemdWorkflowPlanner(await LocalVault.open(workspaceRoot), new ScriptedTransformer([]))
+
+  const plan = await workflows.planChapterSplit('notes/handbook.md')
+
+  expect(plan.provenance.operationId).toBe('content.split-note-by-chapters')
+  expect(plan.mutations.map((mutation) => mutation.destination)).toEqual(expect.arrayContaining([
+    'notes/handbook_chapters/.notemd-chapter-split.json',
+    'notes/handbook_chapters/01-planning.md',
+    'notes/handbook_chapters/02-execution.md',
+    'notes/handbook_chapters/handbook_TOC.md',
+  ]))
+})
+
+test('keeps individual and merged original-text extraction as separate planning operations', async () => {
+  await writeFile(join(workspaceRoot, 'notes', 'original.md'), '# Original\n\nReference material.')
+  const individual = new NotemdWorkflowPlanner(
+    await LocalVault.open(workspaceRoot),
+    new ScriptedTransformer(['First answer', 'Second answer']),
+  )
+
+  const individualPlan = await individual.planOriginalTextExtraction(
+    'notes/original.md',
+    ['What is retained?', 'What changes?'],
+    sourceSiblingOriginalTextOutput(),
+  )
+  const individualMutation = individualPlan.mutations[0]
+  expect(individualMutation).toMatchObject({ destination: 'notes/original_Extracted.md', expectedRevision: 'absent' })
+  expect(individualMutation?.kind === 'write-text' ? individualMutation.content : '').toBe('First answer\n\nSecond answer')
+
+  const merged = new NotemdWorkflowPlanner(
+    await LocalVault.open(workspaceRoot),
+    new ScriptedTransformer(['Merged answer']),
+  )
+  const mergedPlan = await merged.planMergedOriginalTextExtraction(
+    'notes/original.md',
+    ['What is retained?', 'What changes?'],
+    sourceSiblingOriginalTextOutput(),
+  )
+  expect(mergedPlan.provenance.operationId).toBe('content.extract-original-text.merged')
+  expect(mergedPlan.mutations[0]).toMatchObject({ destination: 'notes/original_Extracted.md' })
+})
+
+test('selects folder workflow targets in lexical order and keeps duplicate detection diagnostic', async () => {
+  await writeFile(join(workspaceRoot, 'notes', 'z.md'), '# Z\n\nAlpha alpha')
+  await writeFile(join(workspaceRoot, 'notes', 'a.md'), '# A\n\nBeta beta')
+  const workflows = new NotemdWorkflowPlanner(await LocalVault.open(workspaceRoot), new ScriptedTransformer([]))
+
+  const plans = await workflows.planFormulaRepairsInFolder('notes')
+  const duplicates = await workflows.checkFileDuplicates('notes/z.md')
+
+  expect(plans.map((plan) => plan.provenance.sourceRefs[0])).toEqual(['notes/a.md', 'notes/z.md'])
+  expect(duplicates).toEqual([{ term: 'alpha', occurrences: 2 }])
+})
+
+test('plans folder original-text extraction through separate individual and merged operations', async () => {
+  await writeFile(join(workspaceRoot, 'notes', 'z.md'), '# Z\n\nReference Z.')
+  await writeFile(join(workspaceRoot, 'notes', 'a.md'), '# A\n\nReference A.')
+  const individual = new NotemdWorkflowPlanner(
+    await LocalVault.open(workspaceRoot),
+    new ScriptedTransformer(['Answer A', 'Answer Z']),
+  )
+
+  const individualPlans = await individual.planOriginalTextExtractionsInFolder(
+    'notes',
+    ['What is retained?'],
+    sourceSiblingOriginalTextOutput(),
+  )
+  expect(individualPlans.map((plan) => plan.provenance.sourceRefs[0])).toEqual(['notes/a.md', 'notes/z.md'])
+  expect(individualPlans.map((plan) => plan.mutations[0]?.destination)).toEqual([
+    'notes/a_Extracted.md',
+    'notes/z_Extracted.md',
+  ])
+
+  const merged = new NotemdWorkflowPlanner(
+    await LocalVault.open(workspaceRoot),
+    new ScriptedTransformer(['Merged A', 'Merged Z']),
+  )
+  const mergedPlans = await merged.planMergedOriginalTextExtractionsInFolder(
+    'notes',
+    ['What is retained?'],
+    sourceSiblingOriginalTextOutput(),
+  )
+  expect(mergedPlans.map((plan) => plan.provenance.operationId)).toEqual([
+    'content.extract-original-text.merged',
+    'content.extract-original-text.merged',
+  ])
 })

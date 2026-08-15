@@ -405,13 +405,17 @@ function parseTargetResult(value: unknown, path: string): JobTargetResult {
 }
 
 function normalizeTargets(targets: readonly unknown[]): readonly string[] {
-  if (targets.some((target) => typeof target !== 'string' || target.length === 0)) {
-    throw new RangeError('Job targets must be non-empty strings.')
+  const normalized: string[] = []
+  for (const target of targets) {
+    if (typeof target !== 'string' || target.length === 0) {
+      throw new RangeError('Job targets must be non-empty strings.')
+    }
+    normalized.push(target)
   }
-  if (new Set(targets).size !== targets.length) {
+  if (new Set(normalized).size !== normalized.length) {
     throw new RangeError('Job targets must not contain duplicates.')
   }
-  return Object.freeze([...targets] as string[])
+  return Object.freeze(normalized.sort((left, right) => left.localeCompare(right)))
 }
 
 function normalizeWorkflow(workflow: string): string {

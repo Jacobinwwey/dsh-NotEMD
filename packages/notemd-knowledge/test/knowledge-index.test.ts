@@ -68,3 +68,41 @@ test('re-reads updated content when the workspace change source emits a change',
   ])
   synchronizer.dispose()
 })
+
+test('retrieves scoped section citations with an explainable context window and excludes the current file', async () => {
+  await writeFile(
+    join(workspaceRoot, 'notes', 'knowledge.md'),
+    [
+      '# Atomic Workspace Mutations',
+      '',
+      'A mutation proposal binds every destination to its observed revision.',
+      '',
+      '## Canonical Lock Ordering',
+      'Acquire every destination lock in normalized lexical order before checking revisions.',
+      '',
+      '## Recovery Evidence',
+      'A durable journal records every transition.',
+    ].join('\n'),
+  )
+  await writeFile(join(workspaceRoot, 'notes', 'current.md'), '# Current\n\nCanonical lock ordering is mentioned here too.')
+  const index = new VaultKnowledgeIndex(await LocalVault.open(workspaceRoot))
+
+  await index.rebuild()
+  const result = await index.retrieve({
+    query: 'canonical lock ordering',
+    taskRoots: ['notes'],
+    currentPath: 'notes/current.md',
+    topK: 1,
+    windowSections: 1,
+  })
+
+  expect(result.matches).toHaveLength(1)
+  expect(result.matches[0]).toMatchObject({
+    path: 'notes/knowledge.md',
+    anchor: 'canonical-lock-ordering',
+    citationId: 'citation:notes/knowledge.md#canonical-lock-ordering',
+    explanation: expect.objectContaining({ includedByRoot: 'notes' }),
+  })
+  expect(result.matches[0]?.context).toContain('Recovery Evidence')
+  expect(result.matches.some((match) => match.path === 'notes/current.md')).toBe(false)
+})

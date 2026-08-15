@@ -1,14 +1,12 @@
 {
-  "name": "@notemd-harness/knowledge",
+  "name": "@notemd-harness/documents",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "files": ["lib/**/*.js", "lib/**/*.d.ts"],
   "dependencies": {
-    "@notemd-harness/documents": "workspace:*",
-    "@notemd-harness/vault": "workspace:*",
-    "@notemd-harness/workspace-events": "workspace:*",
-    "minisearch": "^7.1.2"
+    "@notemd-harness/mutation": "workspace:*",
+    "@notemd-harness/vault": "workspace:*"
   },
   "exports": {
     ".": {

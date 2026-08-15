@@ -164,6 +164,28 @@ function registerFixture(
       },
       recoverIncompleteMutationPlans: async () => [],
     },
+    notemdKnowledge: {
+      search: async () => [],
+      retrieve: async () => ({
+        query: 'canonical locks',
+        taskRoots: ['notes'],
+        matches: [{
+          path: 'notes/a.md',
+          title: 'Canonical Lock Ordering',
+          excerpt: 'Acquire locks in lexical order.',
+          score: 1,
+          anchor: 'canonical-lock-ordering',
+          breadcrumb: ['Atomic Writes', 'Canonical Lock Ordering'],
+          citationId: 'citation:notes/a.md#canonical-lock-ordering',
+          context: '## Canonical Lock Ordering\nAcquire locks in lexical order.',
+          explanation: {
+            includedByRoot: 'notes',
+            matchedTerms: ['canonical', 'locks'],
+            window: { before: 0, after: 0 },
+          },
+        }],
+      }),
+    },
     notemdWorkflows: {
       planWikiLinks: async () => plan,
       planTranslation: async () => plan,
@@ -175,6 +197,22 @@ function registerFixture(
       planConceptExtraction: async () => plan,
       planMermaidRepair: async () => plan,
       planFormulaRepair: async () => plan,
+      planChapterSplit: async () => plan,
+      planOriginalTextExtraction: async () => plan,
+      planMergedOriginalTextExtraction: async () => plan,
+      planWikiLinksInFolder: async () => [plan],
+      planTitlesInFolder: async () => [plan],
+      planTranslationsInFolder: async () => [plan],
+      planConceptsInFolder: async () => [plan],
+      planMermaidRepairsInFolder: async () => [plan],
+      planFormulaRepairsInFolder: async () => [plan],
+      planChapterSplitsInFolder: async () => [plan],
+      planOriginalTextExtractionsInFolder: async () => [plan],
+      planMergedOriginalTextExtractionsInFolder: async () => [plan],
+      checkFileDuplicates: async () => [{ term: 'atomic', occurrences: 2 }],
+      findConceptDuplicates: async () => [],
+      planConceptDedupe: async () => plan,
+      planExtractAndGenerate: async () => plan,
     },
     notemdArtifacts: {
       planDiagram: () => plan,
@@ -342,7 +380,15 @@ test('registers named tools with closed canonical result schemas', () => {
   const names = context.registered.map((tool) => tool.name)
 
   expect(names).toContain('notemd_workspace_read')
+  expect(names).toContain('notemd_knowledge_retrieve')
   expect(names).toContain('notemd_plan_translation')
+  expect(names).toContain('notemd_plan_chapter_split')
+  expect(names).toContain('notemd_plan_original_text_extraction')
+  expect(names).toContain('notemd_plan_merged_original_text_extraction')
+  expect(names).toContain('notemd_check_file_duplicates')
+  expect(names).toContain('notemd_plan_formula_repairs_in_folder')
+  expect(names).toContain('notemd_plan_original_text_extractions_in_folder')
+  expect(names).toContain('notemd_plan_merged_original_text_extractions_in_folder')
   expect(names).toContain('notemd_request_plan_approval')
   expect(names).toContain('notemd_apply_approved_plan')
   expect(names).toContain('notemd_artifact_cleanup')
@@ -350,6 +396,41 @@ test('registers named tools with closed canonical result schemas', () => {
   expect(names).not.toContain('notemd_run')
   expect(context.registered.every((tool) => schemaIsClosed(tool.output.schema))).toBe(true)
   expect(context.registered.every((tool) => schemaUsesDshValueDsl(tool.output.schema))).toBe(true)
+})
+
+test('returns citation-bearing scoped knowledge retrieval through its named tool', async () => {
+  const context = registerFixture(textPlan())
+  const retrievalTool = registeredTool(context, 'notemd_knowledge_retrieve')
+
+  await expect(retrievalTool.execute({
+    query: 'canonical locks',
+    taskRoots: ['notes'],
+    topK: 2,
+    windowSections: 1,
+  })).resolves.toMatchObject({
+    status: 'success',
+    result: {
+      matches: [{ citationId: 'citation:notes/a.md#canonical-lock-ordering' }],
+    },
+  })
+})
+
+test('executes document-semantic tools through named planner operations', async () => {
+  const plan = textPlan()
+  const context = registerFixture(plan)
+  const chapterTool = registeredTool(context, 'notemd_plan_chapter_split')
+  const originalTextTool = registeredTool(context, 'notemd_plan_original_text_extraction')
+  const duplicateTool = registeredTool(context, 'notemd_check_file_duplicates')
+
+  await expect(chapterTool.execute({ path: 'notes/a.md' })).resolves.toMatchObject({ status: 'success', plan })
+  await expect(originalTextTool.execute({
+    path: 'notes/a.md',
+    questions: ['What is retained?'],
+  })).resolves.toMatchObject({ status: 'success', plan })
+  await expect(duplicateTool.execute({ path: 'notes/a.md' })).resolves.toMatchObject({
+    status: 'success',
+    duplicates: [{ term: 'atomic', occurrences: 2 }],
+  })
 })
 
 test('does not register legacy provider tools for a DSH-only transformer', () => {

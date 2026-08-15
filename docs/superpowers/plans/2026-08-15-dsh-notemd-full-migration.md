@@ -238,13 +238,13 @@ interface ResearchEvidence {
 - Modify: `packages/notemd-workflows/src/plan-factory.ts`
 - Modify: `packages/notemd-jobs/src/durable-workflow-runner.ts`
 
-- [ ] Introduce AST-derived sections with stable anchors, title/breadcrumb fields, text/search projections, and source digest; use them for chapter split, knowledge, and link/concept work.
-- [ ] Implement chapter plans with manifest ownership, manual-edit digest conflict detection, writes, and stale deletes as one mutation proposal.
-- [ ] Implement original-text extraction as separate `planOriginalTextExtraction` and `planMergedOriginalTextExtraction` operations. Do not use a merged-mode flag.
-- [ ] Add deterministic folder selectors, output-location policy objects, and named batch workflows for title generation, translation, links, concepts, dedupe, formulas, Mermaid repairs, chapters, and original-text extraction.
-- [ ] Restore local-knowledge task roots, section windows, top-k, current-file exclusion, hit explanations, and citation metadata. Keep the index rebuildable.
-- [ ] Run package-level tests plus `rtk proxy pnpm.cmd --filter @notemd-harness/workflows test`, `rtk proxy pnpm.cmd --filter @notemd-harness/knowledge test`, and `rtk tsc`.
-- [ ] Update progress records and commit `feat: restore NoteMD document and knowledge semantics`.
+- [x] Introduced structural Markdown sections with stable anchors, title/breadcrumb fields, text/search projections, and source digest. Chapter planning, knowledge retrieval, wiki-link prompts, and concept prompts consume that one semantic representation.
+- [x] Implemented a single chapter mutation proposal containing chapter/TOC/manifest writes and stale deletes. A manifest records content hashes; managed manual edits and unmanaged output collisions reject planning rather than being overwritten.
+- [x] Implemented separate `planOriginalTextExtraction` and `planMergedOriginalTextExtraction` operations, including corresponding named folder workflows and Tools. No merged-mode flag selects behavior.
+- [x] Added lexical folder target snapshots, output-location policy objects, and named batch workflows for titles, translation, links, concepts, formula and Mermaid repair, chapters, and both original-text extraction modes. Durable job targets are also persisted in canonical lexical order.
+- [x] Restored rebuildable section-level local knowledge with task roots, section windows, top-k, current-file exclusion, hit explanations, and `citation:<path>#<anchor>` metadata.
+- [x] Ran focused documents, workflow, knowledge, Tool, and durable-job tests; full `pnpm test` (26 files, 132 tests), `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm pack:bundle`, `pnpm verify:bundle`, and `pnpm accept:dsh` all passed on Node `v22.19.0` / pnpm `10.7.1`.
+- [x] Updated paired progress records and committed `feat: restore NoteMD document and knowledge semantics`.
 
 ### Task 8: Establish Diagram Specs, Artifact Lineage, and SVG-Capable Renderers
 

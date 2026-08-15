@@ -2,7 +2,7 @@
 
 > English version: [2026-08-15-dsh-notemd-migration-progress.md](2026-08-15-dsh-notemd-migration-progress.md)
 
-**状态：** standalone bundle 与 next-level runtime 基础已实现。全量迁移架构与可执行计划已在 `main` 的 `626f6e1` 发布；Task 1-6 已完成，下一项为 Task 7。
+**状态：** standalone bundle 与 next-level runtime 基础已实现。全量迁移架构与可执行计划已在 `main` 的 `626f6e1` 发布；Task 1-7 已完成，下一项为 Task 8。
 
 ## 1. 范围基线
 
@@ -22,6 +22,7 @@
 - Task 4 已移除 legacy public text-write authority。approval 绑定 plan 与 staged-asset digest；Tool 只在一次性 receipt 被消费后调用 executor；job 只保留 plan identity；workspace event 只源于已核验的 committed receipt。
 - Task 5 已将 `ctx.llm` 设为默认 LLM seam。`@notemd-harness/llm-dsh` 通过封闭 route policy 消费 DSH stream，旧 OpenAI-compatible transport 只作为显式 legacy entry 保留。
 - Task 6 已增加 `@notemd-harness/research`：以 `ctx.web` 为唯一后端的 durable `.notemd/research` catalog，具名的 closed Tool discovery/capture/synthesis，以及只接受 evidence id 的 durable job input。
+- Task 7 已增加 `@notemd-harness/documents` 作为 structural Markdown section、stable anchor、chapter ownership manifest、original-text output policy 和 duplicate diagnostic 的唯一 owner。`notemd-knowledge` 现在在 task-root/current-file 约束下检索带 citation 的 section context；workflow 和 Tool surface 暴露相应具名操作但不拥有 write authority。
 
 ## 3. 已完成的代码审计
 
@@ -34,7 +35,7 @@
 | `packages/notemd-llm-dsh/src/dsh-text-transformer.ts` 与 `cordis.patch.yml` | 默认 bridge 注入 `ctx.llm`、消费 DSH `StreamChunk`，只接受 provider/model/output/prompt route policy。 | DSH 拥有凭据与 transport；只有显式 legacy subpath 保留 OpenAI-compatible diagnostic/discovery。 |
 | `packages/notemd-research/src/` 与 `packages/notemd-bundle/src/research.ts` | catalog 持久化 content-addressed DSH Web discovery/evidence，Cordis service 显式注入 `web`。 | provider selection 仍由 DSH 持有；bundle 和 workflow 均不拥有 network transport。 |
 | `packages/notemd-workflows/src/index.ts` 与 `packages/notemd-bundle/src/jobs.ts` | research synthesis 接受 `ResearchEvidence`；Tool 与 durable job 仅保存 evidence id，并通过 `notemdResearch` 解析。 | raw caller passage 不能绕过 evidence provenance，也不能进入 durable job record。 |
-| `packages/notemd-knowledge/src/knowledge-index.ts` | 按整文件 MiniSearch 索引。 | 缺少源任务路径、section window、当前文件排除和检索解释。 |
+| `packages/notemd-documents/src/` 与 `packages/notemd-knowledge/src/knowledge-index.ts` | structural Markdown section 为 chapter plan、link/concept prompt 和可重建的 section-level MiniSearch index 提供输入。 | retrieval 携带 task-root selection、current-file exclusion、context window、explanation 和 `citation:<path>#<anchor>` metadata。 |
 | `packages/notemd-artifacts/src/artifact-manifest.ts` | 仅 source JSON/README，`renderer: source`，render/export 始终 unavailable。 | artifact lineage 与具名 renderer/export provider 是核心缺口。 |
 | `packages/notemd-tools/src/tool-contract.ts` | 每个具名 Tool 使用封闭 DSH author schema 和显式 outcome variant。 | DSH runtime 可以验证每个输出，不再依赖 catch-all object schema。 |
 | `packages/notemd-jobs` 与 `packages/notemd-workspace-events` | durable planning checkpoint 只保留 proposal identity/evidence；metadata-only change 由已核验 receipt 派生。 | planning 保持非权威，indexing 只观察 committed mutation。 |
@@ -66,7 +67,7 @@
 | 4. 审批、事件、作业与 Tool receipt | 已完成。`WritePlan` export 和 caller 已移除；approval 绑定 proposal/asset digest；checkpoint 保存 proposal identity/evidence；只有匹配的 committed receipt 发布 event；每个 Tool 都有封闭 DSH outcome schema。 | Task 5 可在没有第二写入 authority 的前提下替换默认模型边界。 |
 | 5. DSH LLM consumer bridge | 已完成。`@notemd-harness/llm-dsh` 注入 DSH `llm`，从 `StreamChunk` 生成 provider-neutral completion，拒绝封闭 policy 之外的字段，并随 Cordis owner disposal 终止 active call。 | 已交付。默认 patch 不含 endpoint/key/transport 配置，也不注册 legacy provider Tool。 |
 | 6. DSH web research evidence | 已完成。`@notemd-harness/research` 持久化有界 DSH Web discovery/evidence；具名 Tool 仅返回 evidence metadata，research synthesis 只接受 durable id。`notemdResearch` 已注入 Tools 和 jobs，bundle 将 `dsh-web` 声明为 optional peer。 | 已交付。无 provider 时返回封闭 `capability-unavailable` outcome；非 2xx resource 仍作为 evidence，而非 transport failure。 |
-| 7. 文档语义与知识检索 | 未开始。没有 documents 包，索引仍是整文件 MiniSearch。 | AST section、稳定锚点、章节/原文/协调 proposal、文件夹策略、scope window 和可解释命中通过特征化 fixture。 |
+| 7. 文档语义与知识检索 | 已完成。`@notemd-harness/documents` 拥有 structural section、chapter manifest、original-text policy 和 duplicate diagnostic；workflow 与 Tool 暴露具名 single-file/folder operation；knowledge 索引 section 并返回 citation 和 explanation。 | 已交付。本阶段已通过 focused/full integration gate，包括 packed-bundle 与 clean-profile acceptance。 |
 | 8. Artifact lineage 与 SVG renderer | 未开始。artifact 仅有 source JSON/README，尚无 renderer 包。 | 版本化 spec 与 source/preview/export lineage 仅通过独立具名 provider 为适用目标支持 sanitized SVG。 |
 | 9. Draw.io、稳定 Drawnix 与 Circuitikz provider | 未开始。没有 staging-only process boundary 或专用 renderer 包。 | allowlisted process 测试和 provider-specific canonical source 通过，且只使用固定来源中已提交的 Drawnix 基线。 |
 | 10. Slidev 与媒体导出 | 未开始。没有 Slidev/PPTX/media provider 或 staged export contract。 | prepared slide source 与每个具名 exporter 证明 capability、cleanup、字节上限和可复现性。 |
@@ -80,8 +81,8 @@
 
 ## 7. 后续推进方向
 
-1. 在扩展 renderer 宽度前完成 Task 7。文档结构和检索证据是图表、引用和 artifact provenance 的上游输入。
-2. Task 8-10 必须按目标类别实现，不能使用 target selector。先实现 SVG-capable renderer；随后仅在具备显式 capability test 时加入 process-gated Draw.io/Drawnix/Circuitikz 和 Slidev/media exporter。
+1. 在扩展 external-process 宽度前完成 Task 8。版本化 artifact lineage 与真实的 SVG-capable preview 是 specialist renderer 和 export 的上游契约。
+2. Task 9-10 必须按目标类别实现，不能使用 target selector。process-gated Draw.io/Drawnix/Circuitikz 与 Slidev/media exporter 仅在具备显式 capability test 时加入。
 3. 将 Task 11 留给证明，而不是乐观判断：在实现任务全部完成后运行 source-matrix conformance、生命周期/HMR 失败路径、隔离 bundle 验收和完整 release gate。
 
 ## 8. 约束
@@ -155,3 +156,10 @@
 - Tool/job boundary 不再接收 `sources`。`notemd_research_discover`、`notemd_research_capture_evidence` 与 `notemd_plan_research_synthesis` 是独立操作；research batch job 仅持久化 `evidenceIds`。job runner 在调用 workflow planner 前即时解析这些 id，因此 checkpoint 仍只保留 proposal identity 与 evidence reference。
 - 聚焦证据：`packages/notemd-research/test/dsh-research-client.test.ts` 通过 4 个测试；`packages/notemd-workflows/test/workflow-planning.test.ts` 通过 6 个；`packages/notemd-tools/test/tools.contract.test.ts` 通过 14 个；`packages/notemd-bundle/test/patch.contract.test.ts` 通过 4 个。Tool contract 已包含 DSH schema 精确单分支不变量的回归测试。
 - Node `v22.19.0` / pnpm `10.7.1` 的新鲜 release evidence：`pnpm typecheck`、`pnpm test`（23 个文件、118 个测试）、`pnpm lint`、`pnpm build`、`pnpm pack:bundle`、`pnpm verify:bundle` 与 `pnpm accept:dsh` 均成功完成。clean-profile acceptance 安装无 provider 的 `WebRuntime`，并断言 `notemd_research_discover` 返回 `{ status: 'unavailable', code: 'capability-unavailable' }`。
+
+### Task 7 验证
+
+- `@notemd-harness/documents` 将 fence 外 heading 解析为不可变 section record，记录 source digest、重复安全的 stable anchor、breadcrumb、Markdown projection 与 search projection。chapter planning 在 manifest 记录 generated artifact hash，并在提出 write/delete 前拒绝已手工修改的受管文件和非受管输出冲突。
+- `NotemdWorkflowPlanner` 暴露独立的 individual/merged original-text operation、确定性 folder batch、chapter split、duplicate diagnostic、需复核的 concept-delete proposal 和 extract-and-generate。original-text output path 是 policy object，不是 merged-mode switch；folder/job snapshot 均按字典序固化。
+- `VaultKnowledgeIndex` 是派生且可重建的。它索引 section，支持 task root、top-k、current-file exclusion、adjacent section window、hit explanation 和如 `citation:notes/knowledge.md#canonical-lock-ordering` 的 citation。具名 DSH Tool 返回相同的封闭、带 citation 的 result contract。
+- 在 Node `v22.19.0` / pnpm `10.7.1` 上的新鲜证据：`pnpm test` 通过 26 个文件、132 个测试；`pnpm typecheck`、`pnpm lint`、`pnpm build`、`pnpm pack:bundle`、`pnpm verify:bundle` 与 `pnpm accept:dsh` 均通过。packed tarball 包含 `@notemd-harness/documents`，clean-profile acceptance 成功。

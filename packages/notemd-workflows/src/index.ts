@@ -3,8 +3,19 @@ import {
   createWorkspaceMutationPlan,
   type WorkspaceMutationPlan,
 } from '@notemd-harness/mutation'
+import {
+  buildChapterSplitMutationPlan,
+  createOriginalTextOutputPath,
+  findDuplicateConceptCandidates,
+  findDuplicateTerms,
+  parseMarkdownDocument,
+  sourceSiblingChapterOutput,
+  type DuplicateConceptCandidate,
+  type DuplicateTerm,
+  type OriginalTextOutputLocation,
+} from '@notemd-harness/documents'
 import type { ResearchEvidence } from '@notemd-harness/research'
-import type { NotemdVault } from '@notemd-harness/vault'
+import type { NotemdVault, VaultDocument } from '@notemd-harness/vault'
 
 import { conceptNoteContent, parseExtractedConcepts } from './concepts.js'
 import { replaceMermaidFenceBodies, normalizeFormulaDelimiters } from './markdown-transforms.js'
@@ -16,6 +27,11 @@ export * from './formulas.js'
 export * from './markdown-transforms.js'
 export * from './mermaid.js'
 export * from './plan-factory.js'
+export {
+  sourceSiblingOriginalTextOutput,
+  workspaceMirroredOriginalTextOutput,
+  type OriginalTextOutputLocation,
+} from '@notemd-harness/documents'
 
 export interface TextCompletion {
   text: string
@@ -38,6 +54,46 @@ export interface WorkflowPlanner {
   planConceptExtraction(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan>
   planMermaidRepair(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan>
   planFormulaRepair(path: string): Promise<WorkspaceMutationPlan>
+  planChapterSplit(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan>
+  planOriginalTextExtraction(
+    path: string,
+    questions: readonly string[],
+    output: OriginalTextOutputLocation,
+    signal?: AbortSignal,
+  ): Promise<WorkspaceMutationPlan>
+  planMergedOriginalTextExtraction(
+    path: string,
+    questions: readonly string[],
+    output: OriginalTextOutputLocation,
+    signal?: AbortSignal,
+  ): Promise<WorkspaceMutationPlan>
+  planWikiLinksInFolder(folderPath: string, signal?: AbortSignal): Promise<readonly WorkspaceMutationPlan[]>
+  planTitlesInFolder(folderPath: string, signal?: AbortSignal): Promise<readonly WorkspaceMutationPlan[]>
+  planTranslationsInFolder(folderPath: string, language: string, signal?: AbortSignal): Promise<readonly WorkspaceMutationPlan[]>
+  planConceptsInFolder(folderPath: string, signal?: AbortSignal): Promise<readonly WorkspaceMutationPlan[]>
+  planMermaidRepairsInFolder(folderPath: string, signal?: AbortSignal): Promise<readonly WorkspaceMutationPlan[]>
+  planFormulaRepairsInFolder(folderPath: string): Promise<readonly WorkspaceMutationPlan[]>
+  planChapterSplitsInFolder(folderPath: string, signal?: AbortSignal): Promise<readonly WorkspaceMutationPlan[]>
+  planOriginalTextExtractionsInFolder(
+    folderPath: string,
+    questions: readonly string[],
+    output: OriginalTextOutputLocation,
+    signal?: AbortSignal,
+  ): Promise<readonly WorkspaceMutationPlan[]>
+  planMergedOriginalTextExtractionsInFolder(
+    folderPath: string,
+    questions: readonly string[],
+    output: OriginalTextOutputLocation,
+    signal?: AbortSignal,
+  ): Promise<readonly WorkspaceMutationPlan[]>
+  checkFileDuplicates(path: string, signal?: AbortSignal): Promise<readonly DuplicateTerm[]>
+  findConceptDuplicates(
+    conceptFolderPath: string,
+    comparisonFolderPath: string,
+    signal?: AbortSignal,
+  ): Promise<readonly DuplicateConceptCandidate[]>
+  planConceptDedupe(candidatePaths: readonly string[], signal?: AbortSignal): Promise<WorkspaceMutationPlan>
+  planExtractAndGenerate(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan>
 }
 
 export class NotemdWorkflowPlanner implements WorkflowPlanner {
@@ -47,12 +103,17 @@ export class NotemdWorkflowPlanner implements WorkflowPlanner {
   ) {}
 
   async planWikiLinks(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan> {
-    return this.planDocumentCompletion(
-      path,
-      'file.process-add-links',
-      'Add precise Obsidian wiki-links where they improve navigability. Return the full Markdown document only.',
+    const document = await this.vault.read(path, signal)
+    const text = await this.complete(
+      'Add precise Obsidian wiki-links where they improve navigability. Preserve the supplied section anchors and return the full Markdown document only.',
+      structuredDocumentPrompt(document),
       signal,
     )
+    return replaceDocumentPlan(document, text, {
+      operationId: 'file.process-add-links',
+      sourceRefs: [document.path],
+      evidenceRefs: [],
+    })
   }
 
   async planTranslation(path: string, language: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan> {
@@ -97,7 +158,7 @@ export class NotemdWorkflowPlanner implements WorkflowPlanner {
     const document = await this.vault.read(path, signal)
     const text = await this.complete(
       'Extract concepts as strict JSON: {"concepts":[{"name":"...","summary":"..."}]}. Do not return Markdown.',
-      document.content,
+      structuredDocumentPrompt(document),
       signal,
     )
     const concepts = parseExtractedConcepts(text)
@@ -145,6 +206,211 @@ export class NotemdWorkflowPlanner implements WorkflowPlanner {
     })
   }
 
+  async planChapterSplit(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan> {
+    const source = await this.vault.read(path, signal)
+    const output = sourceSiblingChapterOutput()
+    const sourceBasename = source.path.split('/').at(-1)?.replace(/\.md$/iu, '')
+    if (sourceBasename === undefined || sourceBasename.length === 0) {
+      throw new Error(`Cannot determine chapter split output directory for ${source.path}.`)
+    }
+    const resolved = output.resolve(source.path, sourceBasename)
+    const artifactPaths = await this.vault.listMarkdown(signal)
+    const existingArtifacts = await readExistingDocuments(this.vault, [
+      resolved.manifestPath,
+      ...artifactPaths.filter((candidate) => candidate.startsWith(`${resolved.folderPath}/`)),
+    ], signal)
+
+    return buildChapterSplitMutationPlan({
+      source,
+      parsedSource: parseMarkdownDocument(source),
+      output,
+      existingArtifacts,
+    })
+  }
+
+  async planOriginalTextExtraction(
+    path: string,
+    questions: readonly string[],
+    output: OriginalTextOutputLocation,
+    signal?: AbortSignal,
+  ): Promise<WorkspaceMutationPlan> {
+    const document = await this.vault.read(path, signal)
+    const normalizedQuestions = requireQuestions(questions)
+    const answers: string[] = []
+    for (const question of normalizedQuestions) {
+      answers.push(await this.complete(
+        'You are a strict data extraction and verification agent. Return only the answer grounded in the source material.',
+        `Question: ${question}\n\nReference content:\n${document.content}`,
+        signal,
+      ))
+    }
+    return this.createOriginalTextPlan(document, answers.join('\n\n'), output, 'content.extract-original-text')
+  }
+
+  async planMergedOriginalTextExtraction(
+    path: string,
+    questions: readonly string[],
+    output: OriginalTextOutputLocation,
+    signal?: AbortSignal,
+  ): Promise<WorkspaceMutationPlan> {
+    const document = await this.vault.read(path, signal)
+    const normalizedQuestions = requireQuestions(questions)
+    const questionList = normalizedQuestions.map((question, index) => `${index + 1}. ${question}`).join('\n\n')
+    const text = await this.complete(
+      'You are a strict data extraction and verification agent. Answer each numbered question only from the source material and retain uncertainty.',
+      `Questions:\n${questionList}\n\nReference content:\n${document.content}`,
+      signal,
+    )
+    return this.createOriginalTextPlan(document, text, output, 'content.extract-original-text.merged')
+  }
+
+  async planWikiLinksInFolder(folderPath: string, signal?: AbortSignal): Promise<readonly WorkspaceMutationPlan[]> {
+    return this.planFolder(folderPath, (path) => this.planWikiLinks(path, signal), signal)
+  }
+
+  async planTitlesInFolder(folderPath: string, signal?: AbortSignal): Promise<readonly WorkspaceMutationPlan[]> {
+    return this.planFolder(folderPath, (path) => this.planTitleGeneration(path, signal), signal)
+  }
+
+  async planTranslationsInFolder(
+    folderPath: string,
+    language: string,
+    signal?: AbortSignal,
+  ): Promise<readonly WorkspaceMutationPlan[]> {
+    return this.planFolder(folderPath, (path) => this.planTranslation(path, language, signal), signal)
+  }
+
+  async planConceptsInFolder(folderPath: string, signal?: AbortSignal): Promise<readonly WorkspaceMutationPlan[]> {
+    return this.planFolder(folderPath, (path) => this.planConceptExtraction(path, signal), signal)
+  }
+
+  async planMermaidRepairsInFolder(folderPath: string, signal?: AbortSignal): Promise<readonly WorkspaceMutationPlan[]> {
+    return this.planFolder(folderPath, (path) => this.planMermaidRepair(path, signal), signal)
+  }
+
+  async planFormulaRepairsInFolder(folderPath: string): Promise<readonly WorkspaceMutationPlan[]> {
+    return this.planFolder(folderPath, (path) => this.planFormulaRepair(path))
+  }
+
+  async planChapterSplitsInFolder(folderPath: string, signal?: AbortSignal): Promise<readonly WorkspaceMutationPlan[]> {
+    return this.planFolder(folderPath, (path) => this.planChapterSplit(path, signal), signal)
+  }
+
+  async planOriginalTextExtractionsInFolder(
+    folderPath: string,
+    questions: readonly string[],
+    output: OriginalTextOutputLocation,
+    signal?: AbortSignal,
+  ): Promise<readonly WorkspaceMutationPlan[]> {
+    return this.planFolder(
+      folderPath,
+      (path) => this.planOriginalTextExtraction(path, questions, output, signal),
+      signal,
+    )
+  }
+
+  async planMergedOriginalTextExtractionsInFolder(
+    folderPath: string,
+    questions: readonly string[],
+    output: OriginalTextOutputLocation,
+    signal?: AbortSignal,
+  ): Promise<readonly WorkspaceMutationPlan[]> {
+    return this.planFolder(
+      folderPath,
+      (path) => this.planMergedOriginalTextExtraction(path, questions, output, signal),
+      signal,
+    )
+  }
+
+  async checkFileDuplicates(path: string, signal?: AbortSignal): Promise<readonly DuplicateTerm[]> {
+    return findDuplicateTerms((await this.vault.read(path, signal)).content)
+  }
+
+  async findConceptDuplicates(
+    conceptFolderPath: string,
+    comparisonFolderPath: string,
+    signal?: AbortSignal,
+  ): Promise<readonly DuplicateConceptCandidate[]> {
+    const [conceptPaths, comparisonPaths] = await Promise.all([
+      this.selectFolderTargets(conceptFolderPath, signal),
+      this.selectFolderTargets(comparisonFolderPath, signal),
+    ])
+    return findDuplicateConceptCandidates(conceptPaths, comparisonPaths)
+  }
+
+  async planConceptDedupe(candidatePaths: readonly string[], signal?: AbortSignal): Promise<WorkspaceMutationPlan> {
+    const paths = normalizeTargetPaths(candidatePaths)
+    const documents = await Promise.all(paths.map((path) => this.vault.read(path, signal)))
+    const provenance = {
+      operationId: 'concept.dedupe',
+      sourceRefs: paths,
+      evidenceRefs: [],
+    }
+    return createWorkspaceMutationPlan({
+      provenance,
+      mutations: documents.map((document) => ({
+        kind: 'delete' as const,
+        destination: document.path,
+        expectedRevision: document.revision,
+        provenance,
+        conflictPolicy: 'reject' as const,
+        expectedContentSha256: createContentSha256(document.content),
+      })),
+    })
+  }
+
+  async planExtractAndGenerate(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan> {
+    const document = await this.vault.read(path, signal)
+    const extracted = await this.complete(
+      'Extract concepts as strict JSON: {"concepts":[{"name":"...","summary":"..."}]}. Do not return Markdown.',
+      document.content,
+      signal,
+    )
+    const concepts = parseExtractedConcepts(extracted)
+    const firstConcept = concepts[0]
+    if (firstConcept === undefined) {
+      throw new Error('Extract-and-generate requires at least one concept.')
+    }
+    const generated = await this.complete(
+      'Generate a concise Markdown note from the supplied concept. Preserve uncertainty and return Markdown only.',
+      `${firstConcept.name}\n\n${firstConcept.summary}`,
+      signal,
+    )
+    const provenance = {
+      operationId: 'workflow.extract-and-generate',
+      sourceRefs: [document.path],
+      evidenceRefs: [],
+    }
+    return createWorkspaceMutationPlan({
+      provenance,
+      mutations: [
+        ...concepts.map((concept) => {
+          const content = conceptNoteContent(concept, document.path)
+          return {
+            kind: 'write-text' as const,
+            destination: `concepts/${concept.name}.md`,
+            expectedRevision: 'absent' as const,
+            provenance,
+            conflictPolicy: 'reject' as const,
+            mediaType: 'text/markdown',
+            content,
+            contentSha256: createContentSha256(content),
+          }
+        }),
+        {
+          kind: 'write-text' as const,
+          destination: `generated/${firstConcept.name}.md`,
+          expectedRevision: 'absent' as const,
+          provenance,
+          conflictPolicy: 'reject' as const,
+          mediaType: 'text/markdown',
+          content: generated,
+          contentSha256: createContentSha256(generated),
+        },
+      ],
+    })
+  }
+
   private async planDocumentCompletion(
     path: string,
     operationId: string,
@@ -157,6 +423,57 @@ export class NotemdWorkflowPlanner implements WorkflowPlanner {
       sourceRefs: [document.path],
       evidenceRefs: [],
     })
+  }
+
+  private async createOriginalTextPlan(
+    document: VaultDocument,
+    content: string,
+    output: OriginalTextOutputLocation,
+    operationId: string,
+  ): Promise<WorkspaceMutationPlan> {
+    const basePath = createOriginalTextOutputPath(document.path, output)
+    const destination = await this.unoccupiedOutputPath(basePath)
+    return createDocumentPlan(destination, content, {
+      operationId,
+      sourceRefs: [document.path],
+      evidenceRefs: [],
+    })
+  }
+
+  private async unoccupiedOutputPath(basePath: string): Promise<string> {
+    if (await readOptionalDocument(this.vault, basePath) === undefined) {
+      return basePath
+    }
+    const extensionStart = basePath.toLocaleLowerCase().lastIndexOf('.md')
+    const stem = extensionStart < 0 ? basePath : basePath.slice(0, extensionStart)
+    for (let ordinal = 1; ordinal <= 10_000; ordinal += 1) {
+      const candidate = `${stem} (${ordinal}).md`
+      if (await readOptionalDocument(this.vault, candidate) === undefined) {
+        return candidate
+      }
+    }
+    throw new Error(`Unable to allocate an original-text output path for ${basePath}.`)
+  }
+
+  private async planFolder(
+    folderPath: string,
+    planner: (path: string) => Promise<WorkspaceMutationPlan>,
+    signal?: AbortSignal,
+  ): Promise<readonly WorkspaceMutationPlan[]> {
+    const paths = await this.selectFolderTargets(folderPath, signal)
+    const plans: WorkspaceMutationPlan[] = []
+    for (const path of paths) {
+      plans.push(await planner(path))
+    }
+    return Object.freeze(plans)
+  }
+
+  private async selectFolderTargets(folderPath: string, signal?: AbortSignal): Promise<readonly string[]> {
+    const root = normalizeFolderPath(folderPath)
+    const paths = await this.vault.listMarkdown(signal)
+    return Object.freeze(paths
+      .filter((path) => path.startsWith(`${root}/`))
+      .sort((left, right) => left.localeCompare(right)))
   }
 
   private async complete(system: string, prompt: string, signal?: AbortSignal): Promise<string> {
@@ -186,4 +503,80 @@ function researchEvidenceRefs(evidence: readonly ResearchEvidence[]): readonly s
     throw new TypeError('Research synthesis evidence ids must be unique.')
   }
   return Object.freeze(refs)
+}
+
+function structuredDocumentPrompt(document: VaultDocument): string {
+  const parsed = parseMarkdownDocument(document)
+  const sections = parsed.sections
+    .map((section) => `- ${section.anchor}: ${section.breadcrumb.join(' > ')}`)
+    .join('\n')
+  return `Document sections:\n${sections}\n\nMarkdown:\n${document.content}`
+}
+
+function requireQuestions(questions: readonly string[]): readonly string[] {
+  const normalized = questions.map((question) => {
+    if (typeof question !== 'string') {
+      throw new TypeError('Original-text questions must be text.')
+    }
+    return question.trim()
+  }).filter(Boolean)
+  if (normalized.length === 0) {
+    throw new RangeError('Original-text extraction requires at least one question.')
+  }
+  return Object.freeze(normalized)
+}
+
+function normalizeFolderPath(path: string): string {
+  if (typeof path !== 'string' || path.length === 0 || path.startsWith('/') || path.includes('\\')) {
+    throw new RangeError('Folder workflow paths must be relative slash-separated paths.')
+  }
+  const normalized = path.replace(/\/+$/u, '')
+  if (normalized.length === 0 || normalized.split('/').some((segment) => segment.length === 0 || segment === '.' || segment === '..')) {
+    throw new RangeError('Folder workflow paths must not contain empty, dot, or parent segments.')
+  }
+  return normalized
+}
+
+function normalizeTargetPaths(paths: readonly string[]): readonly string[] {
+  if (paths.length === 0) {
+    throw new RangeError('Concept dedupe requires one or more reviewed candidate paths.')
+  }
+  const normalized = paths.map((path) => normalizeFolderPath(path)).sort((left, right) => left.localeCompare(right))
+  for (let index = 1; index < normalized.length; index += 1) {
+    if (normalized[index] === normalized[index - 1]) {
+      throw new RangeError(`Concept dedupe paths must be unique: ${normalized[index]}`)
+    }
+  }
+  return Object.freeze(normalized)
+}
+
+async function readExistingDocuments(
+  vault: NotemdVault,
+  paths: readonly string[],
+  signal?: AbortSignal,
+): Promise<readonly VaultDocument[]> {
+  const uniquePaths = [...new Set(paths)].sort((left, right) => left.localeCompare(right))
+  const documents: VaultDocument[] = []
+  for (const path of uniquePaths) {
+    const document = await readOptionalDocument(vault, path, signal)
+    if (document !== undefined) {
+      documents.push(document)
+    }
+  }
+  return Object.freeze(documents)
+}
+
+async function readOptionalDocument(
+  vault: NotemdVault,
+  path: string,
+  signal?: AbortSignal,
+): Promise<VaultDocument | undefined> {
+  try {
+    return await vault.read(path, signal)
+  } catch (error) {
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'VAULT_NOT_FOUND') {
+      return undefined
+    }
+    throw error
+  }
 }

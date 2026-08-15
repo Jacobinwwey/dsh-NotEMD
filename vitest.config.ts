@@ -14,6 +14,9 @@ export default defineConfig({
         new URL('./packages/notemd-artifacts/src/index.ts', import.meta.url),
       ),
       '@notemd-harness/jobs': fileURLToPath(new URL('./packages/notemd-jobs/src/index.ts', import.meta.url)),
+      '@notemd-harness/documents': fileURLToPath(
+        new URL('./packages/notemd-documents/src/index.ts', import.meta.url),
+      ),
       '@notemd-harness/knowledge': fileURLToPath(
         new URL('./packages/notemd-knowledge/src/index.ts', import.meta.url),
       ),

@@ -1,6 +1,6 @@
 import type { NotemdArtifacts } from '@notemd-harness/artifacts'
 import type { JobRecord } from '@notemd-harness/jobs'
-import type { KnowledgeMatch } from '@notemd-harness/knowledge'
+import type { KnowledgeMatch, KnowledgeRetrievalRequest, KnowledgeRetrievalResult } from '@notemd-harness/knowledge'
 import type { ModelDiscoveryResult, ProviderDiagnosticResult } from '@notemd-harness/llm-openai-compatible'
 import type {
   RecoveredMutation,
@@ -53,6 +53,7 @@ interface PlanningJobRequest {
 
 export interface NotemdKnowledge {
   search(query: string): Promise<readonly KnowledgeMatch[]>
+  retrieve(request: KnowledgeRetrievalRequest): Promise<KnowledgeRetrievalResult>
 }
 
 export interface NotemdMutationVault extends NotemdVault {

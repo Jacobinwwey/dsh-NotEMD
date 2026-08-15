@@ -1,5 +1,11 @@
 import { Service, type Context } from '@deepseek-ai/cordis'
-import { IncrementalKnowledgeSynchronizer, VaultKnowledgeIndex, type KnowledgeMatch } from '@notemd-harness/knowledge'
+import {
+  IncrementalKnowledgeSynchronizer,
+  VaultKnowledgeIndex,
+  type KnowledgeMatch,
+  type KnowledgeRetrievalRequest,
+  type KnowledgeRetrievalResult,
+} from '@notemd-harness/knowledge'
 
 import type { NotemdKnowledge } from '@notemd-harness/tools'
 
@@ -26,6 +32,10 @@ export class NotemdKnowledgeService extends Service implements NotemdKnowledge {
 
   search(query: string): Promise<readonly KnowledgeMatch[]> {
     return this.requireIndex().search(query)
+  }
+
+  retrieve(request: KnowledgeRetrievalRequest): Promise<KnowledgeRetrievalResult> {
+    return this.requireIndex().retrieve(request)
   }
 
   async rebuild(signal?: AbortSignal): Promise<void> {

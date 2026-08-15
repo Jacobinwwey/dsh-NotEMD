@@ -247,6 +247,27 @@ export const knowledgeMatchSchema = closedObjectSchema({
   score: numberSchema(),
 }, ['path', 'title', 'excerpt', 'score'])
 
+export const knowledgeRetrievalResultSchema = closedObjectSchema({
+  query: stringSchema(),
+  taskRoots: arraySchema(stringSchema()),
+  currentPath: stringSchema(),
+  matches: arraySchema(closedObjectSchema({
+    path: stringSchema(),
+    title: stringSchema(),
+    excerpt: stringSchema(),
+    score: numberSchema(),
+    anchor: stringSchema(),
+    breadcrumb: arraySchema(stringSchema()),
+    citationId: stringSchema(),
+    context: stringSchema(),
+    explanation: closedObjectSchema({
+      includedByRoot: stringSchema(),
+      matchedTerms: arraySchema(stringSchema()),
+      window: closedObjectSchema({ before: integerSchema(), after: integerSchema() }, ['before', 'after']),
+    }, ['includedByRoot', 'matchedTerms', 'window']),
+  }, ['path', 'title', 'excerpt', 'score', 'anchor', 'breadcrumb', 'citationId', 'context', 'explanation'])),
+}, ['query', 'taskRoots', 'matches'])
+
 export const artifactCapabilitySchema = closedObjectSchema({
   capability: { type: 'string', enum: ['diagram-rendering', 'document-export'] },
   status: { type: 'string', const: 'unavailable' },

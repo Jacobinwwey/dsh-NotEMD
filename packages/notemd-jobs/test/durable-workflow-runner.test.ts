@@ -110,3 +110,16 @@ test('records cancellation after active targets settle', async () => {
     results: [{ target: 'notes/a.md', status: 'cancelled' }],
   })
 })
+
+test('persists target snapshots in canonical lexical order before a runner creates checkpoints', async () => {
+  const store = await FileJobStore.open(workspaceRoot)
+
+  const job = await store.start({
+    workflow: 'formula-repair',
+    idempotencyKey: 'formula:ordered-targets',
+    input: {},
+    targets: ['notes/z.md', 'notes/a.md'],
+  })
+
+  expect(job.targets).toEqual(['notes/a.md', 'notes/z.md'])
+})

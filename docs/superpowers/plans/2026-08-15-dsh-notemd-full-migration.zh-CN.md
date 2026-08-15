@@ -178,12 +178,13 @@ interface NotemdLlmRoute {
 - 修改：`packages/notemd-knowledge/src/{knowledge-index.ts,incremental-knowledge-synchronizer.ts}`
 - 修改：`packages/notemd-workflows/src/{index.ts,plan-factory.ts}`、`packages/notemd-jobs/src/durable-workflow-runner.ts`
 
-- [ ] 引入 AST-derived section、稳定 anchor、title/breadcrumb、text/search projection、source digest，供章节、知识与链接/概念复用。
-- [ ] 章节拆分生成一个同时包含 writes 和 stale deletes 的 mutation proposal，带 manifest ownership 和手工编辑摘要冲突检测。
-- [ ] 原文抽取拆为 `planOriginalTextExtraction` 与 `planMergedOriginalTextExtraction`，不能用 merged-mode flag。
-- [ ] 增加确定性 folder selector、output-location policy 和具名 batch workflow，覆盖标题、翻译、链接、概念、去重、公式、Mermaid、章节和原文抽取。
-- [ ] 恢复 task root、section window、top-k、current-file exclusion、hit explanation 与 citation metadata；索引必须可重建。
-- [ ] 运行文档/工作流/知识测试与 typecheck，更新进度并提交 `feat: restore NoteMD document and knowledge semantics`。
+- [x] 已引入结构化 Markdown section、稳定 anchor、title/breadcrumb、text/search projection 与 source digest。章节规划、知识检索、wiki-link prompt 和 concept prompt 共用该语义表示。
+- [x] 已实现单一章节 mutation proposal，包含 chapter/TOC/manifest writes 与 stale delete。manifest 记录 content hash；受管文件被手工修改或输出位置存在非受管文件时，规划会拒绝而非覆盖。
+- [x] 已实现独立的 `planOriginalTextExtraction` 和 `planMergedOriginalTextExtraction`，包含对应的具名 folder workflow 和 Tool；不存在选择行为的 merged-mode flag。
+- [x] 已增加按字典序固化的 folder target snapshot、output-location policy object 和具名 batch workflow，覆盖 title、translation、link、concept、formula/Mermaid repair、chapter 及两种 original-text extraction；durable job target 也以规范字典序持久化。
+- [x] 已恢复可重建的 section-level local knowledge：task root、section window、top-k、current-file exclusion、hit explanation 与 `citation:<path>#<anchor>` metadata。
+- [x] 已运行 focused documents/workflow/knowledge/Tool/durable-job 测试；在 Node `v22.19.0` / pnpm `10.7.1` 上，完整 `pnpm test`（26 files、132 tests）、`pnpm typecheck`、`pnpm lint`、`pnpm build`、`pnpm pack:bundle`、`pnpm verify:bundle` 与 `pnpm accept:dsh` 均通过。
+- [x] 已更新双语进度记录；本阶段提交为 `feat: restore NoteMD document and knowledge semantics`。
 
 ### Task 8：建立 Diagram Spec、Artifact Lineage 与 SVG 目标 Renderer
 
