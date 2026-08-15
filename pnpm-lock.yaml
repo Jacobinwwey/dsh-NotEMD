@@ -62,6 +62,9 @@ importers:
       '@notemd-harness/mutation':
         specifier: workspace:*
         version: link:../notemd-mutation
+      '@notemd-harness/research':
+        specifier: workspace:*
+        version: link:../notemd-research
       '@notemd-harness/tools':
         specifier: workspace:*
         version: link:../notemd-tools
@@ -86,6 +89,12 @@ importers:
       '@notemd-harness/mutation':
         specifier: workspace:*
         version: link:../notemd-mutation
+      '@notemd-harness/research':
+        specifier: workspace:*
+        version: link:../notemd-research
+      '@notemd-harness/workflows':
+        specifier: workspace:*
+        version: link:../notemd-workflows
 
   packages/notemd-knowledge:
     dependencies:
@@ -109,6 +118,8 @@ importers:
 
   packages/notemd-mutation: {}
 
+  packages/notemd-research: {}
+
   packages/notemd-tools:
     dependencies:
       '@notemd-harness/artifacts':
@@ -126,6 +137,9 @@ importers:
       '@notemd-harness/mutation':
         specifier: workspace:*
         version: link:../notemd-mutation
+      '@notemd-harness/research':
+        specifier: workspace:*
+        version: link:../notemd-research
       '@notemd-harness/vault':
         specifier: workspace:*
         version: link:../notemd-vault
@@ -152,6 +166,9 @@ importers:
       '@notemd-harness/mutation':
         specifier: workspace:*
         version: link:../notemd-mutation
+      '@notemd-harness/research':
+        specifier: workspace:*
+        version: link:../notemd-research
       '@notemd-harness/vault':
         specifier: workspace:*
         version: link:../notemd-vault

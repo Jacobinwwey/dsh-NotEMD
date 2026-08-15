@@ -10,6 +10,7 @@ declare module '@deepseek-ai/cordis' {
       }): Promise<unknown>
     }
     readonly llm: import('@notemd-harness/llm-dsh').DshLlmRuntime
+    readonly web: import('@notemd-harness/research').DshWebRuntime
     readonly notemdVault: import('@notemd-harness/vault').NotemdVault
     readonly notemdJobs: import('@notemd-harness/tools').NotemdJobs
     readonly notemdWorkspaceChanges: import('./workspace-changes.js').NotemdWorkspaceChangeService
@@ -17,6 +18,7 @@ declare module '@deepseek-ai/cordis' {
     readonly notemdArtifacts: import('@notemd-harness/artifacts').NotemdArtifacts
     readonly notemdTextTransformer: import('@notemd-harness/workflows').TextTransformer
     readonly notemdWorkflows: import('@notemd-harness/workflows').WorkflowPlanner
+    readonly notemdResearch: import('@notemd-harness/research').NotemdResearch
     readonly notemdApprovalGate: import('@notemd-harness/tools').NotemdApprovalGate
     readonly logger: { warn(message: unknown): unknown }
     effect(callback: () => void | (() => void), name?: string): unknown

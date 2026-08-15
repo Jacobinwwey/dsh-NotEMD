@@ -110,11 +110,25 @@ test('binds link, title, and research transformations to the source revision', a
     '# Source\n\nResearch synthesis',
   ])
   const workflows = new NotemdWorkflowPlanner(await LocalVault.open(workspaceRoot), transformer)
+  const researchEvidence = {
+    version: 1 as const,
+    id: 'evidence:source-revision',
+    query: 'source revision',
+    requestedUrl: 'https://example.test/source',
+    finalUrl: 'https://example.test/source',
+    statusCode: 200,
+    bodyKind: 'text' as const,
+    content: 'Revision-aware evidence',
+    truncated: false,
+    contentSha256: 'b'.repeat(64),
+    retrievedAt: '2026-08-15T00:00:00.000Z',
+    citations: [{ id: 'citation:source-revision', url: 'https://example.test/source' }],
+  }
 
   const [links, title, research] = await Promise.all([
     workflows.planWikiLinks('notes/source.md'),
     workflows.planTitleGeneration('notes/source.md'),
-    workflows.planResearchSynthesis('notes/source.md', ['https://example.test/source']),
+    workflows.planResearchSynthesis('notes/source.md', [researchEvidence]),
   ])
 
   expect(links.mutations[0]).toMatchObject({ kind: 'write-text', destination: 'notes/source.md' })
@@ -127,4 +141,30 @@ test('binds link, title, and research transformations to the source revision', a
       research.mutations[0]?.expectedRevision,
     ]).size,
   ).toBe(1)
+})
+
+test('plans research synthesis from durable evidence records rather than caller-supplied passages', async () => {
+  await writeFile(join(workspaceRoot, 'notes', 'research.md'), '# Research\n\nQuestion')
+  const transformer = new ScriptedTransformer(['# Research\n\nEvidence-backed synthesis'])
+  const workflows = new NotemdWorkflowPlanner(await LocalVault.open(workspaceRoot), transformer)
+  const evidence = {
+    id: 'evidence:revision-aware-mutations',
+    query: 'revision-aware mutations',
+    requestedUrl: 'https://example.test/requested',
+    finalUrl: 'https://example.test/final',
+    statusCode: 200,
+    bodyKind: 'text',
+    content: 'Recoverability requires a durable journal and verified replacement.',
+    truncated: false,
+    contentSha256: 'a'.repeat(64),
+    retrievedAt: '2026-08-15T00:00:00.000Z',
+    citations: [{ id: 'citation:revision-aware-mutations', url: 'https://example.test/final' }],
+  }
+
+  const plan = await workflows.planResearchSynthesis('notes/research.md', [evidence] as never)
+
+  expect(plan.provenance.evidenceRefs).toEqual(['evidence:revision-aware-mutations'])
+  expect(plan.mutations[0]).toMatchObject({ kind: 'write-text', destination: 'notes/research.md' })
+  expect(transformer.requests[0]?.prompt).toContain('evidence:revision-aware-mutations')
+  expect(transformer.requests[0]?.prompt).toContain('Recoverability requires a durable journal')
 })

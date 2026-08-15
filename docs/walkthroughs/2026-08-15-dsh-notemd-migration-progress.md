@@ -2,7 +2,7 @@
 
 > Chinese version: [2026-08-15-dsh-notemd-migration-progress.zh-CN.md](2026-08-15-dsh-notemd-migration-progress.zh-CN.md)
 
-**Status:** The standalone-bundle and next-level-runtime foundations are implemented. The full-migration architecture and executable plan were published on `main` at `626f6e1`; Tasks 1-5 are complete and Task 6 is next.
+**Status:** The standalone-bundle and next-level-runtime foundations are implemented. The full-migration architecture and executable plan were published on `main` at `626f6e1`; Tasks 1-6 are complete and Task 7 is next.
 
 ## 1. Scope Baseline
 
@@ -21,6 +21,7 @@
 - Task 3 adds the only recoverable multi-target executor: content-free journals, plan-local staged payloads, SHA-256 verification, reversible deletes, canonical locks, retry protection, and terminal staging cleanup tracking.
 - Task 4 removes the legacy public text-write authority. Approval binds plan and staged-asset digests; tools invoke the executor only after a one-time receipt is consumed; jobs retain plan identity only; and workspace events originate only from verified committed receipts.
 - Task 5 makes `ctx.llm` the default LLM seam. `@notemd-harness/llm-dsh` consumes DSH streams through a closed route policy, while the old OpenAI-compatible transport is an explicit legacy-only entry.
+- Task 6 adds `@notemd-harness/research`: a durable `.notemd/research` catalog backed only by `ctx.web`, with closed named discovery/capture/synthesis Tools and evidence-id-only durable job input.
 
 ## 3. Completed Code Audit
 
@@ -31,7 +32,8 @@ The source registry exposes 29 operations. Its host/provider/profile surfaces ar
 | `packages/notemd-vault/src/revision.ts` | Exposes immutable read revisions only; its public `WritePlan` contract is removed. | Read facts no longer imply mutation authority. |
 | `packages/notemd-vault-local/src/local-vault.ts` | Exposes shared-lock journaled mutation application/recovery as the only local write path. | Approval, jobs, events, and Tools converge on one recoverable mutation authority. |
 | `packages/notemd-llm-dsh/src/dsh-text-transformer.ts` and `cordis.patch.yml` | The default bridge injects `ctx.llm`, consumes DSH `StreamChunk` values, and accepts only provider/model/output/prompt route policy. | DSH owns credentials and transport; the explicit legacy subpath alone retains OpenAI-compatible diagnostics/discovery. |
-| `packages/notemd-workflows/src/index.ts` | Research synthesis accepts supplied passages. | Native research is absent until a `ctx.web` evidence consumer exists. |
+| `packages/notemd-research/src/` and `packages/notemd-bundle/src/research.ts` | The catalog persists content-addressed DSH Web discoveries/evidence and the Cordis service injects `web` explicitly. | Provider selection remains DSH-owned; neither the bundle nor a workflow owns network transport. |
+| `packages/notemd-workflows/src/index.ts` and `packages/notemd-bundle/src/jobs.ts` | Research synthesis accepts `ResearchEvidence`; Tools and durable jobs persist only evidence ids and resolve them through `notemdResearch`. | Raw caller passages cannot bypass evidence provenance or enter a durable job record. |
 | `packages/notemd-knowledge/src/knowledge-index.ts` | Whole-file MiniSearch indexing. | It lacks source task paths, section windows, current-file exclusion, and retrieval explanation. |
 | `packages/notemd-artifacts/src/artifact-manifest.ts` | Only source JSON/README artifacts, `renderer: source`, and permanent unavailable render/export reports. | Artifact lineage and named renderer/export providers are the central missing migration axis. |
 | `packages/notemd-tools/src/tool-contract.ts` | Each named Tool uses a closed DSH author schema and explicit outcome variants. | The DSH runtime can validate every emitted result without a catch-all object schema. |
@@ -63,7 +65,7 @@ The table records code state, not planned completion. A passing baseline release
 | 3. Local journaled executor | Complete. `LocalMutationExecutor` journals content-free metadata, stages plan payloads, locks canonical targets, verifies hashes, rolls back safely, finalizes staging separately, and shares locks with `LocalVault`. | Delivered through receipt-bound approval, jobs, events, and Tools. |
 | 4. Approval, events, jobs, and Tool receipts | Complete. `WritePlan` exports and callers are removed; approvals bind proposal/asset digests; checkpoints store proposal identity/evidence; only matching committed receipts publish events; and every Tool has a closed DSH outcome schema. | Task 5 can now replace the default model boundary without a second write authority. |
 | 5. DSH LLM consumer bridge | Complete. `@notemd-harness/llm-dsh` injects DSH `llm`, builds provider-neutral completions from `StreamChunk`, rejects closed-policy violations, and disposes active calls with its Cordis owner. | Delivered. The default patch contains no endpoint/key/transport settings and registers no legacy provider tools. |
-| 6. DSH web research evidence | Not started. Research synthesis consumes caller-provided strings and no durable evidence package exists. | Named discovery/synthesis operations use `ctx.web`, retain typed evidence and citations, and return capability-unavailable without transport fallback. |
+| 6. DSH web research evidence | Complete. `@notemd-harness/research` persists bounded DSH Web discoveries/evidence; named Tools return evidence metadata and research synthesis accepts durable ids only. `notemdResearch` is injected into Tools and jobs, and the bundle declares `dsh-web` as an optional peer. | Delivered. No provider yields the closed `capability-unavailable` outcome; non-2xx resources remain evidence rather than becoming transport failures. |
 | 7. Document semantics and knowledge retrieval | Not started. There is no documents package; the index is whole-file MiniSearch. | AST sections, stable anchors, chapter/original-text/reconciliation plans, folder policies, scoped windows, and explainable hits pass characterization fixtures. |
 | 8. Artifact lineage and SVG-capable renderers | Not started. Artifacts are source JSON/README only, and no renderer package exists. | Versioned specs and source/preview/export lineage support sanitized SVG only for eligible targets through separate named providers. |
 | 9. Draw.io, stable Drawnix, and Circuitikz providers | Not started. No staging-only process boundary or specialist renderer package exists. | Allowlisted process tests and provider-specific canonical sources pass, using only the pinned committed Drawnix baseline. |
@@ -78,10 +80,9 @@ The table records code state, not planned completion. A passing baseline release
 
 ## 7. Next Direction
 
-1. Complete Task 6 next. Research discovery and synthesis must consume durable `ctx.web` evidence, never untracked caller-supplied passages or a transport fallback.
-2. Complete Task 7 before renderer breadth. Document structure and retrieval evidence are upstream inputs to diagrams, citations, and artifact provenance.
-3. Implement Tasks 8-10 by target class, never through a target selector. SVG-capable renderers come first; process-gated Draw.io/Drawnix/Circuitikz and Slidev/media exporters follow only with explicit capability tests.
-4. Reserve Task 11 for proof, not optimism: run source-matrix conformance, lifecycle/HMR failure paths, isolated bundle acceptance, and the full release gate after the implementation tasks are green.
+1. Complete Task 7 before renderer breadth. Document structure and retrieval evidence are upstream inputs to diagrams, citations, and artifact provenance.
+2. Implement Tasks 8-10 by target class, never through a target selector. SVG-capable renderers come first; process-gated Draw.io/Drawnix/Circuitikz and Slidev/media exporters follow only with explicit capability tests.
+3. Reserve Task 11 for proof, not optimism: run source-matrix conformance, lifecycle/HMR failure paths, isolated bundle acceptance, and the full release gate after the implementation tasks are green.
 
 ## 8. Guardrails
 
@@ -147,3 +148,10 @@ This publication records architecture, planning, audit, and baseline verificatio
 - `@notemd-harness/llm-dsh` converts DSH `StreamChunk` values into NoteMD text completions. It validates the closed route policy, preserves only neutral failure classes, rejects malformed or post-terminal streams, propagates cancellation, and aborts active calls when its Cordis owner disposes.
 - The default `notemd-llm` service has static `llm` injection and configures only `provider`, `model`, `maxTokens`, and `promptPolicyId`. Endpoint, API-key, header, retry, and discovery fields cannot enter the default route policy. The OpenAI-compatible service is exposed only from `./llm-openai-compatible-legacy`; default tool registration omits its diagnostics.
 - Fresh evidence on Node `v22.19.0` / pnpm `10.7.1`: `pnpm typecheck`, `pnpm test` (22 files, 109 tests), `pnpm lint`, `pnpm build`, `pnpm pack:bundle`, `pnpm verify:bundle`, and `pnpm accept:dsh` all completed successfully. The acceptance runner installs the packed bundle into a clean DSH profile, loads `LlmRuntime`, and asserts the default bridge has no legacy provider Tool.
+
+### Task 6 Verification
+
+- `DshResearchClient` calls only DSH's provider-selecting `ctx.web.search()` and `ctx.web.fetch()` seams. The durable catalog writes discovery/evidence JSON under `.notemd/research`; it retains final URLs, non-2xx status, body kind, bounded content digest, truncation, retrieval time, and citations. Research Tool responses intentionally omit fetched body text; synthesis resolves evidence ids internally and frames bodies as untrusted records.
+- The Tool/job boundary no longer accepts `sources`. `notemd_research_discover`, `notemd_research_capture_evidence`, and `notemd_plan_research_synthesis` are distinct operations; research batch jobs persist only `evidenceIds`. The job runner resolves those ids immediately before it calls the workflow planner, so its checkpoint retains only proposal identity and evidence references.
+- Focused evidence: `packages/notemd-research/test/dsh-research-client.test.ts` passed 4 tests; `packages/notemd-workflows/test/workflow-planning.test.ts` passed 6; `packages/notemd-tools/test/tools.contract.test.ts` passed 14; and `packages/notemd-bundle/test/patch.contract.test.ts` passed 4. The Tool contract includes a regression for the exact-one-branch DSH schema invariant.
+- Fresh Node `v22.19.0` / pnpm `10.7.1` release evidence: `pnpm typecheck`, `pnpm test` (23 files, 118 tests), `pnpm lint`, `pnpm build`, `pnpm pack:bundle`, `pnpm verify:bundle`, and `pnpm accept:dsh` all completed successfully. Clean-profile acceptance installs `WebRuntime` with no provider and asserts `notemd_research_discover` returns `{ status: 'unavailable', code: 'capability-unavailable' }`.

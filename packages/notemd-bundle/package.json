@@ -29,6 +29,10 @@
       "types": "./lib/artifacts.d.ts",
       "default": "./lib/artifacts.js"
     },
+    "./research": {
+      "types": "./lib/research.d.ts",
+      "default": "./lib/research.js"
+    },
     "./llm": {
       "types": "./lib/llm.d.ts",
       "default": "./lib/llm.js"
@@ -59,12 +63,14 @@
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
     "@deepseek-ai/dsh-llm": "0.1.0-rc.5",
-    "@deepseek-ai/dsh-tools": "0.1.0-rc.5"
+    "@deepseek-ai/dsh-tools": "0.1.0-rc.5",
+    "@deepseek-ai/dsh-web": "0.1.0-rc.5"
   },
   "peerDependenciesMeta": {
     "@deepseek-ai/cordis": { "optional": true },
     "@deepseek-ai/dsh-llm": { "optional": true },
-    "@deepseek-ai/dsh-tools": { "optional": true }
+    "@deepseek-ai/dsh-tools": { "optional": true },
+    "@deepseek-ai/dsh-web": { "optional": true }
   },
   "dependencies": {
     "@notemd-harness/artifacts": "workspace:*",
@@ -73,6 +79,7 @@
     "@notemd-harness/llm-dsh": "workspace:*",
     "@notemd-harness/llm-openai-compatible": "workspace:*",
     "@notemd-harness/mutation": "workspace:*",
+    "@notemd-harness/research": "workspace:*",
     "@notemd-harness/tools": "workspace:*",
     "@notemd-harness/vault": "workspace:*",
     "@notemd-harness/vault-local": "workspace:*",
@@ -87,6 +94,7 @@
     "@notemd-harness/llm-dsh",
     "@notemd-harness/llm-openai-compatible",
     "@notemd-harness/mutation",
+    "@notemd-harness/research",
     "@notemd-harness/tools",
     "@notemd-harness/vault",
     "@notemd-harness/vault-local",

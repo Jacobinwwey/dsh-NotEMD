@@ -194,10 +194,10 @@ interface DshTextTransformer extends TextTransformer {
 - Create: `packages/notemd-research/src/dsh-research-client.ts`
 - Create: `packages/notemd-research/src/index.ts`
 - Create: `packages/notemd-research/test/dsh-research-client.test.ts`
-- Modify: `packages/notemd-workflows/src/index.ts`
-- Modify: `packages/notemd-bundle/src/workflows.ts`
-- Modify: `packages/notemd-bundle/src/tools.ts`
-- Modify: `packages/notemd-tools/src/plan-tools.ts`
+- Create: `packages/notemd-tools/src/research-tools.ts`
+- Create: `packages/notemd-bundle/src/research.ts`
+- Modify: `packages/notemd-workflows/src/index.ts`, `packages/notemd-jobs/{package.json,tsconfig.json}`, and `packages/notemd-bundle/src/{jobs.ts,workflows.ts,harness-types.d.ts,index.ts,tools.ts}`
+- Modify: `packages/notemd-tools/src/{index.ts,notemd-services.ts,plan-tools.ts,job-tools.ts}`, package manifests, project references, Cordis patches, and bundle verification/acceptance scripts
 
 **Interfaces:**
 
@@ -215,12 +215,12 @@ interface ResearchEvidence {
 }
 ```
 
-- [ ] Implement separate named planning operations for research discovery and research synthesis. A synthesis consumes durable evidence ids, never arbitrary untracked passages.
-- [ ] Call `ctx.web.search()` with a bounded result count, then `ctx.web.fetch()` only for selected sources. Record redirect final URLs, status, body kind, truncation, and digest.
-- [ ] Return `capability-unavailable` for missing/ambiguous DSH providers and unsupported PDF extraction. Do not introduce DuckDuckGo, Tavily, or raw HTTP fallback code.
-- [ ] Test provider selection errors, non-2xx fetch result preservation, truncation, citation alignment, evidence digest changes, and cancellation.
-- [ ] Run `rtk proxy pnpm.cmd --filter @notemd-harness/research test` and `rtk tsc`.
-- [ ] Update progress records and commit `feat: add DSH web research evidence`.
+- [x] Implemented named discovery, evidence capture, and synthesis operations. Synthesis resolves durable evidence ids through `notemdResearch`; neither Tools nor durable jobs accept arbitrary source passages.
+- [x] `DshResearchClient` uses bounded `ctx.web.search()` followed only by selected `ctx.web.fetch()` calls. The catalog persists final URL, non-2xx status, body kind, truncation, digest, retrieval time, and aligned citations under `.notemd/research`.
+- [x] Missing or ambiguous DSH Web providers and unsupported body kinds map to `capability-unavailable`; no DuckDuckGo, Tavily, raw HTTP, or fallback transport was added. Tool output exposes evidence metadata but not fetched body text.
+- [x] Added provider-selection, non-2xx preservation, truncation, citation alignment, evidence identity, cancellation, closed-schema, durable-job input, packed-bundle, and clean-profile acceptance coverage.
+- [x] Ran focused research/workflow/Tool/bundle tests, strict TypeScript, full Vitest, ESLint, build, packed-bundle verification, and clean DSH-profile acceptance.
+- [x] Updated paired progress records with measured Task 6 evidence.
 
 ### Task 7: Restore Document Semantics and Explainable Knowledge Retrieval
 

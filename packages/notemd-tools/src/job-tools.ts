@@ -69,17 +69,17 @@ export function registerJobTools(context: NotemdToolContext, defineTool: ToolDef
 
   context.tools.register(defineTool({
     name: 'notemd_job_start_research_synthesis',
-    description: 'Start a durable, plan-only batch that prepares research synthesis plans for explicit targets.',
+    description: 'Start a durable, plan-only batch that prepares research synthesis plans from durable evidence identifiers.',
     parameters: {
       ...planningJobParameters,
-      sources: { type: 'array', required: true, description: 'Source passages to synthesize.', items: { type: 'string' } },
+      evidenceIds: { type: 'array', required: true, description: 'Durable research evidence identifiers to synthesize.', items: { type: 'string' } },
     },
     output: jobOutput,
     async execute(args) {
       return executeTool(async () => ({
         job: jobView(await context.notemdJobs.startResearchSyntheses({
           ...planningJobRequest(args),
-          sources: requiredStringList(args, 'sources'),
+          evidenceIds: requiredStringList(args, 'evidenceIds'),
         })),
       }))
     },

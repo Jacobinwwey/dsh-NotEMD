@@ -13,6 +13,7 @@
     { "path": "../notemd-llm-dsh" },
     { "path": "../notemd-llm-openai-compatible" },
     { "path": "../notemd-mutation" },
+    { "path": "../notemd-research" },
     { "path": "../notemd-tools" },
     { "path": "../notemd-vault-local" },
     { "path": "../notemd-workspace-events" },

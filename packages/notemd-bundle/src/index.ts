@@ -9,6 +9,7 @@ export * from './artifacts.js'
 export * from './jobs.js'
 export * from './knowledge.js'
 export * from './llm.js'
+export * from './research.js'
 export {
   DshApprovalGate,
   type DshApprovalContext,

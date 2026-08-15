@@ -12,3 +12,7 @@
   config:
     workspaceRoot: !!js process.cwd() + '/fixtures/workspace'
     approvalTtlMs: 300000
+
+- id: notemd-research
+  config:
+    workspaceRoot: !!js process.cwd() + '/fixtures/workspace'

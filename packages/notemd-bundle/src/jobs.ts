@@ -19,6 +19,7 @@ import type {
   WikiLinkJobRequest,
 } from '@notemd-harness/tools'
 import type { WorkspaceMutationPlan } from '@notemd-harness/mutation'
+import type { NotemdResearch } from '@notemd-harness/research'
 import type { WorkflowPlanner } from '@notemd-harness/workflows'
 
 import { workspaceRootFrom, type WorkspaceRootConfig } from './workspace-root.js'
@@ -30,7 +31,7 @@ export interface NotemdJobsConfig extends WorkspaceRootConfig {
 }
 
 export class NotemdJobsService extends Service implements NotemdJobs {
-  static inject = ['notemdWorkflows'] as const
+  static inject = ['notemdWorkflows', 'notemdResearch'] as const
 
   private store: FileJobStore | undefined
   private executors = new Map<string, WorkflowJobExecutor>()
@@ -47,7 +48,7 @@ export class NotemdJobsService extends Service implements NotemdJobs {
   protected async [Service.init](): Promise<void> {
     this.store = await FileJobStore.open(this.workspaceRoot)
     await this.store.recoverInterrupted()
-    this.executors = planningExecutors(this.ctx.notemdWorkflows)
+    this.executors = planningExecutors(this.ctx.notemdWorkflows, this.ctx.notemdResearch)
   }
 
   async startFormulaRepairs(request: FormulaRepairJobRequest): Promise<JobRecord> {
@@ -71,7 +72,7 @@ export class NotemdJobsService extends Service implements NotemdJobs {
   }
 
   async startResearchSyntheses(request: ResearchJobRequest): Promise<JobRecord> {
-    return this.startJob('research-synthesis', request, { sources: nonEmptyStrings(request.sources, 'research sources') })
+    return this.startJob('research-synthesis', request, { evidenceIds: nonEmptyStrings(request.evidenceIds, 'research evidence ids') })
   }
 
   async startConceptExtractions(request: ConceptJobRequest): Promise<JobRecord> {
@@ -173,14 +174,17 @@ export class NotemdJobsService extends Service implements NotemdJobs {
   }
 }
 
-function planningExecutors(workflows: WorkflowPlanner): Map<string, WorkflowJobExecutor> {
+function planningExecutors(workflows: WorkflowPlanner, research: NotemdResearch): Map<string, WorkflowJobExecutor> {
   return new Map([
     ['formula-repair', planningExecutor('formula-repair', async (target) => workflows.planFormulaRepair(target))],
     ['mermaid-repair', planningExecutor('mermaid-repair', async (target, _input, signal) => workflows.planMermaidRepair(target, signal))],
     ['translation', planningExecutor('translation', async (target, input, signal) => workflows.planTranslation(target, stringInput(input, 'language'), signal))],
     ['wiki-links', planningExecutor('wiki-links', async (target, _input, signal) => workflows.planWikiLinks(target, signal))],
     ['title-generation', planningExecutor('title-generation', async (target, _input, signal) => workflows.planTitleGeneration(target, signal))],
-    ['research-synthesis', planningExecutor('research-synthesis', async (target, input, signal) => workflows.planResearchSynthesis(target, stringListInput(input, 'sources'), signal))],
+    ['research-synthesis', planningExecutor('research-synthesis', async (target, input, signal) => {
+      const evidence = await research.readEvidence(stringListInput(input, 'evidenceIds'), signal)
+      return workflows.planResearchSynthesis(target, evidence, signal)
+    })],
     ['concept-extraction', planningExecutor('concept-extraction', async (target, _input, signal) => workflows.planConceptExtraction(target, signal))],
   ])
 }

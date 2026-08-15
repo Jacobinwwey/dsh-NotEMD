@@ -159,13 +159,16 @@ interface NotemdLlmRoute {
 - 新建：`packages/notemd-research/{package.json,tsconfig.json}`
 - 新建：`packages/notemd-research/src/{research-evidence.ts,dsh-research-client.ts,index.ts}`
 - 新建：`packages/notemd-research/test/dsh-research-client.test.ts`
-- 修改：`packages/notemd-workflows/src/index.ts`、`packages/notemd-bundle/src/{workflows.ts,tools.ts}`、`packages/notemd-tools/src/plan-tools.ts`
+- 新建：`packages/notemd-tools/src/research-tools.ts`、`packages/notemd-bundle/src/research.ts`
+- 修改：`packages/notemd-workflows/src/index.ts`、`packages/notemd-jobs/{package.json,tsconfig.json}`、`packages/notemd-bundle/src/{jobs.ts,workflows.ts,harness-types.d.ts,index.ts,tools.ts}`
+- 修改：`packages/notemd-tools/src/{index.ts,notemd-services.ts,plan-tools.ts,job-tools.ts}`、包 manifest、project reference、Cordis patch、bundle verification/acceptance script
 
-- [ ] 分离具名的 research discovery 与 research synthesis。synthesis 只消费 durable evidence id，不能消费未追踪的任意字符串。
-- [ ] 用 `ctx.web.search()` 获取有限结果，再对选定来源使用 `ctx.web.fetch()`；保存 final URL、status、body kind、truncation 与 digest。
-- [ ] DSH provider 缺失/歧义和不支持 PDF 时返回 `capability-unavailable`，不得重新引入 DuckDuckGo、Tavily 或 raw HTTP fallback。
-- [ ] 测试 provider 选择错误、非 2xx fetch、截断、citation 对齐、evidence digest 变化和取消。
-- [ ] 运行 research 测试和 typecheck，更新进度并提交 `feat: add DSH web research evidence`。
+- [x] 已实现具名 discovery、evidence capture 和 synthesis 操作。synthesis 经 `notemdResearch` 解析 durable evidence id；Tool 与 durable job 均不再接收任意 source passage。
+- [x] `DshResearchClient` 只调用有上限的 `ctx.web.search()`，再调用选定来源的 `ctx.web.fetch()`。catalog 在 `.notemd/research` 持久化 final URL、非 2xx status、body kind、truncation、digest、retrieval time 与对齐 citation。
+- [x] 缺失/歧义 DSH Web provider 和不支持的 body kind 均映射为 `capability-unavailable`；没有增加 DuckDuckGo、Tavily、raw HTTP 或 transport fallback。Tool output 仅暴露 evidence metadata，不暴露 fetched body text。
+- [x] 已增加 provider-selection、非 2xx 保留、truncation、citation 对齐、evidence identity、cancellation、closed schema、durable-job input、packed bundle 与 clean-profile acceptance 覆盖。
+- [x] 已运行 focused research/workflow/Tool/bundle 测试、strict TypeScript、完整 Vitest、ESLint、build、packed-bundle verification 与 clean DSH-profile acceptance。
+- [x] 已用实测 Task 6 证据更新成对 progress record。
 
 ### Task 7：恢复文档语义与可解释知识检索
 

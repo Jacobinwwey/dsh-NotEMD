@@ -1,6 +1,7 @@
 import { Service, type Context } from '@deepseek-ai/cordis'
 import { NotemdWorkflowPlanner, type WorkflowPlanner } from '@notemd-harness/workflows'
 import type { WorkspaceMutationPlan } from '@notemd-harness/mutation'
+import type { ResearchEvidence } from '@notemd-harness/research'
 
 export class NotemdWorkflowsService extends Service implements WorkflowPlanner {
   static inject = ['notemdVault', 'notemdTextTransformer'] as const
@@ -27,8 +28,8 @@ export class NotemdWorkflowsService extends Service implements WorkflowPlanner {
     return this.requirePlanner().planTitleGeneration(path, signal)
   }
 
-  planResearchSynthesis(path: string, sources: readonly string[], signal?: AbortSignal): Promise<WorkspaceMutationPlan> {
-    return this.requirePlanner().planResearchSynthesis(path, sources, signal)
+  planResearchSynthesis(path: string, evidence: readonly ResearchEvidence[], signal?: AbortSignal): Promise<WorkspaceMutationPlan> {
+    return this.requirePlanner().planResearchSynthesis(path, evidence, signal)
   }
 
   planConceptExtraction(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan> {

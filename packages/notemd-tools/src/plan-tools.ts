@@ -5,7 +5,6 @@ import {
   executeTool,
   outcomeOutput,
   requiredString,
-  requiredStringList,
   type ToolDefinitionFactory,
   type ToolExecutionContext,
   workspaceMutationPlanSchema,
@@ -38,24 +37,6 @@ export function registerPlanTools(context: NotemdToolContext, defineTool: ToolDe
     description: 'Create a reviewable plan that gives one note an accurate leading title.',
     parameters: pathParameters,
     execute: (args, execution) => context.notemdWorkflows.planTitleGeneration(requiredString(args, 'path'), execution?.signal),
-  })
-  registerPlanTool(context, defineTool, {
-    name: 'notemd_plan_research_synthesis',
-    description: 'Create a reviewable plan that synthesizes explicit source text into one note.',
-    parameters: {
-      ...pathParameters,
-      sources: {
-        type: 'array',
-        required: true,
-        description: 'Source passages to synthesize.',
-        items: { type: 'string' },
-      },
-    },
-    execute: (args, execution) => context.notemdWorkflows.planResearchSynthesis(
-      requiredString(args, 'path'),
-      requiredStringList(args, 'sources'),
-      execution?.signal,
-    ),
   })
   registerPlanTool(context, defineTool, {
     name: 'notemd_plan_concept_extraction',

@@ -114,12 +114,16 @@ interface RegisteredContext {
   readonly registered: ToolRegistrationSpec[]
   readonly appliedPlans: WorkspaceMutationPlan[]
   readonly publishedReceipts: Array<{ plan: WorkspaceMutationPlan; receipt: WorkspaceMutationReceipt }>
+  readonly evidenceLookups: Array<readonly string[]>
+  readonly workflowEvidence: unknown[]
+  readonly researchJobRequests: Array<{ readonly evidenceIds: readonly string[] }>
 }
 
 interface FixtureOptions {
   readonly approvalDecision?: 'approved' | 'rejected' | 'unavailable' | 'cancelled'
   readonly consumeApproval?: boolean
   readonly dshOnlyTransformer?: boolean
+  readonly researchFailure?: unknown
 }
 
 function registerFixture(
@@ -130,7 +134,24 @@ function registerFixture(
   const registered: ToolRegistrationSpec[] = []
   const appliedPlans: WorkspaceMutationPlan[] = []
   const publishedReceipts: Array<{ plan: WorkspaceMutationPlan; receipt: WorkspaceMutationReceipt }> = []
+  const evidenceLookups: Array<readonly string[]> = []
+  const workflowEvidence: unknown[] = []
+  const researchJobRequests: Array<{ readonly evidenceIds: readonly string[] }> = []
   let approvalNumber = 0
+  const researchEvidence = {
+    version: 1 as const,
+    id: 'evidence:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    query: 'revision-aware mutations',
+    requestedUrl: 'https://example.test/requested',
+    finalUrl: 'https://example.test/final',
+    statusCode: 200,
+    bodyKind: 'text' as const,
+    content: 'Durable research evidence.',
+    truncated: false,
+    contentSha256: 'b'.repeat(64),
+    retrievedAt: '2026-08-15T00:00:00.000Z',
+    citations: [{ id: 'citation:one', url: 'https://example.test/final' }],
+  }
 
   const context = {
     tools: { register: (tool: ToolRegistrationSpec) => registered.push(tool) },
@@ -147,7 +168,10 @@ function registerFixture(
       planWikiLinks: async () => plan,
       planTranslation: async () => plan,
       planTitleGeneration: async () => plan,
-      planResearchSynthesis: async () => plan,
+      planResearchSynthesis: async (_path: string, evidence: unknown) => {
+        workflowEvidence.push(evidence)
+        return plan
+      },
       planConceptExtraction: async () => plan,
       planMermaidRepair: async () => plan,
       planFormulaRepair: async () => plan,
@@ -165,13 +189,40 @@ function registerFixture(
           diagnoseProvider: async () => ({ status: 'available', endpoint: 'https://example.test/v1/chat/completions', model: 'test-model', elapsedMs: 1 }),
           discoverModels: async () => ({ status: 'available', endpoint: 'https://example.test/v1/models', models: [{ id: 'test-model' }] }),
         },
+    notemdResearch: {
+      discover: async (request: { query: string; maxResults: number }) => {
+        if (options.researchFailure !== undefined) throw options.researchFailure
+        return {
+          version: 1 as const,
+          id: 'discovery:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          query: request.query,
+          sources: [{ url: 'https://example.test/final', title: 'Evidence source' }],
+          truncated: false,
+          retrievedAt: '2026-08-15T00:00:00.000Z',
+        }
+      },
+      capture: async (discoveryId: string, sourceIndex: number) => {
+        if (options.researchFailure !== undefined) throw options.researchFailure
+        expect(discoveryId).toContain('discovery:')
+        expect(sourceIndex).toBe(0)
+        return researchEvidence
+      },
+      readEvidence: async (ids: readonly string[]) => {
+        evidenceLookups.push(ids)
+        if (options.researchFailure !== undefined) throw options.researchFailure
+        return [researchEvidence]
+      },
+    },
     notemdJobs: {
       startFormulaRepairs: async () => ({ id: 'job-formula' }),
       startMermaidRepairs: async () => ({ id: 'job-mermaid' }),
       startTranslations: async () => ({ id: 'job-translation' }),
       startWikiLinkPlans: async () => ({ id: 'job-links' }),
       startTitlePlans: async () => ({ id: 'job-title' }),
-      startResearchSyntheses: async () => ({ id: 'job-research' }),
+      startResearchSyntheses: async (request: { readonly evidenceIds: readonly string[] }) => {
+        researchJobRequests.push(request)
+        return { id: 'job-research' }
+      },
       startConceptExtractions: async () => ({ id: 'job-concepts' }),
       resume: async () => ({ id: 'job', state: 'running' }),
       get: async () => undefined,
@@ -205,7 +256,7 @@ function registerFixture(
   } as unknown as NotemdToolContext
 
   registerNotemdTools(context, (tool) => tool)
-  return { registered, appliedPlans, publishedReceipts }
+  return { registered, appliedPlans, publishedReceipts, evidenceLookups, workflowEvidence, researchJobRequests }
 }
 
 function registeredTool(context: RegisteredContext, name: string): ToolRegistrationSpec {
@@ -307,6 +358,59 @@ test('does not register legacy provider tools for a DSH-only transformer', () =>
 
   expect(names).not.toContain('notemd_provider_diagnostic')
   expect(names).not.toContain('notemd_provider_models')
+})
+
+test('uses named discovery, capture, and evidence-id synthesis operations', async () => {
+  const context = registerFixture(textPlan())
+  const discoveryTool = registeredTool(context, 'notemd_research_discover')
+  const captureTool = registeredTool(context, 'notemd_research_capture_evidence')
+  const synthesisTool = registeredTool(context, 'notemd_plan_research_synthesis')
+
+  const discovery = await discoveryTool.execute({ query: 'revision-aware mutations', maxResults: 2 })
+  const discoveryId = (discovery as { discovery: { id: string } }).discovery.id
+  const evidence = await captureTool.execute({ discoveryId, sourceIndex: 0 })
+  const evidenceId = (evidence as { evidence: { id: string } }).evidence.id
+  await expect(synthesisTool.execute({ path: 'notes/a.md', evidenceIds: [evidenceId] })).resolves.toMatchObject({
+    status: 'success',
+    plan: { id: textPlan().id },
+  })
+
+  expect(context.evidenceLookups).toEqual([[evidenceId]])
+  expect(context.workflowEvidence).toHaveLength(1)
+})
+
+test('reports missing or ambiguous DSH web capability as unavailable', async () => {
+  const context = registerFixture(textPlan(), receiptFor(textPlan(), 'committed'), {
+    researchFailure: Object.assign(new Error('no provider'), { code: 'RESEARCH_CAPABILITY_UNAVAILABLE' }),
+  })
+  const discoveryTool = registeredTool(context, 'notemd_research_discover')
+
+  await expect(discoveryTool.execute({ query: 'revision-aware mutations', maxResults: 1 })).resolves.toEqual({
+    status: 'unavailable',
+    code: 'capability-unavailable',
+  })
+})
+
+test('keeps research unavailable output in one closed schema branch', () => {
+  const context = registerFixture(textPlan())
+  const discoveryTool = registeredTool(context, 'notemd_research_discover')
+  const schema = discoveryTool.output.schema as { oneOf?: unknown[] }
+
+  expect(schema.oneOf).toHaveLength(6)
+})
+
+test('starts research jobs from durable evidence ids without accepting raw passages', async () => {
+  const context = registerFixture(textPlan())
+  const jobTool = registeredTool(context, 'notemd_job_start_research_synthesis')
+  const evidenceId = 'evidence:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+
+  await expect(jobTool.execute({
+    idempotencyKey: 'research-durable-evidence',
+    targets: ['notes/a.md'],
+    evidenceIds: [evidenceId],
+  })).resolves.toMatchObject({ status: 'success', job: { id: 'job-research' } })
+
+  expect(context.researchJobRequests).toMatchObject([{ evidenceIds: [evidenceId] }])
 })
 
 function schemaIsClosed(schema: unknown): boolean {

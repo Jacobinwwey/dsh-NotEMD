@@ -35,13 +35,19 @@
         maxTokens: 4096
         promptPolicyId: notemd.default.v1
 
+    - id: notemd-research
+      name: '@jacobinwwey/notemd-deepseek-harness/research'
+      inject: [web]
+      config:
+        workspaceRoot: !!js process.cwd()
+
     - id: notemd-workflows
       name: '@jacobinwwey/notemd-deepseek-harness/workflows'
       inject: [notemdVault, notemdTextTransformer]
 
     - id: notemd-jobs
       name: '@jacobinwwey/notemd-deepseek-harness/jobs'
-      inject: [notemdWorkflows]
+      inject: [notemdWorkflows, notemdResearch]
       config:
         workspaceRoot: !!js process.cwd()
         concurrency: 2
@@ -49,4 +55,4 @@
     - id: notemd-tools
       name: '@jacobinwwey/notemd-deepseek-harness/tools'
       inject:
-        [tools, notemdVault, notemdJobs, notemdWorkspaceChanges, notemdKnowledge, notemdTextTransformer, notemdWorkflows, notemdArtifacts, notemdApprovalLedger, notemdApprovalGate]
+        [tools, notemdVault, notemdJobs, notemdWorkspaceChanges, notemdKnowledge, notemdTextTransformer, notemdWorkflows, notemdResearch, notemdArtifacts, notemdApprovalLedger, notemdApprovalGate]

@@ -10,6 +10,7 @@
     "@notemd-harness/knowledge": "workspace:*",
     "@notemd-harness/llm-openai-compatible": "workspace:*",
     "@notemd-harness/mutation": "workspace:*",
+    "@notemd-harness/research": "workspace:*",
     "@notemd-harness/vault": "workspace:*",
     "@notemd-harness/workspace-events": "workspace:*",
     "@notemd-harness/workflows": "workspace:*"

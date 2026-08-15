@@ -6,6 +6,7 @@
   "files": ["lib/**/*.js", "lib/**/*.d.ts"],
   "dependencies": {
     "@notemd-harness/mutation": "workspace:*",
+    "@notemd-harness/research": "workspace:*",
     "@notemd-harness/vault": "workspace:*"
   },
   "exports": {

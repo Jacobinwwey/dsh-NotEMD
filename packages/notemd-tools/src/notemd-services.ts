@@ -7,6 +7,7 @@ import type {
   WorkspaceMutationPlan,
   WorkspaceMutationReceipt,
 } from '@notemd-harness/mutation'
+import type { NotemdResearch } from '@notemd-harness/research'
 import type { NotemdVault } from '@notemd-harness/vault'
 import type { WorkspaceChangeEvent } from '@notemd-harness/workspace-events'
 import type { TextTransformer, WorkflowPlanner } from '@notemd-harness/workflows'
@@ -42,7 +43,7 @@ export interface TranslationJobRequest extends PlanningJobRequest {
 }
 
 export interface ResearchJobRequest extends PlanningJobRequest {
-  readonly sources: readonly string[]
+  readonly evidenceIds: readonly string[]
 }
 
 interface PlanningJobRequest {
@@ -85,6 +86,7 @@ export interface NotemdToolContext {
   readonly notemdKnowledge?: NotemdKnowledge
   readonly notemdTextTransformer: TextTransformer
   readonly notemdWorkflows: WorkflowPlanner
+  readonly notemdResearch: NotemdResearch
   readonly notemdArtifacts: NotemdArtifacts
   readonly notemdApprovalLedger: ApprovalLedger
   readonly notemdApprovalGate: NotemdApprovalGate

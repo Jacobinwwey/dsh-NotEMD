@@ -8,6 +8,7 @@
   },
   "references": [
     { "path": "../notemd-mutation" },
+    { "path": "../notemd-research" },
     { "path": "../notemd-vault" }
   ],
   "include": ["src/**/*.ts"]

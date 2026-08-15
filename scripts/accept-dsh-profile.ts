@@ -69,6 +69,7 @@ export async function acceptDshProfile(): Promise<void> {
     assert(evidence.appliedStatus === 'committed', 'The approved mutation proposal was not applied through the installed ToolRuntime.')
     assert(evidence.staleStatus === 'conflict', 'A stale mutation proposal was not rejected by the vault write precondition.')
     assert(evidence.jobState === 'completed', 'The installed formula planning job did not complete.')
+    assert(evidence.researchStatus === 'unavailable', 'The installed research Tool did not report an unconfigured DSH web capability as unavailable.')
     assert(evidence.legacyProviderToolMissing, 'The default DSH bridge registered a legacy provider diagnostic Tool.')
 
     process.stdout.write('Clean DeepSeek Harness profile acceptance passed.\n')
@@ -127,6 +128,7 @@ function parseRunnerEvidence(stdout: string): {
   readonly appliedStatus: string
   readonly staleStatus: string
   readonly jobState: string
+  readonly researchStatus: string
   readonly legacyProviderToolMissing: boolean
 } {
   const line = stdout.trim().split(/\r?\n/u).at(-1)
@@ -139,6 +141,7 @@ function parseRunnerEvidence(stdout: string): {
     readonly appliedStatus: string
     readonly staleStatus: string
     readonly jobState: string
+    readonly researchStatus: string
     readonly legacyProviderToolMissing: boolean
   }
 }
@@ -177,11 +180,13 @@ import { Context, Service } from '@deepseek-ai/cordis'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import LlmRuntime, { CallId } from '@deepseek-ai/dsh-llm'
+import WebRuntime from '@deepseek-ai/dsh-web'
 
 import NotemdArtifactsService from '@jacobinwwey/notemd-deepseek-harness/artifacts'
 import NotemdJobsService from '@jacobinwwey/notemd-deepseek-harness/jobs'
 import NotemdKnowledgeService from '@jacobinwwey/notemd-deepseek-harness/knowledge'
 import NotemdTextTransformerService from '@jacobinwwey/notemd-deepseek-harness/llm'
+import NotemdResearchService from '@jacobinwwey/notemd-deepseek-harness/research'
 import NotemdVaultLocalService from '@jacobinwwey/notemd-deepseek-harness/vault-local'
 import NotemdWorkspaceChangeService from '@jacobinwwey/notemd-deepseek-harness/workspace-changes'
 import NotemdWorkflowsService from '@jacobinwwey/notemd-deepseek-harness/workflows'
@@ -206,6 +211,7 @@ assert(typeof workspaceRoot === 'string' && workspaceRoot.length > 0, 'The accep
 
 const ctx = new Context()
 await ctx.plugin(LlmRuntime)
+await ctx.plugin(WebRuntime, {})
 await ctx.plugin(SystemPrompt, {})
 await ctx.plugin(ToolRuntime, { mode: 'native' })
 await ctx.plugin(AllowOnceApprovalService)
@@ -220,6 +226,7 @@ await ctx.plugin(NotemdTextTransformerService, {
   promptPolicyId: 'notemd.acceptance.v1',
 })
 await ctx.plugin(NotemdWorkflowsService)
+await ctx.plugin(NotemdResearchService, { workspaceRoot })
 await ctx.plugin(NotemdJobsService, { workspaceRoot, concurrency: 2 })
 await ctx.plugin(NotemdKnowledgeService)
 await ctx.plugin(NotemdArtifactsService)
@@ -245,6 +252,8 @@ assert(read.document.path === 'notes/architecture.md', 'The read Tool did not re
 
 const legacyProviderToolMissing = await toolIsMissing('notemd_provider_diagnostic')
 assert(legacyProviderToolMissing, 'The default DSH bridge unexpectedly registered a legacy provider diagnostic Tool.')
+const research = await invoke('notemd_research_discover', { query: 'research capability test', maxResults: 1 })
+assert(research.status === 'unavailable' && research.code === 'capability-unavailable', 'The empty DSH web runtime did not report research as unavailable.')
 const renderStatus = await invoke('notemd_artifact_render_status', {})
 const exportStatus = await invoke('notemd_artifact_export_status', {})
 assert(renderStatus.status === 'unavailable', 'The core bundle unexpectedly claimed a portable diagram renderer.')
@@ -294,6 +303,7 @@ process.stdout.write(JSON.stringify({
   appliedStatus: applied.receipt.status,
   staleStatus: staleApply.receipt.status,
   jobState: completedJob.state,
+  researchStatus: research.status,
   legacyProviderToolMissing,
 }) + '\n')
 
