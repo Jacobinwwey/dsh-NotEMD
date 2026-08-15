@@ -2,7 +2,7 @@
 
 > English version: [2026-08-15-dsh-notemd-migration-progress.md](2026-08-15-dsh-notemd-migration-progress.md)
 
-**状态：** standalone bundle 与 next-level runtime 基础已实现。全量迁移架构与可执行计划已记录；十一项全量迁移能力任务均尚未开始实现。
+**状态：** standalone bundle 与 next-level runtime 基础已实现。全量迁移架构与可执行计划已在 `main` 的 `626f6e1` 发布；十一项全量迁移能力任务均尚未开始实现。
 
 ## 1. 范围基线
 
@@ -105,4 +105,8 @@
 
 ### 发布段
 
-文档提交、canonical remote 更新、非强制推送和最终 clean-worktree 检查会在实际执行发布命令后记录。它们与实现账本严格分离：发布本架构不会推进任何能力任务。
+- 发布前，本地 `HEAD`、`FETCH_HEAD` 与 `origin/main` 均解析为 `6672f54def2b05e1628786ace97ab73649edab74`；相对已抓取远程的分歧计数为 `0 0`。
+- `626f6e1ac46ac5cb733e1d6c177b47cc987e0f77`（`docs: define full NotEMD migration roadmap`）在 release gate 和 clean staged-diff check 后创建于 `main`。
+- 该提交已非强制推送至 `git@github.com:Jacobinwwey/dsh-NotEMD.git`，远程快进为 `6672f54..626f6e1`；写入本发布日志前，`git status --short --branch` 只显示 `## main`。
+
+本次发布只记录架构、计划、审计和基线验证。它不会推进任何能力任务；任务进度必须以对应的源 fixture 与退出证据为准。

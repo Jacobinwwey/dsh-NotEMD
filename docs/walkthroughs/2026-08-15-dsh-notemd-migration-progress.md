@@ -2,7 +2,7 @@
 
 > Chinese version: [2026-08-15-dsh-notemd-migration-progress.zh-CN.md](2026-08-15-dsh-notemd-migration-progress.zh-CN.md)
 
-**Status:** The standalone-bundle and next-level-runtime foundations are implemented. The full-migration architecture and executable plan are recorded; none of the eleven full-migration capability tasks has started implementation.
+**Status:** The standalone-bundle and next-level-runtime foundations are implemented. The full-migration architecture and executable plan were published on `main` at `626f6e1`; none of the eleven full-migration capability tasks has started implementation.
 
 ## 1. Scope Baseline
 
@@ -105,4 +105,8 @@ The second verification segment completed successfully:
 
 ### Publication Segment
 
-The documentation commit, canonical-remote update, non-force push, and final clean-worktree check are recorded after the publication commands run. They are intentionally separate from the implementation ledger: publication of this architecture does not advance any capability task.
+- Before publication, local `HEAD`, `FETCH_HEAD`, and `origin/main` all resolved to `6672f54def2b05e1628786ace97ab73649edab74`; the divergence count against the fetched remote was `0 0`.
+- `626f6e1ac46ac5cb733e1d6c177b47cc987e0f77` (`docs: define full NotEMD migration roadmap`) was created on `main` after the release gate and a clean staged-diff check.
+- The commit was pushed non-force to `git@github.com:Jacobinwwey/dsh-NotEMD.git` as `6672f54..626f6e1`; immediately before this publication-log update, `git status --short --branch` reported only `## main`.
+
+This publication records architecture, planning, audit, and baseline verification only. It intentionally does not advance a capability task; that requires the task's source fixtures and exit evidence.
