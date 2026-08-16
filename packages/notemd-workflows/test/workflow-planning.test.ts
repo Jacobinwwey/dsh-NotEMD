@@ -107,6 +107,25 @@ test('rejects malformed concept extraction responses instead of guessing', async
   })
 })
 
+test('keeps extract-and-generate as a two-step, source-bound mutation plan', async () => {
+  await writeFile(join(workspaceRoot, 'notes', 'concepts.md'), '# Concepts\n\nAtomic writes are visible safely.')
+  const transformer = new ScriptedTransformer([
+    '{"concepts":[{"name":"Atomic Writes","summary":"Visibility-safe replacement."}]}',
+    '# Atomic Writes\n\nA generated explanation.',
+  ])
+  const workflows = new NotemdWorkflowPlanner(await LocalVault.open(workspaceRoot), transformer)
+
+  const plan = await workflows.planExtractAndGenerate('notes/concepts.md')
+
+  expect(plan.provenance.operationId).toBe('workflow.extract-and-generate')
+  expect(plan.mutations.map((mutation) => mutation.destination)).toEqual([
+    'concepts/Atomic Writes.md',
+    'generated/Atomic Writes.md',
+  ])
+  expect(transformer.requests).toHaveLength(2)
+  expect(transformer.requests[1]?.prompt).toContain('Visibility-safe replacement.')
+})
+
 test('uses a non-destructive target for a translation plan', async () => {
   await writeFile(join(workspaceRoot, 'notes', 'source.md'), '# Source\n\nHello')
   const workflows = new NotemdWorkflowPlanner(

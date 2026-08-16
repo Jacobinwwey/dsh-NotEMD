@@ -299,11 +299,11 @@ interface ResearchEvidence {
 - Modify: `packages/notemd-tools/src/artifact-tools.ts`
 - Modify: `packages/notemd-bundle/cordis.patch.yml`
 
-- [ ] Port Slidev source preparation and layout validation before adding process calls. Treat prepared Markdown and layout report as canonical artifacts.
-- [ ] Add separate named providers for HTML, PDF, PNG, PPTX, and MP4. Each reports its actual capability; SVG never substitutes for PPTX or MP4.
-- [ ] Run Slidev/Playwright/FFmpeg processes in staging and return digest-verified staged assets for approval-gated workspace materialization.
-- [ ] Test each output's missing dependency path, successful fixture export where runtime exists, output size cap, cleanup, and reproduction from canonical source.
-- [ ] Update progress records and commit `feat: add staged Slidev export providers`.
+- [x] Ported Slidev source preparation and layout validation before process calls. Prepared Markdown and the layout report are canonical artifacts, with offline fonts enforced and existing Slidev decks preserved.
+- [x] Added separate named providers for HTML, PDF, PNG, PPTX, and MP4. Each reports its actual capability; SVG never substitutes for PPTX or MP4. The runtime is pinned to the `github:Jacobinwwey/slidev` fork at `bbcb2efae709c2ebaa96bda522cd6c192476817c`.
+- [x] Runs Slidev/Playwright/FFmpeg only in staging and returns digest-verified staged assets for approval-gated workspace materialization. The fork standalone archive accepts `index-standalone.html` and legacy `index.html`.
+- [x] Tested missing dependencies, fixture-success fakes, output byte caps, staging cleanup, cancellation/process failure mapping, source/report reproducibility, numeric MP4 frame ordering, and staged digest substitution protection. The optional real binaries remain truthfully capability-gated.
+- [x] Updated progress records and prepared the phase commit `feat: add staged Slidev export providers`.
 
 ### Task 11: Conformance, HMR, Documentation, and Mainline Publication
 
@@ -316,9 +316,9 @@ interface ResearchEvidence {
 - Create: `docs/walkthroughs/2026-08-15-dsh-notemd-full-migration-validation.md`
 - Create: `docs/walkthroughs/2026-08-15-dsh-notemd-full-migration-validation.zh-CN.md`
 
-- [ ] Add a conformance test that consumes `fixtures/migration/source-operation-matrix.json` and fails if an included capability lacks a passing implementation fixture.
-- [ ] Test dependency removal/re-addition, HMR disposal, timer/process/staging cleanup ordering, profile config replacement semantics, `ctx.llm` route failure, `ctx.web` provider ambiguity, and clean-profile bundle installation.
-- [ ] Run the full release gate:
+- [x] Added `packages/notemd-workflows/test/migration-conformance.test.ts`, which consumes the source matrix and conformance manifest; every included operation fixture and every required semantic fixture must point at a passing test proof.
+- [x] Tested removable optional DSH peer boundaries, complete profile-row replacement configuration, Cordis effect disposal seams, timer/process/staging cleanup ordering, `ctx.llm` route rejection and active-call disposal, `ctx.web` provider ambiguity, and clean-profile bundle installation.
+- [x] Ran the full release gate:
 
 ```powershell
 rtk tsc
@@ -332,8 +332,8 @@ rtk proxy pnpm.cmd accept:dsh
 rtk proxy git diff --check
 ```
 
-- [ ] Update both progress records after each verified phase and write the bilingual validation walkthrough with exact command evidence and known environmental provider limits.
-- [ ] Verify `main` is current, change `origin` to `git@github.com:Jacobinwwey/dsh-NotEMD.git`, fetch remote `main`, rebase only if needed, make non-force commits, push, and run `rtk git status --short --branch` to prove a clean worktree.
+- [x] Updated both progress records after each verified phase and wrote the bilingual validation walkthrough with exact command evidence and known environmental provider limits.
+- [ ] Verify `main` is current, fetch remote `main`, rebase only if needed, make non-force commits, push, and run `rtk git status --short --branch` to prove a clean worktree.
 
 ## Plan Review
 

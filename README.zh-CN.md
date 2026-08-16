@@ -17,7 +17,21 @@
 | 持久化规划作业 | `notemdJobs` | 具名工作流将计划 checkpoint 写入 `<workspace>/.notemd/jobs/`；作业绝不应用计划。 |
 | LLM 路由 | DSH `llm` | NoteMD 只提供 provider/model route policy；凭据、adapter 与 transport 由 DSH 所有。 |
 
-该包刻意不是 Obsidian 兼容层。UI、预览、原生渲染器、Slidev/PPTX/PDF 导出、Tectonic 与桌面进程集成都属于独立的可选 provider。基线只生成可移植源工件，并对缺失的可选能力返回明确结果。
+该包刻意不是 Obsidian 兼容层。UI、编辑器选区、命令、modal 与预览宿主仍在 bundle 之外。可移植的文档/图表语义在 bundle 内；具名 render/export provider 生成 canonical source 与真实派生物。可选 executable 缺失时返回 `unavailable`，不会静默替换成另一种格式。
+
+## 导出目标
+
+Slidev source preparation 是确定性的，并强制 offline fonts。HTML、PDF、PNG、PPTX、MP4 是同一 approval-gated artifact planner 后的独立具名 provider。所有外部进程都在每次请求的 staging 目录运行，并返回 digest-verified staged asset；provider 不会直接写工作区。
+
+唯一接受的 Slidev runtime 是 NoteMD fork：
+
+```text
+origin: github:Jacobinwwey/slidev
+revision: bbcb2efae709c2ebaa96bda522cd6c192476817c
+package: @slidev/cli@52.16.0
+```
+
+该 fork 的 standalone HTML build 输出 `index-standalone.html`。PPTX 保持 native OOXML，MP4 保持 Slidev PNG 加 FFmpeg pipeline；SVG 绝不会被宣传为二者的等价 fallback。Playwright 与 FFmpeg 是可选 capability，缺失时会显式分类。
 
 ## 安装
 
@@ -93,7 +107,7 @@ notemd_plan_* -> notemd_request_plan_approval -> notemd_apply_approved_plan
 
 默认 DSH route 不会注册 `notemd_provider_diagnostic` 或 `notemd_provider_models`，因为 DSH 拥有 provider configuration 与 observability。这两个迁移期 Tool 只在显式 legacy transport entry 替换默认 LLM entry 后才会出现。
 
-`notemd_artifact_render_status` 与 `notemd_artifact_export_status` 在核心 bundle 中返回结构化 `unavailable`。源工件仍然是可审查的计划；渲染器和导出器只能通过独立声明的 provider 安装。
+Artifact Tool 按 target 分离：`notemd_plan_mermaid_artifact`、Draw.io/Drawnix/Circuitikz planning/status 对，以及六组 `notemd_plan_slidev_*` 与 status 对。不存在 generic renderer/export selector，因为不同 target 的保真、进程 allowlist 和失败语义有实质差异。
 
 ## 开发门禁
 

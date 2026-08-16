@@ -222,11 +222,11 @@ interface NotemdLlmRoute {
 - 新建：`fixtures/migration/slides/` 下的 fixture deck
 - 修改：`packages/notemd-artifacts/src/artifact-manifest.ts`、`packages/notemd-tools/src/artifact-tools.ts`、`packages/notemd-bundle/cordis.patch.yml`
 
-- [ ] 先迁移 Slidev source preparation/layout validation，再调用进程；prepared Markdown 与 layout report 是 canonical artifact。
-- [ ] HTML、PDF、PNG、PPTX、MP4 各自有具名 provider；SVG 绝不代替 PPTX 或 MP4。
-- [ ] Slidev/Playwright/FFmpeg 全部在 staging 运行，返回 digest-verified staged asset，之后才允许审批门控 materialization。
-- [ ] 测试每种输出的缺依赖路径、runtime 存在时的 fixture export、大小限制、清理和从 canonical source 重现。
-- [ ] 更新进度并提交 `feat: add staged Slidev export providers`。
+- [x] 先迁移 Slidev source preparation/layout validation，再调用进程；prepared Markdown 与 layout report 是 canonical artifact。
+- [x] HTML、PDF、PNG、PPTX、MP4 各自有具名 provider；SVG 绝不代替 PPTX 或 MP4。运行时固定为 `github:Jacobinwwey/slidev` fork 的 revision `bbcb2efae709c2ebaa96bda522cd6c192476817c`。
+- [x] Slidev/Playwright/FFmpeg 全部在 staging 运行，返回 digest-verified staged asset，之后才允许审批门控 materialization；fork standalone archive 接受 `index-standalone.html`，同时兼容 legacy `index.html`。
+- [x] 已测试每种输出的缺依赖路径、fixture-success fake、大小限制、清理、取消/进程失败映射、数字帧顺序和从 canonical source 重现；真实 optional binary 继续按 capability 如实报告。
+- [x] 已更新进度并提交 `feat: add staged Slidev export providers`。
 
 ### Task 11：Conformance、HMR、文档与 Mainline 发布
 
@@ -235,9 +235,9 @@ interface NotemdLlmRoute {
 - 修改：完整迁移架构、计划、进度的中英文文档对
 - 新建：`docs/walkthroughs/2026-08-15-dsh-notemd-full-migration-validation.{md,zh-CN.md}`
 
-- [ ] 增加消费 `fixtures/migration/source-operation-matrix.json` 的 conformance test；任何 included capability 缺少 passing fixture 均失败。
-- [ ] 测试依赖移除/重加、HMR dispose、timer/process/staging cleanup order、profile config replacement、`ctx.llm` route failure、`ctx.web` provider ambiguity、clean-profile 安装。
-- [ ] 执行完整 release gate：
+- [x] 已增加消费 `fixtures/migration/source-operation-matrix.json` 与 conformance manifest 的测试；任何 included operation fixture 或必需 semantic fixture 缺少可运行的 passing proof 均失败。
+- [x] 已测试可移除 optional DSH peer、完整 profile replacement row、Cordis effect dispose、timer/process/staging cleanup order、`ctx.llm` route failure、`ctx.web` provider ambiguity 与 clean-profile 安装。
+- [x] 已执行完整 release gate：
 
 ```powershell
 rtk tsc
@@ -251,7 +251,7 @@ rtk proxy pnpm.cmd accept:dsh
 rtk proxy git diff --check
 ```
 
-- [ ] 每个已验证 phase 后更新双语进度文档；写入含精确命令证据、环境 provider 限制的双语 validation walkthrough。
+- [x] 已在每个已验证 phase 后更新双语进度文档，并写入含精确命令证据与环境 provider 限制的双语 validation walkthrough。
 - [ ] 确认 `main` 最新，将 `origin` 改为 `git@github.com:Jacobinwwey/dsh-NotEMD.git`，拉取远程 `main`，必要时 rebase，创建非强制提交并推送，最后运行 `rtk git status --short --branch` 证明 worktree clean。
 
 ## 计划复核

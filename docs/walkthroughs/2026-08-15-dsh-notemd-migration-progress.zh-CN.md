@@ -2,7 +2,7 @@
 
 > English version: [2026-08-15-dsh-notemd-migration-progress.md](2026-08-15-dsh-notemd-migration-progress.md)
 
-**状态：** standalone bundle 与 next-level runtime 基础已实现。全量迁移架构与可执行计划已在 `main` 的 `626f6e1` 发布；Task 1-9 已完成，下一项为 Task 10。
+**状态：** standalone bundle 与 next-level runtime 基础已实现。Task 1-10 已完成；Task 11 正在进行最终 conformance 与发布验证。Slidev export 固定使用 `Jacobinwwey/slidev` fork，绝不静默使用上游 Slidev。
 
 ## 1. 范围基线
 
@@ -25,6 +25,7 @@
 - Task 7 已增加 `@notemd-harness/documents` 作为 structural Markdown section、stable anchor、chapter ownership manifest、original-text output policy 和 duplicate diagnostic 的唯一 owner。`notemd-knowledge` 现在在 task-root/current-file 约束下检索带 citation 的 section context；workflow 和 Tool surface 暴露相应具名操作但不拥有 write authority。
 - Task 8 已将 source-only artifact contract 替换为 `DiagramSpec` v2 与 source/preview/export lineage manifest。五个具名 renderer package 生成 canonical Mermaid、Vega-Lite、JSON Canvas、HTML 或 editable-SVG source 及清洗后的 SVG 派生产物；JSON Canvas SVG 被明确标记为 projection，不能替代 `.canvas`。每个 target 均有独立的 planning/status Tool，而 materialization 仍走既有 approval-gated mutation path。
 - Task 9 已增加 `@notemd-harness/process`，作为唯一 staging-only 外部进程边界。Draw.io、稳定 Drawnix 与 Circuitikz provider 生成确定性的 canonical source、明确标注的 SVG projection、真实的 native capability outcome，并在 Circuitikz 场景生成 digest-verified staged PDF。native export 不会直接写最终工作区；process boundary 负责 executable allowlist、固定 argv、有界 I/O、timeout/cancellation 分类、进程树 join、HMR dispose 与 staging cleanup。
+- Task 10 已增加 `@notemd-harness/export-slidev`、`@notemd-harness/export-pptx` 与 `@notemd-harness/export-media`。prepared Slidev Markdown 和 layout report 是 canonical source；HTML、PDF、PNG、PPTX、MP4 各自有具名 provider。process boundary 固定 `github:Jacobinwwey/slidev` revision `bbcb2efae709c2ebaa96bda522cd6c192476817c`，所有输出都经过 staging 与 digest 校验，支持 fork 的 `index-standalone.html`，且绝不把 SVG 当作 PPTX/MP4 parity。
 
 ## 3. 已完成的代码审计
 
@@ -72,8 +73,8 @@
 | 7. 文档语义与知识检索 | 已完成。`@notemd-harness/documents` 拥有 structural section、chapter manifest、original-text policy 和 duplicate diagnostic；workflow 与 Tool 暴露具名 single-file/folder operation；knowledge 索引 section 并返回 citation 和 explanation。 | 已交付。本阶段已通过 focused/full integration gate，包括 packed-bundle 与 clean-profile acceptance。 |
 | 8. Artifact lineage 与 SVG renderer | 已完成。`DiagramSpec` v2 携带 source revision、provenance、evidence、structured input 与 renderer intent。五个已打包的具名 renderer 生成 canonical source 与清洗后的 SVG preview/export 派生产物；Tool schema 绑定 source 且按 target 分离。 | 已交付。packed bundle 仅包含编译后的 renderer dependency，clean-profile acceptance 会执行 Mermaid planning Tool。 |
 | 9. Draw.io、稳定 Drawnix 与 Circuitikz provider | 已完成。`@notemd-harness/process` 强制固定 command profile 与 staging containment；三个具名 provider 和六个 planning/status Tool 已打包。Drawnix WIP 路径仍被排除；缺失可选 `notemd-drawnix-render` adapter 时如实返回 unavailable。 | 已通过 Windows process/provider 测试、全量 suite、packed-bundle 校验与 clean DSH profile acceptance。 |
-| 10. Slidev 与媒体导出 | 未开始。没有 Slidev/PPTX/media provider 或 staged export contract。 | prepared slide source 与每个具名 exporter 证明 capability、cleanup、字节上限和可复现性。 |
-| 11. Conformance、HMR 与发布 | 仅具备前置条件。既有 bundle release gate 已通过，但没有 source-matrix conformance suite 或全量迁移 HMR 覆盖。 | 全部 included matrix 行通过，依赖/HMR/进程清理测试通过，且 clean DSH profile 能安装最终 packed bundle。 |
+| 10. Slidev 与媒体导出 | 已完成。三个 package 提供 canonical source preparation，以及在同一 staging/process boundary 上的 HTML/PDF/PNG/PPTX/MP4 具名 provider。 | Task 10 focused/full gate 通过；真实 optional executable 缺失时如实返回 unavailable。 |
+| 11. Conformance、HMR 与发布 | 进行中。matrix conformance 与 lifecycle contract 已实现；最终 full release gate 与非强制发布尚未完成。 | included matrix、可移除依赖边界、HMR/timer/process cleanup、DSH failure mapping、clean profile 和远程 main 同步全部通过。 |
 
 ## 6. 已记录方向
 
@@ -83,9 +84,9 @@
 
 ## 7. 后续推进方向
 
-1. 下一步完成 Task 10。Slidev source preparation 与具名 HTML/PDF/PNG/PPTX/MP4 exporter 必须复用 Task 9 的 staging/process contract。
-2. 导出 provider 必须按 target class 实现，不能使用 target selector。SVG 只能是 preview derivative，不能替代 PPTX 或 MP4。
-3. 将 Task 11 留给证明，而不是乐观判断：在实现任务全部完成后运行 source-matrix conformance、生命周期/HMR 失败路径、隔离 bundle 验收和完整 release gate。
+1. 完成 Task 11 release gate 与审计。source matrix 已由可执行 conformance test 消费，optional DSH capability 仍保持显式。
+2. 保持 fork lock：`github:Jacobinwwey/slidev@bbcb2efae709c2ebaa96bda522cd6c192476817c`；更新它是兼容性决策，不是普通依赖刷新。
+3. HMR 时必须保留待审批/materialization 的 staged asset；dispose 只停止进程和 timer，不能提前删除审批输入。
 
 ## 8. 约束
 
@@ -179,3 +180,16 @@
 - `@notemd-harness/render-drawio`、`@notemd-harness/render-drawnix`、`@notemd-harness/render-circuitikz` 的 3 个 provider 文件、8 个测试通过。Draw.io XML 与 Drawnix semantic JSON 确定性且已转义；preview 明确 projection 语义；native failure 保持 unavailable/failed；取消不会被转换为成功。Circuitikz 只有在 process digest 与重算 digest 一致时才 stage PDF。
 - artifact/Tool 集成通过：specialist lineage 3 个测试通过；named Tool contract 16 个测试通过，并包含六个新操作 `notemd_plan_drawio_artifact`、`notemd_drawio_render_status`、`notemd_plan_drawnix_artifact`、`notemd_drawnix_render_status`、`notemd_plan_circuitikz_artifact`、`notemd_circuitikz_render_status`。bundle 显式注入 DSH `subprocess`，组合 SVG 与 specialist planner，并通过异步 Cordis effect 等待 process quiescence。
 - Node `v22.19.0` / pnpm `10.7.1` 上的新鲜 release evidence：root typecheck 与 lint 通过；`pnpm build`、`pnpm verify:bundle` 和 clean DSH acceptance 通过。全量 Vitest 现为 40 个文件、162 个测试通过。clean-profile acceptance 安装 packed bundle 与 DSH local subprocess runtime，执行三个 capability Tool，并生成 Draw.io canonical/projection plan，同时对可选 binary 的状态保持真实。
+
+### Task 10 验证
+
+- source preparation 是确定性且 source-bound 的：普通 Markdown 会生成稳定的 Slidev deck、section/closing slide 与 layout report；已有 Slidev deck 保留内容，同时将 `fonts.provider` 规范化为 `none` 以保证 offline。fork lock fixture 固定 origin `github:Jacobinwwey/slidev`、revision `bbcb2efae709c2ebaa96bda522cd6c192476817c`、release asset 与 build options。
+- `AllowlistedProcessBoundary` 拥有 HTML、PDF、PNG、PPTX、MP4 profile。HTML 同时校验 fork 输出的 `index-standalone.html` 与兼容性的 `index.html`；MP4 使用数字帧排序、FFmpeg `libx264`/`yuv420p`/`+faststart`、偶数尺寸 padding 和 staged output。native target 不会收到 SVG substitute。
+- 具名 provider 通过 `DocumentExportPlanner` 生成 `slides.md`、`layout-report.json` 与 target-specific export；manifest 使用 v3，绑定 source/revision，记录 renderer/theme/font fingerprint 和 staged-byte digest。generic document-export Tool 已移除，改为六组封闭的具名 planning/status Tool。
+- Task 10 新鲜证据（Task 11 新增测试前）：`pnpm typecheck`、`pnpm lint`、`pnpm build`、`pnpm pack:bundle`、`pnpm verify:bundle` 与 `pnpm accept:dsh` 均通过；Vitest 为 46 个文件、179 个测试。第一次 acceptance 有意暴露 DSH 不支持 `minimum` schema keyword，随后将范围检查移到 Tool edge runtime validator，在不削弱输入校验的前提下恢复 clean-profile acceptance。
+
+### Task 11 验证
+
+- `packages/notemd-workflows/test/migration-conformance.test.ts` 消费固定的 source matrix 与 conformance manifest，要求所有 included operation fixture，以及独立的 local-retrieval/diagram/slide fixture，都有现存测试 proof 和可运行的 `test(...)` contract。新增的 `extract-and-generate` 测试实际执行两步 LLM planning，并断言两个 absent-precondition 输出。
+- `packages/notemd-bundle/test/runtime-boundary.test.ts` 证明五个 DSH runtime 是可移除的 optional peer，patch 会重述完整 replacement-row 配置，Cordis effect 负责 LLM、process 和 scanner dispose。process suite 现在证明 dispose 会 abort active tree、等待完成、删除 run directory，并在 dispose 后拒绝新任务；既有 DSH LLM route rejection 与 Web ambiguity 测试保持通过。
+- Node `v22.19.0` / pnpm `10.7.1` 的最终 gate 证据：`pnpm typecheck`、`pnpm lint`、`pnpm test`（48 个文件、184 个测试）、`pnpm test:coverage`（statement 77.03%、branch 71.86%、function 84.54%）、`pnpm build`、`pnpm pack:bundle`、`pnpm verify:bundle` 与 `pnpm accept:dsh` 全部通过。`git diff --check` 也通过；packed tarball 已安装到隔离 DSH profile，clean acceptance 成功完成。

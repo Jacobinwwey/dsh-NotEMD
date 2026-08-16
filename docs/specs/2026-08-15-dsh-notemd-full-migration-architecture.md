@@ -110,13 +110,13 @@ External programs run from a staging directory through an allowlisted, argument-
 | --- | --- | --- |
 | Provider diagnostics, profile import/export, connection test | Excluded by design; DSH owns providers and secrets. | NoteMD no longer exposes duplicate endpoint/key configuration. |
 | Obsidian editor/command/modal/sidebar/preview host | Excluded by design. | All reusable workflows accept explicit paths/content and return canonical data. |
-| Wiki links, title generation, translation, concepts, formula and Mermaid repair | Partial implementation exists. | Source-compatible file/folder/batch semantics, prompts, output location policy, and mutation proposals pass fixtures. |
-| Chapter split, original-text extraction, extract-and-generate, duplicate reconciliation | Not implemented. | Managed artifact ownership, manual-edit conflict detection, deletion/rename reconciliation, and checkpointed batches pass fixtures. |
-| Local knowledge retrieval | Simplified implementation exists. | Task path policy, sections, windows, diagnostics, and citations match the characterized source behavior. |
-| Research summarization | Partial string-synthesis implementation exists. | Search/fetch evidence is acquired through `ctx.web` and persisted with citations. |
-| Mermaid, JSON Canvas, Vega-Lite, HTML, editable SVG | Not implemented as renderers. | Canonical source plus sanitized SVG preview/export where applicable. |
-| Draw.io, stable Drawnix, Circuitikz | Not implemented. | Named renderer provider, source fidelity, staging-only process policy, and honest unavailable outcome. |
-| Slidev HTML, PDF, PNG, PPTX, MP4 | Not implemented. | Named export provider and capability-specific conformance tests. |
+| Wiki links, title generation, translation, concepts, formula and Mermaid repair | Implemented as named path/folder/batch planners. | Source-compatible fixtures, prompt boundaries, output policy, and mutation proposals are covered by the source matrix and conformance gate. |
+| Chapter split, original-text extraction, extract-and-generate, duplicate reconciliation | Implemented with managed ownership and separate operation contracts. | Manifest digest protection, manual-edit conflict detection, explicit output policies, and checkpointed batches pass fixtures. |
+| Local knowledge retrieval | Implemented as rebuildable section-level retrieval. | Task-root policy, section windows, diagnostics, and citations are covered by knowledge and conformance tests. |
+| Research summarization | Implemented through durable `ctx.web` evidence. | Search/fetch evidence is selected through DSH, persisted with citations, and consumed by evidence id only. |
+| Mermaid, JSON Canvas, Vega-Lite, HTML, editable SVG | Implemented as named SVG-capable renderers. | Canonical sources and sanitized SVG preview/export are emitted only for applicable targets. |
+| Draw.io, stable Drawnix, Circuitikz | Implemented as guarded named providers. | Source fidelity, staging-only process policy, digest verification, and honest unavailable outcomes are tested. |
+| Slidev HTML, PDF, PNG, PPTX, MP4 | Implemented as named staged exporters. | The pinned `github:Jacobinwwey/slidev` fork is source-bound; each binary/HTML target has independent capability, byte-limit, cleanup, and failure tests. |
 | Current Drawnix cross-root and relation-lane WIP | Explicitly excluded. | No source uncommitted WIP file or fixture is used as a parity oracle. |
 
 ## 7. Rejected Shortcuts and Risks
@@ -127,6 +127,7 @@ External programs run from a staging directory through an allowlisted, argument-
 - Rendering availability is environmental. The bundle can provide complete providers and tests, but cannot honestly promise a local executable exists. Capability reporting is part of parity.
 - A broad source copy would import Obsidian's UI and process assumptions. Characterization fixtures preserve behavior without preserving host coupling.
 - Existing source changes in Drawnix are uncommitted. Treating them as baseline would make migration non-reproducible.
+- Slidev is intentionally pinned to the fork `github:Jacobinwwey/slidev` at revision `bbcb2efae709c2ebaa96bda522cd6c192476817c`; upstream Slidev is not an interchangeable runtime. The fork emits the standalone HTML entry `index-standalone.html`, which the archive validator accepts alongside legacy `index.html` for compatibility.
 
 ## 8. Completion Criteria
 

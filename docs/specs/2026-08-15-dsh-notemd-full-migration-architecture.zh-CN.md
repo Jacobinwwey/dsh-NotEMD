@@ -110,13 +110,13 @@ Markdown 敏感变换必须使用 AST 和稳定段落锚点，不用纯正则做
 | --- | --- | --- |
 | Provider 诊断、profile 导入导出、连接测试 | 按设计排除，由 DSH 管理 Provider 和密钥。 | NoteMD 不再暴露重复的 endpoint/key 配置。 |
 | Obsidian editor/command/modal/sidebar/preview host | 按设计排除。 | 可复用工作流接受显式 path/content 并返回 canonical data。 |
-| Wiki link、标题、翻译、概念、公式、Mermaid | 已部分实现。 | 文件/文件夹/批处理语义、prompt、输出位置策略和 mutation proposal 通过 fixture。 |
-| 章节拆分、原文抽取、extract-and-generate、重复项协调 | 未实现。 | managed artifact ownership、手工编辑冲突、删除/重命名协调、checkpoint 批处理通过 fixture。 |
-| 本地知识检索 | 已简化实现。 | task path、section、window、diagnostic 与 citation 对齐特征化源行为。 |
-| 研究摘要 | 已有字符串合成的部分实现。 | 经 `ctx.web` 获取证据并保存引用。 |
-| Mermaid、JSON Canvas、Vega-Lite、HTML、editable SVG | 尚无 renderer。 | 对适用目标生成 canonical source 与 sanitized SVG preview/export。 |
-| Draw.io、稳定 Drawnix、Circuitikz | 尚未实现。 | 具名 renderer provider、source fidelity、staging-only process policy 和真实 unavailable 结果。 |
-| Slidev HTML、PDF、PNG、PPTX、MP4 | 尚未实现。 | 具名 export provider 与各能力 conformance test。 |
+| Wiki link、标题、翻译、概念、公式、Mermaid | 已实现为具名 path/folder/batch planner。 | 源兼容 fixture、prompt 边界、输出策略和 mutation proposal 均由 source matrix 与 conformance gate 覆盖。 |
+| 章节拆分、原文抽取、extract-and-generate、重复项协调 | 已实现为受管 ownership 与分离的 operation contract。 | manifest digest 保护、手工编辑冲突、显式输出策略和 checkpoint 批处理通过 fixture。 |
+| 本地知识检索 | 已实现为可重建的 section-level retrieval。 | task-root 策略、section window、diagnostic 和 citation 由 knowledge/conformance 测试覆盖。 |
+| 研究摘要 | 已通过持久化 `ctx.web` evidence 实现。 | search/fetch 由 DSH 选择 provider，带 citation 持久化，并且只通过 evidence id 消费。 |
+| Mermaid、JSON Canvas、Vega-Lite、HTML、editable SVG | 已实现为具名 SVG-capable renderer。 | 仅对适用 target 生成 canonical source 与清洗后的 SVG preview/export。 |
+| Draw.io、稳定 Drawnix、Circuitikz | 已实现为受保护的具名 provider。 | source fidelity、staging-only process policy、digest 校验和真实 unavailable 结果均有测试。 |
+| Slidev HTML、PDF、PNG、PPTX、MP4 | 已实现为具名 staged exporter。 | source 绑定到 `github:Jacobinwwey/slidev` fork；每个 HTML/二进制 target 独立测试 capability、字节上限、cleanup 和失败路径。 |
 | 当前 Drawnix cross-root、relation-lane WIP | 明确排除。 | 不使用任何未提交源文件或 fixture 作为 parity oracle。 |
 
 ## 7. 拒绝的捷径与风险
@@ -127,6 +127,7 @@ Markdown 敏感变换必须使用 AST 和稳定段落锚点，不用纯正则做
 - 渲染可用性取决于环境。bundle 可以交付 provider 与测试，但不能承诺本机 executable 存在；能力报告是 parity 的一部分。
 - 大范围复制源代码会重新引入 Obsidian UI/进程假设；应以特征化 fixture 保留行为而非宿主耦合。
 - 源 Drawnix 改动未提交，作为基线会破坏可复现性。
+- Slidev 固定使用 fork `github:Jacobinwwey/slidev`，revision 为 `bbcb2efae709c2ebaa96bda522cd6c192476817c`；不能静默替换为上游仓库。该 fork 的 standalone HTML 入口为 `index-standalone.html`，archive validator 同时接受旧版 `index.html` 以保持兼容。
 
 ## 8. 完成条件
 

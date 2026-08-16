@@ -2,12 +2,12 @@
 
 > Chinese version: [2026-08-15-dsh-notemd-migration-progress.zh-CN.md](2026-08-15-dsh-notemd-migration-progress.zh-CN.md)
 
-**Status:** The standalone-bundle and next-level-runtime foundations are implemented. The full-migration architecture and executable plan were published on `main` at `626f6e1`; Tasks 1-9 are complete and Task 10 is next.
+**Status:** The standalone-bundle and next-level-runtime foundations are implemented. Tasks 1-10 are complete; Task 11 is in final conformance and publication verification. Slidev export is pinned to the `Jacobinwwey/slidev` fork, never upstream Slidev.
 
 ## 1. Scope Baseline
 
 - Source baseline: `E:\convert\undo\obsidian-NoteMD_new` at `4168a51cd19ad8c3d1e05f604b50936255461a31`.
-- Target baseline: `E:\convert\undo\notemd-deepseek-harness` at `6672f54def2b05e1628786ace97ab73649edab74` on `main`.
+- Target baseline: `E:\convert\undo\notemd-deepseek-harness` on `main`; the final release commit is recorded after the release gate below.
 - In scope: every non-Obsidian-host NoteMD workflow, including documents, knowledge, research, diagrams, artifact export, batch execution, and stable Drawnix behavior.
 - Deliberately out of scope: Obsidian UI and host APIs, direct provider configuration, and the source working tree's uncommitted Drawnix WIP.
 
@@ -25,6 +25,7 @@
 - Task 7 adds `@notemd-harness/documents` as the sole owner of structural Markdown sections, stable anchors, chapter ownership manifests, original-text output policies, and duplicate diagnostics. `notemd-knowledge` now retrieves section-level, citation-bearing context under task-root/current-file constraints; workflow and Tool surfaces expose the resulting named operations without write authority.
 - Task 8 replaces the source-only artifact contract with `DiagramSpec` v2 and a source/preview/export lineage manifest. Five named renderer packages generate canonical Mermaid, Vega-Lite, JSON Canvas, HTML, or editable-SVG sources plus sanitized SVG derivatives; the JSON Canvas SVG is explicitly a projection, not a `.canvas` replacement. Each target has separate named planning/status Tools, while materialization remains on the existing approval-gated mutation path.
 - Task 9 adds `@notemd-harness/process` as the only staging-only external process boundary. Draw.io, stable Drawnix, and Circuitikz providers emit deterministic canonical source, labelled SVG projections, truthful native capability outcomes, and (for Circuitikz) digest-verified staged PDF assets. Native exports never write final workspace paths; the process boundary owns executable allowlists, fixed argv, bounded I/O, timeout/cancellation classification, process-tree joining, HMR disposal, and staging cleanup.
+- Task 10 adds `@notemd-harness/export-slidev`, `@notemd-harness/export-pptx`, and `@notemd-harness/export-media`. Prepared Slidev Markdown and layout reports are canonical source artifacts; HTML, PDF, PNG, PPTX, and MP4 each have a named provider. The process boundary pins `github:Jacobinwwey/slidev` revision `bbcb2efae709c2ebaa96bda522cd6c192476817c`, stages all output, verifies byte digests, accepts the fork's `index-standalone.html`, and never treats SVG as PPTX/MP4 parity.
 
 ## 3. Completed Code Audit
 
@@ -72,8 +73,8 @@ The table records code state, not planned completion. A passing baseline release
 | 7. Document semantics and knowledge retrieval | Complete. `@notemd-harness/documents` owns structural sections, chapter manifests, original-text policies, and duplicate diagnostics; workflows and Tools expose named single-file/folder operations; knowledge indexes sections with citations and explanations. | Delivered. The phase passed focused and full integration gates, including packed-bundle and clean-profile acceptance. |
 | 8. Artifact lineage and SVG-capable renderers | Complete. `DiagramSpec` v2 carries source revisions, provenance, evidence, structured inputs, and renderer intent. Five bundled named renderers create canonical sources plus sanitized SVG preview/export derivatives; Tool schemas are source-bound and target-specific. | Delivered. The packed bundle contains compiled renderer dependencies only, and clean-profile acceptance executes the Mermaid planning Tool. |
 | 9. Draw.io, stable Drawnix, and Circuitikz providers | Complete. `@notemd-harness/process` enforces fixed command profiles and staging containment; three named providers and six planning/status Tools are bundled. Drawnix WIP paths remain excluded, and the optional `notemd-drawnix-render` adapter is reported unavailable when absent. | Delivered with Windows process/provider tests, full suite, packed-bundle verification, and clean DSH profile acceptance. |
-| 10. Slidev and media exporters | Not started. No Slidev/PPTX/media provider or staged export contract exists. | Prepared slide source and each named export provider prove capability, cleanup, byte limits, and reproducibility. |
-| 11. Conformance, HMR, and publication | Prerequisites only. The existing bundle release gate passes, but there is no source-matrix conformance suite or full-migration HMR coverage. | Included matrix rows all pass, dependency/HMR/process cleanup tests pass, and a clean DSH profile accepts the final packed bundle. |
+| 10. Slidev and media exporters | Complete. Three packages provide canonical source preparation plus named HTML/PDF/PNG/PPTX/MP4 providers over one staging/process boundary. | Task 10 focused and full gates pass; optional real executables report unavailable rather than being emulated. |
+| 11. Conformance, HMR, and publication | In progress. The matrix conformance and lifecycle contracts are implemented; final full release gate and non-force publication remain. | Included matrix rows, removable dependency boundaries, HMR/timer/process cleanup, DSH failure mapping, clean profile, and remote main synchronization all pass. |
 
 ## 6. Recorded Direction
 
@@ -83,9 +84,9 @@ The table records code state, not planned completion. A passing baseline release
 
 ## 7. Next Direction
 
-1. Complete Task 10 next. Slidev source preparation and named HTML/PDF/PNG/PPTX/MP4 exporters must reuse the Task 9 staging/process contract.
-2. Implement export providers by target class, never through a target selector. SVG remains a preview derivative and cannot stand in for PPTX or MP4.
-3. Reserve Task 11 for proof, not optimism: run source-matrix conformance, lifecycle/HMR failure paths, isolated bundle acceptance, and the full release gate after the implementation tasks are green.
+1. Finish Task 11's release gate and audit. The source matrix is now consumed by an executable conformance test and optional DSH capabilities remain explicit.
+2. Preserve the fork lock: `github:Jacobinwwey/slidev@bbcb2efae709c2ebaa96bda522cd6c192476817c`. Updating it is a compatibility decision, not a dependency refresh.
+3. Keep staged assets durable across HMR until approval/materialization completes; disposing a renderer must stop processes and timers without deleting pending approval inputs.
 
 ## 8. Guardrails
 
@@ -179,3 +180,16 @@ This publication records architecture, planning, audit, and baseline verificatio
 - `@notemd-harness/render-drawio`, `@notemd-harness/render-drawnix`, and `@notemd-harness/render-circuitikz` passed 3 provider files and 8 tests. Draw.io XML and Drawnix semantic JSON are deterministic and escaped; each preview states projection semantics; native failures remain unavailable/failed; cancellation is not converted into success. Circuitikz stages only a PDF whose recomputed digest matches the process result.
 - Artifact/tool integration passed: specialist lineage tests passed 3 tests; named Tool contract passed 16 tests and now includes `notemd_plan_drawio_artifact`, `notemd_drawio_render_status`, `notemd_plan_drawnix_artifact`, `notemd_drawnix_render_status`, `notemd_plan_circuitikz_artifact`, and `notemd_circuitikz_render_status`. The bundle injects DSH `subprocess`, composes the SVG and specialist planners, and awaits process quiescence through an async Cordis effect.
 - Fresh release evidence on Node `v22.19.0` / pnpm `10.7.1`: root typecheck and lint passed; `pnpm build`, `pnpm verify:bundle`, and clean DSH acceptance passed. The full Vitest suite now reports 40 files and 162 tests passing. Clean-profile acceptance installed the packed bundle with the local DSH subprocess runtime, exercised all three capability Tools, and created a Draw.io canonical/projection plan while preserving truthful optional-binary status.
+
+### Task 10 Verification
+
+- Source preparation is deterministic and source-bound: ordinary Markdown becomes a stable Slidev deck with section/closing slides and a layout report; existing Slidev decks retain their content while `fonts.provider` is normalized to `none` for offline operation. The fork lock fixture records origin `github:Jacobinwwey/slidev`, revision `bbcb2efae709c2ebaa96bda522cd6c192476817c`, release asset, and required build options.
+- `AllowlistedProcessBoundary` owns HTML, PDF, PNG, PPTX, and MP4 profiles. HTML validates both `index-standalone.html` (fork output) and `index.html`; MP4 uses numerically ordered PNG frames, FFmpeg `libx264`/`yuv420p`/`+faststart`, even-dimension padding, and staged output. Native targets never receive an SVG substitute.
+- Named providers emit `slides.md`, `layout-report.json`, and target-specific exports through `DocumentExportPlanner`; manifests are version 3, source/revision bound, and include renderer/theme/font fingerprints plus staged-byte digests. The generic document-export Tool was removed in favor of six closed named planning/status pairs.
+- Fresh Task 10 evidence before Task 11 additions: `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm pack:bundle`, `pnpm verify:bundle`, and `pnpm accept:dsh` passed; Vitest reported 46 files and 179 tests. The first acceptance run intentionally failed on unsupported DSH `minimum` schema keywords; moving range checks to the Tool edge runtime validator restored clean-profile acceptance without weakening input validation.
+
+### Task 11 Verification
+
+- `packages/notemd-workflows/test/migration-conformance.test.ts` consumes the pinned source matrix and the conformance manifest. It requires all included operation fixture ids plus the independent local-retrieval/diagram/slide fixtures to have an existing test proof with a runnable `test(...)` contract. The added `extract-and-generate` test exercises both LLM planning steps and asserts the two absent-precondition outputs.
+- `packages/notemd-bundle/test/runtime-boundary.test.ts` proves the five DSH runtimes remain optional removable peers, the patch restates complete replacement-row configuration, and Cordis effects own LLM, process, and scanner disposal. The process suite now proves disposal aborts active trees, waits for completion, removes run directories, and rejects new work after disposal; existing DSH LLM route rejection and Web ambiguity tests remain green.
+- Fresh final-gate evidence on Node `v22.19.0` / pnpm `10.7.1`: `pnpm typecheck`, `pnpm lint`, `pnpm test` (48 files, 184 tests), `pnpm test:coverage` (77.03% statements, 71.86% branches, 84.54% functions), `pnpm build`, `pnpm pack:bundle`, `pnpm verify:bundle`, and `pnpm accept:dsh` all passed. `git diff --check` also passed; the packed tarball installed into an isolated DSH profile and clean acceptance completed successfully.

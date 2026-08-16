@@ -17,7 +17,21 @@ The current runtime baseline is in [the original architecture record](docs/specs
 | Durable planning jobs | `notemdJobs` | Named workflows checkpoint plans under `<workspace>/.notemd/jobs/`; a job never applies a plan. |
 | LLM routing | DSH `llm` | NoteMD supplies only a provider/model route policy; DSH owns credentials, adapters, and transport. |
 
-The package is deliberately not an Obsidian compatibility layer. UI, preview, native renderers, Slidev/PPTX/PDF export, Tectonic, and desktop process integrations are separate optional providers. The baseline produces portable source artifacts and reports missing optional capability explicitly.
+The package is deliberately not an Obsidian compatibility layer. UI, editor selection, commands, modals, and preview hosting remain outside the bundle. Portable document and diagram semantics are in the bundle; named render/export providers produce canonical source plus truthful derivatives. Optional executables report `unavailable` instead of silently substituting a different format.
+
+## Export Targets
+
+Slidev source preparation is deterministic and offline-font safe. HTML, PDF, PNG, PPTX, and MP4 are separate named providers behind the same approval-gated artifact planner. All external work runs in a per-request staging directory and returns a digest-verified staged asset; no provider writes the workspace directly.
+
+The only accepted Slidev runtime is the NoteMD fork:
+
+```text
+origin: github:Jacobinwwey/slidev
+revision: bbcb2efae709c2ebaa96bda522cd6c192476817c
+package: @slidev/cli@52.16.0
+```
+
+The fork's standalone HTML build emits `index-standalone.html`. PPTX remains native OOXML and MP4 remains a Slidev PNG plus FFmpeg pipeline; SVG is never advertised as an equivalent fallback for either target. Playwright and FFmpeg are optional capabilities and are classified explicitly when absent.
 
 ## Install
 
@@ -81,7 +95,7 @@ Named `notemd_job_start_*` tools persist a plan-only job and schedule new work a
 
 The default DSH route does not register `notemd_provider_diagnostic` or `notemd_provider_models`, because DSH owns provider configuration and observability. Those migration-only tools are available only when the explicit legacy transport entry replaces the default LLM entry.
 
-`notemd_artifact_render_status` and `notemd_artifact_export_status` report structured `unavailable` results in the core bundle. Source artifacts remain reviewable plans; renderer and exporter installation belong to separately declared providers.
+Artifact Tools are target-specific: `notemd_plan_mermaid_artifact`, the Draw.io/Drawnix/Circuitikz planning/status pairs, and the six `notemd_plan_slidev_*` plus status pairs. There is no generic renderer/export selector because target fidelity, process allowlists, and failure semantics differ materially.
 
 ## Development Gates
 

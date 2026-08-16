@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "implementations": [
+    {
+      "fixtureId": "wiki-links",
+      "testPath": "packages/notemd-workflows/test/workflow-planning.test.ts",
+      "proofTerms": ["link, title, and research transformations"]
+    },
+    {
+      "fixtureId": "title-generation",
+      "testPath": "packages/notemd-workflows/test/workflow-planning.test.ts",
+      "proofTerms": ["link, title, and research transformations"]
+    },
+    {
+      "fixtureId": "chapter-split",
+      "testPath": "packages/notemd-documents/test/chapter-split.test.ts",
+      "proofTerms": ["emits chapter, toc, manifest"]
+    },
+    {
+      "fixtureId": "research-synthesis",
+      "testPath": "packages/notemd-workflows/test/workflow-planning.test.ts",
+      "proofTerms": ["research synthesis"]
+    },
+    {
+      "fixtureId": "translation",
+      "testPath": "packages/notemd-workflows/test/workflow-planning.test.ts",
+      "proofTerms": ["non-destructive target for a translation plan"]
+    },
+    {
+      "fixtureId": "concept-extraction",
+      "testPath": "packages/notemd-workflows/test/workflow-planning.test.ts",
+      "proofTerms": ["concept note"]
+    },
+    {
+      "fixtureId": "original-text",
+      "testPath": "packages/notemd-documents/test/original-text.test.ts",
+      "proofTerms": ["original-text destinations"]
+    },
+    {
+      "fixtureId": "extract-and-generate",
+      "testPath": "packages/notemd-workflows/test/workflow-planning.test.ts",
+      "proofTerms": ["extract-and-generate"]
+    },
+    {
+      "fixtureId": "duplicate-reconciliation",
+      "testPath": "packages/notemd-workflows/test/workflow-planning.test.ts",
+      "proofTerms": ["duplicate detection diagnostic"]
+    },
+    {
+      "fixtureId": "mermaid-repair",
+      "testPath": "packages/notemd-workflows/test/workflow-planning.test.ts",
+      "proofTerms": ["Mermaid replacement"]
+    },
+    {
+      "fixtureId": "formula-repair",
+      "testPath": "packages/notemd-workflows/test/markdown-transforms.test.ts",
+      "proofTerms": ["formula"]
+    },
+    {
+      "fixtureId": "local-retrieval",
+      "testPath": "packages/notemd-knowledge/test/knowledge-index.test.ts",
+      "proofTerms": ["citation:notes/knowledge.md#canonical-lock-ordering"]
+    },
+    {
+      "fixtureId": "diagram-source",
+      "testPath": "packages/notemd-artifacts/test/source-artifact-contracts.test.ts",
+      "proofTerms": ["diagram-source"]
+    },
+    {
+      "fixtureId": "slide-source",
+      "testPath": "packages/notemd-export-slidev/test/slidev-source.test.ts",
+      "proofTerms": ["source-bound layout report"]
+    }
+  ]
+}
