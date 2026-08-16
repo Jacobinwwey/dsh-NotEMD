@@ -60,10 +60,6 @@ The bundle patch replaces complete config rows, so every replacement must restat
 
 ## Publication evidence
 
-Before publication, fetch `origin/main`, inspect divergence, create ordinary commits, push without force, and finish with:
-
-```powershell
-rtk git status --short --branch
-```
-
-The required final output is `## main` with no following paths.
+- Canonical remote: `git@github.com:Jacobinwwey/dsh-NotEMD.git`.
+- Release commit `73480df` (`test: prove full NoteMD migration conformance`) was pushed to `origin/main` without force after the fresh release gate. Fetch-before-push divergence was `0 11`; there were no remote-ahead commits to rebase.
+- A final fetch confirmed `origin/main...main = 0 0`. `rtk git status --short --branch` reported exactly `## main` with no following paths.

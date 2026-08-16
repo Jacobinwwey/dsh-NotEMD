@@ -252,7 +252,7 @@ rtk proxy git diff --check
 ```
 
 - [x] 已在每个已验证 phase 后更新双语进度文档，并写入含精确命令证据与环境 provider 限制的双语 validation walkthrough。
-- [ ] 确认 `main` 最新，将 `origin` 改为 `git@github.com:Jacobinwwey/dsh-NotEMD.git`，拉取远程 `main`，必要时 rebase，创建非强制提交并推送，最后运行 `rtk git status --short --branch` 证明 worktree clean。
+- [x] 已确认 `main` 最新，fetch 远程 `main` 且无远端领先提交；`73480df` 已以非强制方式推送到 `origin/main`，并确认推送后 worktree clean。
 
 ## 计划复核
 

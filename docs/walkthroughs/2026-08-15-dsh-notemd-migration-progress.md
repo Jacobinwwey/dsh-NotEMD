@@ -2,12 +2,12 @@
 
 > Chinese version: [2026-08-15-dsh-notemd-migration-progress.zh-CN.md](2026-08-15-dsh-notemd-migration-progress.zh-CN.md)
 
-**Status:** The standalone-bundle and next-level-runtime foundations are implemented. Tasks 1-10 are complete; Task 11 is in final conformance and publication verification. Slidev export is pinned to the `Jacobinwwey/slidev` fork, never upstream Slidev.
+**Status:** The complete eleven-phase standalone migration is implemented, verified, and published. Task 11 conformance, lifecycle, release-gate, and non-force mainline synchronization are complete. Slidev export is pinned to the `Jacobinwwey/slidev` fork, never upstream Slidev.
 
 ## 1. Scope Baseline
 
 - Source baseline: `E:\convert\undo\obsidian-NoteMD_new` at `4168a51cd19ad8c3d1e05f604b50936255461a31`.
-- Target baseline: `E:\convert\undo\notemd-deepseek-harness` on `main`; the final release commit is recorded after the release gate below.
+- Target baseline: `E:\convert\undo\notemd-deepseek-harness` on `main` at release commit `73480df` (`test: prove full NoteMD migration conformance`); the publication-record commit follows it.
 - In scope: every non-Obsidian-host NoteMD workflow, including documents, knowledge, research, diagrams, artifact export, batch execution, and stable Drawnix behavior.
 - Deliberately out of scope: Obsidian UI and host APIs, direct provider configuration, and the source working tree's uncommitted Drawnix WIP.
 
@@ -74,7 +74,7 @@ The table records code state, not planned completion. A passing baseline release
 | 8. Artifact lineage and SVG-capable renderers | Complete. `DiagramSpec` v2 carries source revisions, provenance, evidence, structured inputs, and renderer intent. Five bundled named renderers create canonical sources plus sanitized SVG preview/export derivatives; Tool schemas are source-bound and target-specific. | Delivered. The packed bundle contains compiled renderer dependencies only, and clean-profile acceptance executes the Mermaid planning Tool. |
 | 9. Draw.io, stable Drawnix, and Circuitikz providers | Complete. `@notemd-harness/process` enforces fixed command profiles and staging containment; three named providers and six planning/status Tools are bundled. Drawnix WIP paths remain excluded, and the optional `notemd-drawnix-render` adapter is reported unavailable when absent. | Delivered with Windows process/provider tests, full suite, packed-bundle verification, and clean DSH profile acceptance. |
 | 10. Slidev and media exporters | Complete. Three packages provide canonical source preparation plus named HTML/PDF/PNG/PPTX/MP4 providers over one staging/process boundary. | Task 10 focused and full gates pass; optional real executables report unavailable rather than being emulated. |
-| 11. Conformance, HMR, and publication | In progress. The matrix conformance and lifecycle contracts are implemented; final full release gate and non-force publication remain. | Included matrix rows, removable dependency boundaries, HMR/timer/process cleanup, DSH failure mapping, clean profile, and remote main synchronization all pass. |
+| 11. Conformance, HMR, and publication | Complete. The matrix conformance and lifecycle contracts, full release gate, clean DSH profile, and non-force mainline synchronization all pass. | Keep the fork lock, optional capability boundaries, and publication evidence aligned when future changes update the bundle. |
 
 ## 6. Recorded Direction
 
@@ -84,9 +84,9 @@ The table records code state, not planned completion. A passing baseline release
 
 ## 7. Next Direction
 
-1. Finish Task 11's release gate and audit. The source matrix is now consumed by an executable conformance test and optional DSH capabilities remain explicit.
-2. Preserve the fork lock: `github:Jacobinwwey/slidev@bbcb2efae709c2ebaa96bda522cd6c192476817c`. Updating it is a compatibility decision, not a dependency refresh.
-3. Keep staged assets durable across HMR until approval/materialization completes; disposing a renderer must stop processes and timers without deleting pending approval inputs.
+1. Preserve the fork lock: `github:Jacobinwwey/slidev@bbcb2efae709c2ebaa96bda522cd6c192476817c`. Updating it is a compatibility decision, not a dependency refresh.
+2. Keep staged assets durable across HMR until approval/materialization completes; disposing a renderer must stop processes and timers without deleting pending approval inputs.
+3. Treat the conformance manifest, release gate, and clean-profile acceptance as mandatory evidence for future capability changes.
 
 ## 8. Guardrails
 
@@ -193,3 +193,9 @@ This publication records architecture, planning, audit, and baseline verificatio
 - `packages/notemd-workflows/test/migration-conformance.test.ts` consumes the pinned source matrix and the conformance manifest. It requires all included operation fixture ids plus the independent local-retrieval/diagram/slide fixtures to have an existing test proof with a runnable `test(...)` contract. The added `extract-and-generate` test exercises both LLM planning steps and asserts the two absent-precondition outputs.
 - `packages/notemd-bundle/test/runtime-boundary.test.ts` proves the five DSH runtimes remain optional removable peers, the patch restates complete replacement-row configuration, and Cordis effects own LLM, process, and scanner disposal. The process suite now proves disposal aborts active trees, waits for completion, removes run directories, and rejects new work after disposal; existing DSH LLM route rejection and Web ambiguity tests remain green.
 - Fresh final-gate evidence on Node `v22.19.0` / pnpm `10.7.1`: `pnpm typecheck`, `pnpm lint`, `pnpm test` (48 files, 184 tests), `pnpm test:coverage` (77.03% statements, 71.86% branches, 84.54% functions), `pnpm build`, `pnpm pack:bundle`, `pnpm verify:bundle`, and `pnpm accept:dsh` all passed. `git diff --check` also passed; the packed tarball installed into an isolated DSH profile and clean acceptance completed successfully.
+
+### Final Task 11 Publication
+
+- Release commit `73480df` (`test: prove full NoteMD migration conformance`) contains the conformance tests, runtime-boundary checks, bilingual architecture/plan/progress updates, and validation walkthroughs.
+- The commit was pushed non-force to `git@github.com:Jacobinwwey/dsh-NotEMD.git` after the fresh release gate. The fetch-before-push divergence was `0 11` (no remote-ahead commits); post-push `origin/main` resolved to `73480df`.
+- A final fetch confirmed `origin/main...main = 0 0`; the worktree reported only `## main` with no paths. The Slidev lock remains `github:Jacobinwwey/slidev@bbcb2efae709c2ebaa96bda522cd6c192476817c`.

@@ -2,12 +2,12 @@
 
 > English version: [2026-08-15-dsh-notemd-migration-progress.md](2026-08-15-dsh-notemd-migration-progress.md)
 
-**状态：** standalone bundle 与 next-level runtime 基础已实现。Task 1-10 已完成；Task 11 正在进行最终 conformance 与发布验证。Slidev export 固定使用 `Jacobinwwey/slidev` fork，绝不静默使用上游 Slidev。
+**状态：** 十一阶段 standalone migration 已全部实现、验证并发布。Task 11 的 conformance、lifecycle、release gate 与非强制 mainline 同步均已完成。Slidev export 固定使用 `Jacobinwwey/slidev` fork，绝不静默使用上游 Slidev。
 
 ## 1. 范围基线
 
 - 源基线：`E:\convert\undo\obsidian-NoteMD_new`，提交 `4168a51cd19ad8c3d1e05f604b50936255461a31`。
-- 目标基线：`E:\convert\undo\notemd-deepseek-harness`，`main` 上的提交 `6672f54def2b05e1628786ace97ab73649edab74`。
+- 目标基线：`E:\convert\undo\notemd-deepseek-harness`，`main` 上的发布提交 `73480df`（`test: prove full NoteMD migration conformance`）；其后还有发布记录提交。
 - 范围内：全部非 Obsidian 宿主的 NoteMD 工作流，包括文档、知识库、研究、图表、工件导出、批处理和稳定 Drawnix 能力。
 - 明确排除：Obsidian UI 与宿主 API、直连 Provider 配置，以及源工作树中尚未提交的 Drawnix WIP。
 
@@ -74,7 +74,7 @@
 | 8. Artifact lineage 与 SVG renderer | 已完成。`DiagramSpec` v2 携带 source revision、provenance、evidence、structured input 与 renderer intent。五个已打包的具名 renderer 生成 canonical source 与清洗后的 SVG preview/export 派生产物；Tool schema 绑定 source 且按 target 分离。 | 已交付。packed bundle 仅包含编译后的 renderer dependency，clean-profile acceptance 会执行 Mermaid planning Tool。 |
 | 9. Draw.io、稳定 Drawnix 与 Circuitikz provider | 已完成。`@notemd-harness/process` 强制固定 command profile 与 staging containment；三个具名 provider 和六个 planning/status Tool 已打包。Drawnix WIP 路径仍被排除；缺失可选 `notemd-drawnix-render` adapter 时如实返回 unavailable。 | 已通过 Windows process/provider 测试、全量 suite、packed-bundle 校验与 clean DSH profile acceptance。 |
 | 10. Slidev 与媒体导出 | 已完成。三个 package 提供 canonical source preparation，以及在同一 staging/process boundary 上的 HTML/PDF/PNG/PPTX/MP4 具名 provider。 | Task 10 focused/full gate 通过；真实 optional executable 缺失时如实返回 unavailable。 |
-| 11. Conformance、HMR 与发布 | 进行中。matrix conformance 与 lifecycle contract 已实现；最终 full release gate 与非强制发布尚未完成。 | included matrix、可移除依赖边界、HMR/timer/process cleanup、DSH failure mapping、clean profile 和远程 main 同步全部通过。 |
+| 11. Conformance、HMR 与发布 | 已完成。matrix conformance、lifecycle contract、完整 release gate、clean DSH profile 与非强制 mainline 同步全部通过。 | 后续能力变更必须继续保持 fork lock、optional capability boundary 与发布证据一致。 |
 
 ## 6. 已记录方向
 
@@ -84,9 +84,9 @@
 
 ## 7. 后续推进方向
 
-1. 完成 Task 11 release gate 与审计。source matrix 已由可执行 conformance test 消费，optional DSH capability 仍保持显式。
-2. 保持 fork lock：`github:Jacobinwwey/slidev@bbcb2efae709c2ebaa96bda522cd6c192476817c`；更新它是兼容性决策，不是普通依赖刷新。
-3. HMR 时必须保留待审批/materialization 的 staged asset；dispose 只停止进程和 timer，不能提前删除审批输入。
+1. 保持 fork lock：`github:Jacobinwwey/slidev@bbcb2efae709c2ebaa96bda522cd6c192476817c`；更新它是兼容性决策，不是普通依赖刷新。
+2. HMR 时必须保留待审批/materialization 的 staged asset；dispose 只停止进程和 timer，不能提前删除审批输入。
+3. 后续能力变更必须把 conformance manifest、release gate 与 clean-profile acceptance 作为强制证据。
 
 ## 8. 约束
 
@@ -193,3 +193,9 @@
 - `packages/notemd-workflows/test/migration-conformance.test.ts` 消费固定的 source matrix 与 conformance manifest，要求所有 included operation fixture，以及独立的 local-retrieval/diagram/slide fixture，都有现存测试 proof 和可运行的 `test(...)` contract。新增的 `extract-and-generate` 测试实际执行两步 LLM planning，并断言两个 absent-precondition 输出。
 - `packages/notemd-bundle/test/runtime-boundary.test.ts` 证明五个 DSH runtime 是可移除的 optional peer，patch 会重述完整 replacement-row 配置，Cordis effect 负责 LLM、process 和 scanner dispose。process suite 现在证明 dispose 会 abort active tree、等待完成、删除 run directory，并在 dispose 后拒绝新任务；既有 DSH LLM route rejection 与 Web ambiguity 测试保持通过。
 - Node `v22.19.0` / pnpm `10.7.1` 的最终 gate 证据：`pnpm typecheck`、`pnpm lint`、`pnpm test`（48 个文件、184 个测试）、`pnpm test:coverage`（statement 77.03%、branch 71.86%、function 84.54%）、`pnpm build`、`pnpm pack:bundle`、`pnpm verify:bundle` 与 `pnpm accept:dsh` 全部通过。`git diff --check` 也通过；packed tarball 已安装到隔离 DSH profile，clean acceptance 成功完成。
+
+### Task 11 最终发布
+
+- 发布提交 `73480df`（`test: prove full NoteMD migration conformance`）包含 conformance 测试、runtime-boundary 检查、双语架构/计划/进度更新与 validation walkthrough。
+- 该提交在新鲜 release gate 通过后，以非强制方式推送到 `git@github.com:Jacobinwwey/dsh-NotEMD.git`。推送前 fetch 的分歧为 `0 11`（远端没有领先提交）；推送后 `origin/main` 已解析为 `73480df`。
+- 最终 fetch 确认 `origin/main...main = 0 0`；工作区只报告 `## main`，没有任何路径。Slidev lock 仍为 `github:Jacobinwwey/slidev@bbcb2efae709c2ebaa96bda522cd6c192476817c`。

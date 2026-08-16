@@ -333,7 +333,7 @@ rtk proxy git diff --check
 ```
 
 - [x] Updated both progress records after each verified phase and wrote the bilingual validation walkthrough with exact command evidence and known environmental provider limits.
-- [ ] Verify `main` is current, fetch remote `main`, rebase only if needed, make non-force commits, push, and run `rtk git status --short --branch` to prove a clean worktree.
+- [x] Verified `main` was current, fetched remote `main`, found no remote-ahead commits, pushed `73480df` non-force to `origin/main`, and confirmed the post-push worktree was clean.
 
 ## Plan Review
 

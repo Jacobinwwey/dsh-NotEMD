@@ -60,10 +60,6 @@ bundle patch 替换的是完整 config row，因此每次替换都必须按需�
 
 ## 发布证据
 
-发布前 fetch `origin/main`、检查分歧、创建普通提交、非强制 push，最后执行：
-
-```powershell
-rtk git status --short --branch
-```
-
-最终必须只输出 `## main`，其后没有任何路径。
+- canonical remote：`git@github.com:Jacobinwwey/dsh-NotEMD.git`。
+- 发布提交 `73480df`（`test: prove full NoteMD migration conformance`）在新鲜 release gate 通过后，以非强制方式推送到 `origin/main`。推送前分歧为 `0 11`；远端没有领先提交，因此无需 rebase。
+- 最终 fetch 确认 `origin/main...main = 0 0`。`rtk git status --short --branch` 只输出 `## main`，其后没有任何路径。
