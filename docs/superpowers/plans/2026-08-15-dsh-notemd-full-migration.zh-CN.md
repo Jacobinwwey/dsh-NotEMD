@@ -194,12 +194,13 @@ interface NotemdLlmRoute {
 - 新建：`packages/notemd-render-{mermaid,vega-lite,json-canvas,html,editable-svg}/`
 - 修改：`packages/notemd-bundle/src/artifacts.ts`、`packages/notemd-tools/src/artifact-tools.ts`
 
-- [ ] `DiagramSpec` 按 canonical target source 使用 versioned discriminated contract，保存 structured graph/chart/circuit input、evidence ref、source revision、prompt/model provenance、renderer intent。
-- [ ] source、preview、export 分别记录 MIME、SHA-256、parent artifact id、renderer/theme/font fingerprint 以及 `ready`/`unavailable`/`failed`。
-- [ ] 实现具名 SVG-capable renderer；JSON Canvas 的 SVG 仅是标注清楚的 projection，不能替换 `.canvas`。
-- [ ] 清洗持久化 SVG，测试 script、event attribute、remote URL、JavaScript link 与危险 data URL 被删除。
-- [ ] 每个 target 一个具名 Tool，artifact 规划和应用分离，禁止 target selector 参数。
-- [ ] 运行 renderer/artifact 测试、typecheck、pack，更新进度并提交 `feat: add artifact lineage and SVG-capable renderers`。
+- [x] `DiagramSpec` 已按 canonical target source 使用 versioned discriminated contract，保存 structured graph/chart/circuit input、evidence ref、source revision、prompt/model provenance、renderer intent。
+- [x] source、preview、export 已分别记录 MIME、SHA-256、parent artifact id、renderer/theme/font fingerprint 以及 `ready`/`unavailable`/`failed`。
+- [x] 已实现具名 SVG-capable renderer；JSON Canvas 的 SVG 仅是标注清楚的 projection，不能替换 `.canvas`。
+- [x] 已在持久化前清洗 SVG，并验证 script、event attribute、remote URL、JavaScript link 与危险 data URL 被删除。
+- [x] 每个渲染 target 均有具名 planning/status Tool；artifact 规划仍与既有 approval-gated application Tool 分离，且没有 target selector 参数。
+- [x] 已运行 renderer/artifact 测试、严格 TypeScript、lint、全量测试、bundle 打包/校验与 clean-profile DSH 验收。
+- [x] 已更新配对进度记录并提交 `feat: add artifact lineage and SVG-capable renderers`。
 
 ### Task 9：增加 Process-Gated Draw.io、稳定 Drawnix、Circuitikz Provider
 

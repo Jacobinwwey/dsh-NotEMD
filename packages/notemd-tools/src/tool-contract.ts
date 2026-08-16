@@ -270,7 +270,7 @@ export const knowledgeRetrievalResultSchema = closedObjectSchema({
 
 export const artifactCapabilitySchema = closedObjectSchema({
   capability: { type: 'string', enum: ['diagram-rendering', 'document-export'] },
-  status: { type: 'string', const: 'unavailable' },
+  status: { type: 'string', enum: ['available', 'unavailable'] },
   reason: stringSchema(),
 }, ['capability', 'status', 'reason'])
 

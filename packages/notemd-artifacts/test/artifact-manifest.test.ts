@@ -6,7 +6,11 @@ import { afterEach, beforeEach, expect, test } from 'vitest'
 
 import { LocalVault } from '@notemd-harness/vault-local'
 
-import { SourceArtifactPlanner } from '../src/index.js'
+import {
+  ArtifactPlanner,
+  type DiagramArtifactRenderer,
+  type SvgArtifactRenderers,
+} from '../src/index.js'
 
 let workspaceRoot = ''
 
@@ -20,41 +24,32 @@ afterEach(async () => {
 })
 
 test('never deletes an artifact absent from its manifest', async () => {
-  const artifacts = new SourceArtifactPlanner(await LocalVault.open(workspaceRoot))
+  const artifacts = createPlanner(await LocalVault.open(workspaceRoot))
 
   await expect(artifacts.planCleanup('unknown-id')).resolves.toEqual([])
 })
 
-test('reports renderer and export gaps as explicit unavailable capabilities', async () => {
-  const artifacts = new SourceArtifactPlanner(await LocalVault.open(workspaceRoot))
+test('reports installed renderers and the still-absent document export capability truthfully', async () => {
+  const artifacts = createPlanner(await LocalVault.open(workspaceRoot))
 
-  expect(artifacts.diagramRenderingCapability()).toEqual({
+  expect(artifacts.mermaidRenderingCapability()).toMatchObject({
     capability: 'diagram-rendering',
-    status: 'unavailable',
-    reason: 'No portable diagram renderer is configured.',
+    status: 'available',
   })
   expect(artifacts.documentExportCapability()).toEqual({
     capability: 'document-export',
     status: 'unavailable',
-    reason: 'No portable document export provider is configured.',
+    reason: 'Slidev and media export providers are not installed.',
   })
 })
 
-test('plans portable source files and a manifest with exact ownership', async () => {
+test('plans source, preview, and export content with a versioned manifest', async () => {
   await writeFile(join(workspaceRoot, 'notes', 'architecture.md'), '# Architecture')
   const vault = await LocalVault.open(workspaceRoot)
   const source = await vault.read('notes/architecture.md')
-  const artifacts = new SourceArtifactPlanner(vault)
+  const artifacts = createPlanner(vault)
 
-  const plan = artifacts.planDiagram(
-    {
-      version: 1,
-      title: 'Write Lifecycle',
-      intent: 'flowchart',
-      source: 'flowchart TD\n  Plan --> Approval --> Write',
-    },
-    source,
-  )
+  const plan = artifacts.planMermaidArtifact(createMermaidSpec(source.path, source.revision), source)
 
   const manifestMutation = plan.mutations.find(
     (mutation) => mutation.kind === 'write-text' && mutation.destination.endsWith('/manifest.json'),
@@ -63,16 +58,18 @@ test('plans portable source files and a manifest with exact ownership', async ()
   expect(manifestMutation?.expectedRevision).toBe('absent')
   const manifestContent = manifestMutation?.kind === 'write-text' ? manifestMutation.content : '{}'
   expect(JSON.parse(manifestContent)).toMatchObject({
-    version: 1,
-    renderer: 'source',
+    version: 2,
+    canonicalTarget: 'mermaid',
     sourcePath: 'notes/architecture.md',
-    ownedPaths: expect.arrayContaining(
-      plan.mutations.map((mutation) => mutation.destination).filter((path) => !path.endsWith('/manifest.json')),
-    ),
+    entries: expect.arrayContaining([
+      expect.objectContaining({ role: 'source', status: 'ready' }),
+      expect.objectContaining({ role: 'preview', status: 'ready' }),
+      expect.objectContaining({ role: 'export', status: 'ready' }),
+    ]),
   })
 })
 
-test('rejects a manifest that claims a path outside its artifact directory', async () => {
+test('rejects a legacy manifest that claims a path outside its artifact directory', async () => {
   const artifactId = `notemd-artifact-${'a'.repeat(20)}`
   const artifactDirectory = join(workspaceRoot, '.notemd', 'artifacts', artifactId)
   await mkdir(artifactDirectory, { recursive: true })
@@ -85,9 +82,54 @@ test('rejects a manifest that claims a path outside its artifact directory', asy
     ownedPaths: [`.notemd/artifacts/${artifactId}/../../notes/architecture.md`],
   }))
 
-  const artifacts = new SourceArtifactPlanner(await LocalVault.open(workspaceRoot))
+  const artifacts = createPlanner(await LocalVault.open(workspaceRoot))
 
   await expect(artifacts.planCleanup(artifactId)).rejects.toMatchObject({
     code: 'ARTIFACT_MANIFEST_INVALID',
   })
 })
+
+function createPlanner(vault: Awaited<ReturnType<typeof LocalVault.open>>): ArtifactPlanner {
+  return new ArtifactPlanner(vault, rendererSet())
+}
+
+function rendererSet(): SvgArtifactRenderers {
+  return {
+    mermaid: renderer('mermaid'),
+    vegaLite: renderer('vega-lite'),
+    jsonCanvas: renderer('json-canvas'),
+    html: renderer('html'),
+    editableSvg: renderer('editable-svg'),
+  }
+}
+
+function renderer(target: DiagramArtifactRenderer['target']): DiagramArtifactRenderer {
+  return {
+    target,
+    fingerprint: { id: `test-${target}`, version: '1' },
+    render() {
+      return {
+        source: { filename: 'source.txt', mediaType: 'text/plain', content: target },
+        preview: { filename: 'preview.svg', mediaType: 'image/svg+xml', content: '<svg><rect /></svg>' },
+        export: { filename: 'export.svg', mediaType: 'image/svg+xml', content: '<svg><rect /></svg>' },
+      }
+    },
+  }
+}
+
+function createMermaidSpec(path: string, revision: string) {
+  return {
+    version: 2 as const,
+    title: 'Write Lifecycle',
+    source: { path, revision },
+    evidenceRefs: [],
+    generation: {
+      promptPolicyId: 'notemd.diagram.mermaid.v2',
+      provider: 'deepseek',
+      model: 'deepseek-chat',
+    },
+    rendererIntent: { theme: 'light', fontFamily: 'Inter' },
+    canonicalTarget: 'mermaid' as const,
+    graph: { intent: 'flowchart' as const, nodes: [{ id: 'plan', label: 'Plan' }], edges: [] },
+  }
+}

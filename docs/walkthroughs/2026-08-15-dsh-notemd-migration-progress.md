@@ -2,7 +2,7 @@
 
 > Chinese version: [2026-08-15-dsh-notemd-migration-progress.zh-CN.md](2026-08-15-dsh-notemd-migration-progress.zh-CN.md)
 
-**Status:** The standalone-bundle and next-level-runtime foundations are implemented. The full-migration architecture and executable plan were published on `main` at `626f6e1`; Tasks 1-7 are complete and Task 8 is next.
+**Status:** The standalone-bundle and next-level-runtime foundations are implemented. The full-migration architecture and executable plan were published on `main` at `626f6e1`; Tasks 1-8 are complete and Task 9 is next.
 
 ## 1. Scope Baseline
 
@@ -23,6 +23,7 @@
 - Task 5 makes `ctx.llm` the default LLM seam. `@notemd-harness/llm-dsh` consumes DSH streams through a closed route policy, while the old OpenAI-compatible transport is an explicit legacy-only entry.
 - Task 6 adds `@notemd-harness/research`: a durable `.notemd/research` catalog backed only by `ctx.web`, with closed named discovery/capture/synthesis Tools and evidence-id-only durable job input.
 - Task 7 adds `@notemd-harness/documents` as the sole owner of structural Markdown sections, stable anchors, chapter ownership manifests, original-text output policies, and duplicate diagnostics. `notemd-knowledge` now retrieves section-level, citation-bearing context under task-root/current-file constraints; workflow and Tool surfaces expose the resulting named operations without write authority.
+- Task 8 replaces the source-only artifact contract with `DiagramSpec` v2 and a source/preview/export lineage manifest. Five named renderer packages generate canonical Mermaid, Vega-Lite, JSON Canvas, HTML, or editable-SVG sources plus sanitized SVG derivatives; the JSON Canvas SVG is explicitly a projection, not a `.canvas` replacement. Each target has separate named planning/status Tools, while materialization remains on the existing approval-gated mutation path.
 
 ## 3. Completed Code Audit
 
@@ -36,7 +37,7 @@ The source registry exposes 29 operations. Its host/provider/profile surfaces ar
 | `packages/notemd-research/src/` and `packages/notemd-bundle/src/research.ts` | The catalog persists content-addressed DSH Web discoveries/evidence and the Cordis service injects `web` explicitly. | Provider selection remains DSH-owned; neither the bundle nor a workflow owns network transport. |
 | `packages/notemd-workflows/src/index.ts` and `packages/notemd-bundle/src/jobs.ts` | Research synthesis accepts `ResearchEvidence`; Tools and durable jobs persist only evidence ids and resolve them through `notemdResearch`. | Raw caller passages cannot bypass evidence provenance or enter a durable job record. |
 | `packages/notemd-documents/src/` and `packages/notemd-knowledge/src/knowledge-index.ts` | Structural Markdown sections feed chapter plans, link/concept prompts, and a rebuildable section-level MiniSearch index. | Retrieval carries task-root selection, current-file exclusion, context windows, explanations, and `citation:<path>#<anchor>` metadata. |
-| `packages/notemd-artifacts/src/artifact-manifest.ts` | Only source JSON/README artifacts, `renderer: source`, and permanent unavailable render/export reports. | Artifact lineage and named renderer/export providers are the central missing migration axis. |
+| `packages/notemd-artifacts/src/artifact-manifest.ts` and `packages/notemd-render-*/` | `ArtifactPlanner` freezes v2 source/preview/export lineage with content and renderer/theme/font fingerprints, sanitizes SVG before a mutation plan is emitted, and binds one renderer per canonical SVG-capable target. | SVG is a truthful derivative for Mermaid, Vega-Lite, JSON Canvas, HTML, and editable SVG only; it is not a replacement for future Draw.io, Drawnix, Circuitikz, PPTX, or media sources. |
 | `packages/notemd-tools/src/tool-contract.ts` | Each named Tool uses a closed DSH author schema and explicit outcome variants. | The DSH runtime can validate every emitted result without a catch-all object schema. |
 | `packages/notemd-jobs` and `packages/notemd-workspace-events` | Durable planning checkpoints retain proposal identity/evidence only; metadata-only changes derive from verified receipts. | Planning remains non-authoritative and indexing observes only committed mutations. |
 
@@ -68,7 +69,7 @@ The table records code state, not planned completion. A passing baseline release
 | 5. DSH LLM consumer bridge | Complete. `@notemd-harness/llm-dsh` injects DSH `llm`, builds provider-neutral completions from `StreamChunk`, rejects closed-policy violations, and disposes active calls with its Cordis owner. | Delivered. The default patch contains no endpoint/key/transport settings and registers no legacy provider tools. |
 | 6. DSH web research evidence | Complete. `@notemd-harness/research` persists bounded DSH Web discoveries/evidence; named Tools return evidence metadata and research synthesis accepts durable ids only. `notemdResearch` is injected into Tools and jobs, and the bundle declares `dsh-web` as an optional peer. | Delivered. No provider yields the closed `capability-unavailable` outcome; non-2xx resources remain evidence rather than becoming transport failures. |
 | 7. Document semantics and knowledge retrieval | Complete. `@notemd-harness/documents` owns structural sections, chapter manifests, original-text policies, and duplicate diagnostics; workflows and Tools expose named single-file/folder operations; knowledge indexes sections with citations and explanations. | Delivered. The phase passed focused and full integration gates, including packed-bundle and clean-profile acceptance. |
-| 8. Artifact lineage and SVG-capable renderers | Not started. Artifacts are source JSON/README only, and no renderer package exists. | Versioned specs and source/preview/export lineage support sanitized SVG only for eligible targets through separate named providers. |
+| 8. Artifact lineage and SVG-capable renderers | Complete. `DiagramSpec` v2 carries source revisions, provenance, evidence, structured inputs, and renderer intent. Five bundled named renderers create canonical sources plus sanitized SVG preview/export derivatives; Tool schemas are source-bound and target-specific. | Delivered. The packed bundle contains compiled renderer dependencies only, and clean-profile acceptance executes the Mermaid planning Tool. |
 | 9. Draw.io, stable Drawnix, and Circuitikz providers | Not started. No staging-only process boundary or specialist renderer package exists. | Allowlisted process tests and provider-specific canonical sources pass, using only the pinned committed Drawnix baseline. |
 | 10. Slidev and media exporters | Not started. No Slidev/PPTX/media provider or staged export contract exists. | Prepared slide source and each named export provider prove capability, cleanup, byte limits, and reproducibility. |
 | 11. Conformance, HMR, and publication | Prerequisites only. The existing bundle release gate passes, but there is no source-matrix conformance suite or full-migration HMR coverage. | Included matrix rows all pass, dependency/HMR/process cleanup tests pass, and a clean DSH profile accepts the final packed bundle. |
@@ -81,7 +82,7 @@ The table records code state, not planned completion. A passing baseline release
 
 ## 7. Next Direction
 
-1. Complete Task 8 before external-process breadth. Versioned artifact lineage and truthful SVG-capable previews are upstream contracts for specialist renderers and exports.
+1. Complete Task 9 before export breadth. The staging-only allowlisted-process contract must precede Draw.io, stable Drawnix, and Circuitikz providers.
 2. Implement Tasks 9-10 by target class, never through a target selector. Process-gated Draw.io/Drawnix/Circuitikz and Slidev/media exporters follow only with explicit capability tests.
 3. Reserve Task 11 for proof, not optimism: run source-matrix conformance, lifecycle/HMR failure paths, isolated bundle acceptance, and the full release gate after the implementation tasks are green.
 
@@ -163,3 +164,10 @@ This publication records architecture, planning, audit, and baseline verificatio
 - `NotemdWorkflowPlanner` exposes separate individual and merged original-text operations, deterministic folder batches, chapter split, duplicate diagnostics, reviewed concept-delete proposals, and extract-and-generate. Original-text output paths are policy objects, not a merged-mode switch; folder/job snapshots are lexical and deterministic.
 - `VaultKnowledgeIndex` is derived and rebuildable. It indexes sections, supports task roots, top-k, current-file exclusion, adjacent section windows, hit explanations, and citations such as `citation:notes/knowledge.md#canonical-lock-ordering`. The named DSH Tool returns the same closed, citation-bearing result contract.
 - Fresh evidence on Node `v22.19.0` / pnpm `10.7.1`: `pnpm test` passed 26 files and 132 tests; `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm pack:bundle`, `pnpm verify:bundle`, and `pnpm accept:dsh` all passed. The packed tarball includes `@notemd-harness/documents`, and clean-profile acceptance succeeded.
+
+### Task 8 Verification
+
+- The renderer Tool contract was first observed red: the pre-Task-8 registry contained only `notemd_artifact_render_status`, `notemd_artifact_export_status`, `notemd_plan_source_artifact`, and cleanup. The focused named-Tool test then passed after replacing that generic surface with five target-specific planning/status pairs and v2 source-bound specifications.
+- Focused artifact evidence: `diagram-spec`, `svg-sanitizer`, lineage/manifest, five renderer, and Tool suites passed: 10 files and 16 tests. SVG sanitizer coverage proves removal of scripts, foreign content, event attributes, remote URLs, JavaScript links, and unsafe data URLs while preserving local fragment and image references.
+- Bundle verifier was intentionally observed red when initial renderer packages included source, tests, maps, and build metadata. Each renderer package now ships only compiled `.js` and `.d.ts`; `pnpm pack:bundle` and `pnpm verify:bundle` passed with all five renderer dependencies present.
+- Fresh full evidence: `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm test` (35 files, 144 tests), `pnpm pack:bundle`, `pnpm verify:bundle`, and `pnpm accept:dsh` all passed. Clean-profile acceptance invokes `notemd_mermaid_render_status` and `notemd_plan_mermaid_artifact`, confirming the installed bundle creates a canonical `.mmd` source and sanitized SVG preview proposal without claiming a document-export provider.

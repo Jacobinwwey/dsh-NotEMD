@@ -261,13 +261,13 @@ interface ResearchEvidence {
 - Modify: `packages/notemd-bundle/src/artifacts.ts`
 - Modify: `packages/notemd-tools/src/artifact-tools.ts`
 
-- [ ] Make `DiagramSpec` versioned and discriminated by canonical target source; include structured graph/chart/circuit inputs, evidence refs, source revision, prompt/model provenance, and renderer intent.
-- [ ] Record source, preview, and export entries separately with MIME, SHA-256, parent artifact id, renderer/theme/font fingerprints, and `ready`, `unavailable`, or `failed` state.
-- [ ] Implement SVG-capable named renderers. JSON Canvas produces an explicitly labelled SVG projection, not a replacement for `.canvas` source.
-- [ ] Sanitize SVG before persistence and verify removal of scripts, event attributes, remote URLs, JavaScript links, and unsafe data URLs.
-- [ ] Add one named Tool per rendering target and separate planning/application tools for its artifacts. Avoid a target selector parameter.
-- [ ] Run renderer package tests, artifact tests, `rtk tsc`, and `rtk proxy pnpm.cmd pack:bundle`.
-- [ ] Update progress records and commit `feat: add artifact lineage and SVG-capable renderers`.
+- [x] Made `DiagramSpec` versioned and discriminated by canonical target source; it carries structured graph/chart/circuit inputs, evidence refs, source revision, prompt/model provenance, and renderer intent.
+- [x] Recorded source, preview, and export entries separately with MIME, SHA-256, parent artifact id, renderer/theme/font fingerprints, and `ready`, `unavailable`, or `failed` state.
+- [x] Implemented SVG-capable named renderers. JSON Canvas produces an explicitly labelled SVG projection, not a replacement for `.canvas` source.
+- [x] Sanitized SVG before persistence and verified removal of scripts, event attributes, remote URLs, JavaScript links, and unsafe data URLs.
+- [x] Added named planning and status Tools per rendering target; artifact planning remains separate from the existing approval-gated application Tool, with no target selector parameter.
+- [x] Ran renderer package tests, artifact tests, strict TypeScript, lint, the complete suite, bundle packing/verification, and clean-profile DSH acceptance.
+- [x] Updated paired progress records and committed `feat: add artifact lineage and SVG-capable renderers`.
 
 ### Task 9: Add Process-Gated Draw.io, Stable Drawnix, and Circuitikz Providers
 

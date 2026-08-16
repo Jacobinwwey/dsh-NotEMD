@@ -65,6 +65,21 @@ importers:
       '@notemd-harness/mutation':
         specifier: workspace:*
         version: link:../notemd-mutation
+      '@notemd-harness/render-editable-svg':
+        specifier: workspace:*
+        version: link:../notemd-render-editable-svg
+      '@notemd-harness/render-html':
+        specifier: workspace:*
+        version: link:../notemd-render-html
+      '@notemd-harness/render-json-canvas':
+        specifier: workspace:*
+        version: link:../notemd-render-json-canvas
+      '@notemd-harness/render-mermaid':
+        specifier: workspace:*
+        version: link:../notemd-render-mermaid
+      '@notemd-harness/render-vega-lite':
+        specifier: workspace:*
+        version: link:../notemd-render-vega-lite
       '@notemd-harness/research':
         specifier: workspace:*
         version: link:../notemd-research
@@ -132,6 +147,36 @@ importers:
   packages/notemd-llm-openai-compatible: {}
 
   packages/notemd-mutation: {}
+
+  packages/notemd-render-editable-svg:
+    dependencies:
+      '@notemd-harness/artifacts':
+        specifier: workspace:*
+        version: link:../notemd-artifacts
+
+  packages/notemd-render-html:
+    dependencies:
+      '@notemd-harness/artifacts':
+        specifier: workspace:*
+        version: link:../notemd-artifacts
+
+  packages/notemd-render-json-canvas:
+    dependencies:
+      '@notemd-harness/artifacts':
+        specifier: workspace:*
+        version: link:../notemd-artifacts
+
+  packages/notemd-render-mermaid:
+    dependencies:
+      '@notemd-harness/artifacts':
+        specifier: workspace:*
+        version: link:../notemd-artifacts
+
+  packages/notemd-render-vega-lite:
+    dependencies:
+      '@notemd-harness/artifacts':
+        specifier: workspace:*
+        version: link:../notemd-artifacts
 
   packages/notemd-research: {}
 

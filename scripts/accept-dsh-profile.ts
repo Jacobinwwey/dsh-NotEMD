@@ -70,6 +70,7 @@ export async function acceptDshProfile(): Promise<void> {
     assert(evidence.staleStatus === 'conflict', 'A stale mutation proposal was not rejected by the vault write precondition.')
     assert(evidence.jobState === 'completed', 'The installed formula planning job did not complete.')
     assert(evidence.researchStatus === 'unavailable', 'The installed research Tool did not report an unconfigured DSH web capability as unavailable.')
+    assert(evidence.mermaidRendererStatus === 'available', 'The installed Mermaid renderer did not report its capability.')
     assert(evidence.legacyProviderToolMissing, 'The default DSH bridge registered a legacy provider diagnostic Tool.')
 
     process.stdout.write('Clean DeepSeek Harness profile acceptance passed.\n')
@@ -129,6 +130,7 @@ function parseRunnerEvidence(stdout: string): {
   readonly staleStatus: string
   readonly jobState: string
   readonly researchStatus: string
+  readonly mermaidRendererStatus: string
   readonly legacyProviderToolMissing: boolean
 } {
   const line = stdout.trim().split(/\r?\n/u).at(-1)
@@ -142,6 +144,7 @@ function parseRunnerEvidence(stdout: string): {
     readonly staleStatus: string
     readonly jobState: string
     readonly researchStatus: string
+    readonly mermaidRendererStatus: string
     readonly legacyProviderToolMissing: boolean
   }
 }
@@ -254,10 +257,34 @@ const legacyProviderToolMissing = await toolIsMissing('notemd_provider_diagnosti
 assert(legacyProviderToolMissing, 'The default DSH bridge unexpectedly registered a legacy provider diagnostic Tool.')
 const research = await invoke('notemd_research_discover', { query: 'research capability test', maxResults: 1 })
 assert(research.status === 'unavailable' && research.code === 'capability-unavailable', 'The empty DSH web runtime did not report research as unavailable.')
-const renderStatus = await invoke('notemd_artifact_render_status', {})
+const mermaidRenderStatus = await invoke('notemd_mermaid_render_status', {})
 const exportStatus = await invoke('notemd_artifact_export_status', {})
-assert(renderStatus.status === 'unavailable', 'The core bundle unexpectedly claimed a portable diagram renderer.')
-assert(exportStatus.status === 'unavailable', 'The core bundle unexpectedly claimed a portable export provider.')
+assert(mermaidRenderStatus.status === 'success' && mermaidRenderStatus.capability.status === 'available', 'The core bundle did not load the Mermaid renderer.')
+assert(exportStatus.status === 'success' && exportStatus.capability.status === 'unavailable', 'The core bundle unexpectedly claimed a portable export provider.')
+
+const artifact = await invoke('notemd_plan_mermaid_artifact', {
+  spec: {
+    version: 2,
+    title: 'Approval Lifecycle',
+    source: { path: read.document.path, revision: read.document.revision },
+    evidenceRefs: [],
+    generation: {
+      promptPolicyId: 'notemd.acceptance.mermaid.v2',
+      provider: 'deepseek',
+      model: 'deepseek-chat',
+    },
+    rendererIntent: { theme: 'light', fontFamily: 'Inter' },
+    canonicalTarget: 'mermaid',
+    graph: {
+      intent: 'flowchart',
+      nodes: [{ id: 'plan', label: 'Plan' }, { id: 'apply', label: 'Apply' }],
+      edges: [{ from: 'plan', to: 'apply', label: 'approved' }],
+    },
+  },
+})
+assert(artifact.status === 'success', 'The installed Mermaid planning Tool did not create an artifact proposal.')
+assert(artifact.plan.mutations.some(mutation => mutation.destination.endsWith('/diagram.mmd')), 'The Mermaid artifact proposal omitted its canonical source.')
+assert(artifact.plan.mutations.some(mutation => mutation.destination.endsWith('/preview.svg')), 'The Mermaid artifact proposal omitted its SVG preview.')
 
 const jobStarted = await invoke('notemd_job_start_formula_repair', {
   idempotencyKey: 'acceptance-formula-repair',
@@ -304,6 +331,7 @@ process.stdout.write(JSON.stringify({
   staleStatus: staleApply.receipt.status,
   jobState: completedJob.state,
   researchStatus: research.status,
+  mermaidRendererStatus: mermaidRenderStatus.capability.status,
   legacyProviderToolMissing,
 }) + '\n')
 

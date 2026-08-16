@@ -26,6 +26,11 @@
       "@notemd-harness/knowledge": ["packages/notemd-knowledge/src/index.ts"],
       "@notemd-harness/workflows": ["packages/notemd-workflows/src/index.ts"],
       "@notemd-harness/artifacts": ["packages/notemd-artifacts/src/index.ts"],
+      "@notemd-harness/render-mermaid": ["packages/notemd-render-mermaid/src/index.ts"],
+      "@notemd-harness/render-vega-lite": ["packages/notemd-render-vega-lite/src/index.ts"],
+      "@notemd-harness/render-json-canvas": ["packages/notemd-render-json-canvas/src/index.ts"],
+      "@notemd-harness/render-html": ["packages/notemd-render-html/src/index.ts"],
+      "@notemd-harness/render-editable-svg": ["packages/notemd-render-editable-svg/src/index.ts"],
       "@notemd-harness/llm-dsh": ["packages/notemd-llm-dsh/src/index.ts"],
       "@notemd-harness/llm-openai-compatible": ["packages/notemd-llm-openai-compatible/src/index.ts"],
       "@notemd-harness/tools": ["packages/notemd-tools/src/index.ts"]
