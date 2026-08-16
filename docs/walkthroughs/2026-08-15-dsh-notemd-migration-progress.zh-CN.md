@@ -2,7 +2,7 @@
 
 > English version: [2026-08-15-dsh-notemd-migration-progress.md](2026-08-15-dsh-notemd-migration-progress.md)
 
-**状态：** standalone bundle 与 next-level runtime 基础已实现。全量迁移架构与可执行计划已在 `main` 的 `626f6e1` 发布；Task 1-8 已完成，下一项为 Task 9。
+**状态：** standalone bundle 与 next-level runtime 基础已实现。全量迁移架构与可执行计划已在 `main` 的 `626f6e1` 发布；Task 1-9 已完成，下一项为 Task 10。
 
 ## 1. 范围基线
 
@@ -24,6 +24,7 @@
 - Task 6 已增加 `@notemd-harness/research`：以 `ctx.web` 为唯一后端的 durable `.notemd/research` catalog，具名的 closed Tool discovery/capture/synthesis，以及只接受 evidence id 的 durable job input。
 - Task 7 已增加 `@notemd-harness/documents` 作为 structural Markdown section、stable anchor、chapter ownership manifest、original-text output policy 和 duplicate diagnostic 的唯一 owner。`notemd-knowledge` 现在在 task-root/current-file 约束下检索带 citation 的 section context；workflow 和 Tool surface 暴露相应具名操作但不拥有 write authority。
 - Task 8 已将 source-only artifact contract 替换为 `DiagramSpec` v2 与 source/preview/export lineage manifest。五个具名 renderer package 生成 canonical Mermaid、Vega-Lite、JSON Canvas、HTML 或 editable-SVG source 及清洗后的 SVG 派生产物；JSON Canvas SVG 被明确标记为 projection，不能替代 `.canvas`。每个 target 均有独立的 planning/status Tool，而 materialization 仍走既有 approval-gated mutation path。
+- Task 9 已增加 `@notemd-harness/process`，作为唯一 staging-only 外部进程边界。Draw.io、稳定 Drawnix 与 Circuitikz provider 生成确定性的 canonical source、明确标注的 SVG projection、真实的 native capability outcome，并在 Circuitikz 场景生成 digest-verified staged PDF。native export 不会直接写最终工作区；process boundary 负责 executable allowlist、固定 argv、有界 I/O、timeout/cancellation 分类、进程树 join、HMR dispose 与 staging cleanup。
 
 ## 3. 已完成的代码审计
 
@@ -70,7 +71,7 @@
 | 6. DSH web research evidence | 已完成。`@notemd-harness/research` 持久化有界 DSH Web discovery/evidence；具名 Tool 仅返回 evidence metadata，research synthesis 只接受 durable id。`notemdResearch` 已注入 Tools 和 jobs，bundle 将 `dsh-web` 声明为 optional peer。 | 已交付。无 provider 时返回封闭 `capability-unavailable` outcome；非 2xx resource 仍作为 evidence，而非 transport failure。 |
 | 7. 文档语义与知识检索 | 已完成。`@notemd-harness/documents` 拥有 structural section、chapter manifest、original-text policy 和 duplicate diagnostic；workflow 与 Tool 暴露具名 single-file/folder operation；knowledge 索引 section 并返回 citation 和 explanation。 | 已交付。本阶段已通过 focused/full integration gate，包括 packed-bundle 与 clean-profile acceptance。 |
 | 8. Artifact lineage 与 SVG renderer | 已完成。`DiagramSpec` v2 携带 source revision、provenance、evidence、structured input 与 renderer intent。五个已打包的具名 renderer 生成 canonical source 与清洗后的 SVG preview/export 派生产物；Tool schema 绑定 source 且按 target 分离。 | 已交付。packed bundle 仅包含编译后的 renderer dependency，clean-profile acceptance 会执行 Mermaid planning Tool。 |
-| 9. Draw.io、稳定 Drawnix 与 Circuitikz provider | 未开始。没有 staging-only process boundary 或专用 renderer 包。 | allowlisted process 测试和 provider-specific canonical source 通过，且只使用固定来源中已提交的 Drawnix 基线。 |
+| 9. Draw.io、稳定 Drawnix 与 Circuitikz provider | 已完成。`@notemd-harness/process` 强制固定 command profile 与 staging containment；三个具名 provider 和六个 planning/status Tool 已打包。Drawnix WIP 路径仍被排除；缺失可选 `notemd-drawnix-render` adapter 时如实返回 unavailable。 | 已通过 Windows process/provider 测试、全量 suite、packed-bundle 校验与 clean DSH profile acceptance。 |
 | 10. Slidev 与媒体导出 | 未开始。没有 Slidev/PPTX/media provider 或 staged export contract。 | prepared slide source 与每个具名 exporter 证明 capability、cleanup、字节上限和可复现性。 |
 | 11. Conformance、HMR 与发布 | 仅具备前置条件。既有 bundle release gate 已通过，但没有 source-matrix conformance suite 或全量迁移 HMR 覆盖。 | 全部 included matrix 行通过，依赖/HMR/进程清理测试通过，且 clean DSH profile 能安装最终 packed bundle。 |
 
@@ -82,8 +83,8 @@
 
 ## 7. 后续推进方向
 
-1. 在扩展 export 宽度前完成 Task 9。staging-only allowlisted-process contract 必须先于 Draw.io、稳定 Drawnix 和 Circuitikz provider。
-2. Task 9-10 必须按目标类别实现，不能使用 target selector。process-gated Draw.io/Drawnix/Circuitikz 与 Slidev/media exporter 仅在具备显式 capability test 时加入。
+1. 下一步完成 Task 10。Slidev source preparation 与具名 HTML/PDF/PNG/PPTX/MP4 exporter 必须复用 Task 9 的 staging/process contract。
+2. 导出 provider 必须按 target class 实现，不能使用 target selector。SVG 只能是 preview derivative，不能替代 PPTX 或 MP4。
 3. 将 Task 11 留给证明，而不是乐观判断：在实现任务全部完成后运行 source-matrix conformance、生命周期/HMR 失败路径、隔离 bundle 验收和完整 release gate。
 
 ## 8. 约束
@@ -171,3 +172,10 @@
 - focused artifact 证据：`diagram-spec`、`svg-sanitizer`、lineage/manifest、五个 renderer 与 Tool suite 共 10 个文件、16 个测试通过。SVG sanitizer coverage 证明会删除 script、foreign content、event attribute、remote URL、JavaScript link 与危险 data URL，同时保留 local fragment 和 image reference。
 - bundle verifier 先有意观察到红态：初始 renderer package 包含 source、test、map 和 build metadata。每个 renderer package 现在只发布编译后的 `.js` 与 `.d.ts`；`pnpm pack:bundle` 与 `pnpm verify:bundle` 均通过，且包含全部五个 renderer dependency。
 - 最新全量证据：`pnpm typecheck`、`pnpm lint`、`pnpm build`、`pnpm test`（35 个文件、144 个测试）、`pnpm pack:bundle`、`pnpm verify:bundle` 与 `pnpm accept:dsh` 均通过。clean-profile acceptance 调用 `notemd_mermaid_render_status` 与 `notemd_plan_mermaid_artifact`，确认安装后的 bundle 会创建 canonical `.mmd` source 与清洗后的 SVG preview proposal，同时不会虚称存在 document-export provider。
+
+### Task 9 验证
+
+- `@notemd-harness/process` 只暴露固定的 Draw.io SVG、稳定 Drawnix adapter SVG、Tectonic PDF、PDF-to-SVG 与 PDF-to-PNG profile。边界核验 resolved executable identity、精确 argv、staging containment、有界 input/output、环境 allowlist、timeout 与 caller cancellation、进程树 `waitForExit()` 和 owner disposal。聚焦 Windows suite 通过 1 个文件、7 个测试，覆盖缺 executable、非零退出、坏输出、字节上限、staging escape、timeout/cancellation 和 cleanup。
+- `@notemd-harness/render-drawio`、`@notemd-harness/render-drawnix`、`@notemd-harness/render-circuitikz` 的 3 个 provider 文件、8 个测试通过。Draw.io XML 与 Drawnix semantic JSON 确定性且已转义；preview 明确 projection 语义；native failure 保持 unavailable/failed；取消不会被转换为成功。Circuitikz 只有在 process digest 与重算 digest 一致时才 stage PDF。
+- artifact/Tool 集成通过：specialist lineage 3 个测试通过；named Tool contract 16 个测试通过，并包含六个新操作 `notemd_plan_drawio_artifact`、`notemd_drawio_render_status`、`notemd_plan_drawnix_artifact`、`notemd_drawnix_render_status`、`notemd_plan_circuitikz_artifact`、`notemd_circuitikz_render_status`。bundle 显式注入 DSH `subprocess`，组合 SVG 与 specialist planner，并通过异步 Cordis effect 等待 process quiescence。
+- Node `v22.19.0` / pnpm `10.7.1` 上的新鲜 release evidence：root typecheck 与 lint 通过；`pnpm build`、`pnpm verify:bundle` 和 clean DSH acceptance 通过。全量 Vitest 现为 40 个文件、162 个测试通过。clean-profile acceptance 安装 packed bundle 与 DSH local subprocess runtime，执行三个 capability Tool，并生成 Draw.io canonical/projection plan，同时对可选 binary 的状态保持真实。

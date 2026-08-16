@@ -65,6 +65,18 @@ importers:
       '@notemd-harness/mutation':
         specifier: workspace:*
         version: link:../notemd-mutation
+      '@notemd-harness/process':
+        specifier: workspace:*
+        version: link:../notemd-process
+      '@notemd-harness/render-circuitikz':
+        specifier: workspace:*
+        version: link:../notemd-render-circuitikz
+      '@notemd-harness/render-drawio':
+        specifier: workspace:*
+        version: link:../notemd-render-drawio
+      '@notemd-harness/render-drawnix':
+        specifier: workspace:*
+        version: link:../notemd-render-drawnix
       '@notemd-harness/render-editable-svg':
         specifier: workspace:*
         version: link:../notemd-render-editable-svg
@@ -147,6 +159,38 @@ importers:
   packages/notemd-llm-openai-compatible: {}
 
   packages/notemd-mutation: {}
+
+  packages/notemd-process: {}
+
+  packages/notemd-render-circuitikz:
+    dependencies:
+      '@notemd-harness/artifacts':
+        specifier: workspace:*
+        version: link:../notemd-artifacts
+      '@notemd-harness/process':
+        specifier: workspace:*
+        version: link:../notemd-process
+      '@notemd-harness/vault-local':
+        specifier: workspace:*
+        version: link:../notemd-vault-local
+
+  packages/notemd-render-drawio:
+    dependencies:
+      '@notemd-harness/artifacts':
+        specifier: workspace:*
+        version: link:../notemd-artifacts
+      '@notemd-harness/process':
+        specifier: workspace:*
+        version: link:../notemd-process
+
+  packages/notemd-render-drawnix:
+    dependencies:
+      '@notemd-harness/artifacts':
+        specifier: workspace:*
+        version: link:../notemd-artifacts
+      '@notemd-harness/process':
+        specifier: workspace:*
+        version: link:../notemd-process
 
   packages/notemd-render-editable-svg:
     dependencies:

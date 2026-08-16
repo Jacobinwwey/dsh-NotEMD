@@ -10,6 +10,7 @@ declare module '@deepseek-ai/cordis' {
       }): Promise<unknown>
     }
     readonly llm: import('@notemd-harness/llm-dsh').DshLlmRuntime
+    readonly subprocess: import('@notemd-harness/process').DshSubprocessRuntime
     readonly web: import('@notemd-harness/research').DshWebRuntime
     readonly notemdVault: import('@notemd-harness/vault').NotemdVault
     readonly notemdJobs: import('@notemd-harness/tools').NotemdJobs
@@ -21,7 +22,7 @@ declare module '@deepseek-ai/cordis' {
     readonly notemdResearch: import('@notemd-harness/research').NotemdResearch
     readonly notemdApprovalGate: import('@notemd-harness/tools').NotemdApprovalGate
     readonly logger: { warn(message: unknown): unknown }
-    effect(callback: () => void | (() => void), name?: string): unknown
+    effect(callback: () => void | (() => void | Promise<void>) | Promise<void>, name?: string): unknown
     plugin(plugin: unknown, config?: unknown): unknown
   }
 

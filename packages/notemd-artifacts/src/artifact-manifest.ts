@@ -4,6 +4,7 @@ import {
   createContentSha256,
   createWorkspaceMutationPlan,
   type ContentSha256,
+  type WorkspaceMutation,
   type WorkspaceMutationPlan,
 } from '@notemd-harness/mutation'
 import type { NotemdVault, Revision, VaultDocument } from '@notemd-harness/vault'
@@ -11,12 +12,14 @@ import type { NotemdVault, Revision, VaultDocument } from '@notemd-harness/vault
 import type {
   ArtifactDerivativePayload,
   DiagramArtifactRenderer,
+  DiagramArtifactRenderOutput,
   DiagramSpecFor,
   ReadyArtifactPayload,
   SvgArtifactRenderers,
 } from './artifact-renderer.js'
 import {
   validateDiagramSpec,
+  type DiagramCanonicalTarget,
   type DiagramSpec,
   type SvgCanonicalTarget,
 } from './diagram-spec.js'
@@ -57,7 +60,7 @@ export type ArtifactManifestEntry = ReadyArtifactManifestEntry | UnavailableArti
 export interface ArtifactManifest {
   readonly version: 2
   readonly artifactId: string
-  readonly canonicalTarget: SvgCanonicalTarget
+  readonly canonicalTarget: DiagramCanonicalTarget
   readonly sourcePath: string
   readonly sourceRevision: Revision
   readonly entries: readonly ArtifactManifestEntry[]
@@ -85,16 +88,22 @@ export interface NotemdArtifacts {
   planJsonCanvasArtifact(spec: DiagramSpecFor<'json-canvas'>, source: VaultDocument): WorkspaceMutationPlan
   planHtmlArtifact(spec: DiagramSpecFor<'html'>, source: VaultDocument): WorkspaceMutationPlan
   planEditableSvgArtifact(spec: DiagramSpecFor<'editable-svg'>, source: VaultDocument): WorkspaceMutationPlan
+  planDrawioArtifact(spec: DiagramSpecFor<'drawio'>, source: VaultDocument, signal?: AbortSignal): Promise<WorkspaceMutationPlan>
+  planDrawnixArtifact(spec: DiagramSpecFor<'drawnix'>, source: VaultDocument, signal?: AbortSignal): Promise<WorkspaceMutationPlan>
+  planCircuitikzArtifact(spec: DiagramSpecFor<'circuitikz'>, source: VaultDocument, signal?: AbortSignal): Promise<WorkspaceMutationPlan>
   planCleanup(artifactId: string): Promise<readonly string[]>
   mermaidRenderingCapability(): ArtifactCapability
   vegaLiteRenderingCapability(): ArtifactCapability
   jsonCanvasRenderingCapability(): ArtifactCapability
   htmlRenderingCapability(): ArtifactCapability
   editableSvgRenderingCapability(): ArtifactCapability
+  drawioRenderingCapability(signal?: AbortSignal): Promise<ArtifactCapability>
+  drawnixRenderingCapability(signal?: AbortSignal): Promise<ArtifactCapability>
+  circuitikzRenderingCapability(signal?: AbortSignal): Promise<ArtifactCapability>
   documentExportCapability(): ArtifactCapability
 }
 
-export class ArtifactPlanner implements NotemdArtifacts {
+export class ArtifactPlanner {
   constructor(
     private readonly vault: NotemdVault,
     private readonly renderers: SvgArtifactRenderers,
@@ -173,59 +182,61 @@ export class ArtifactPlanner implements NotemdArtifacts {
     if (spec.canonicalTarget !== renderer.target) {
       throw new ArtifactManifestError(`The ${renderer.target} renderer cannot plan a ${spec.canonicalTarget} source artifact.`)
     }
-
-    const artifactId = artifactIdFor(spec)
-    const directory = `.notemd/artifacts/${artifactId}`
     const rendered = renderer.render(spec as DiagramSpecFor<Target>)
-    const fingerprints = {
-      rendererFingerprint: createContentSha256(`${renderer.fingerprint.id}@${renderer.fingerprint.version}`),
-      themeFingerprint: createContentSha256(spec.rendererIntent.theme),
-      fontFingerprint: createContentSha256(spec.rendererIntent.fontFamily),
-    }
-    const entries = Object.freeze([
-      readyEntry('source', rendered.source, artifactId, directory, null, fingerprints),
-      derivativeEntry('preview', rendered.preview, artifactId, directory, fingerprints),
-      derivativeEntry('export', rendered.export, artifactId, directory, fingerprints),
-    ])
-    const ownedPaths = Object.freeze(entries
-      .flatMap((entry) => entry.status === 'ready' ? [entry.path] : [])
-      .sort())
-    const manifest: ArtifactManifest = Object.freeze({
-      version: 2,
-      artifactId,
-      canonicalTarget: spec.canonicalTarget,
-      sourcePath: source.path,
-      sourceRevision: source.revision,
-      entries,
-      ownedPaths,
-    })
-    const provenance = {
-      operationId: `artifact.plan.${spec.canonicalTarget}`,
-      sourceRefs: [source.path],
-      evidenceRefs: spec.evidenceRefs,
-    }
-    const contentByPath = new Map<string, { readonly content: string; readonly mediaType: string }>()
-    for (const entry of entries) {
-      if (entry.status !== 'ready') {
-        continue
-      }
-      const content = contentForEntry(entry, rendered)
-      contentByPath.set(entry.path, { content, mediaType: entry.mediaType })
-    }
-    const manifestPath = `${directory}/manifest.json`
-    const manifestContent = `${JSON.stringify(manifest, null, 2)}\n`
-    contentByPath.set(manifestPath, { content: manifestContent, mediaType: 'application/json' })
-
-    return createWorkspaceMutationPlan({
-      provenance,
-      mutations: [...contentByPath.entries()].map(([destination, payload]) => textMutation(
-        destination,
-        payload.content,
-        payload.mediaType,
-        provenance,
-      )),
-    })
+    return compileRenderedArtifactPlan(spec, source, renderer.fingerprint, rendered)
   }
+}
+
+/** Compiles one renderer result into the shared approval-bound mutation vocabulary. */
+export function compileRenderedArtifactPlan(
+  specInput: DiagramSpec,
+  source: VaultDocument,
+  defaultFingerprint: { readonly id: string; readonly version: string },
+  rendered: DiagramArtifactRenderOutput,
+): WorkspaceMutationPlan {
+  const spec = validateDiagramSpec(specInput)
+  assertSpecMatchesSource(spec, source)
+  const artifactId = artifactIdFor(spec)
+  const directory = `.notemd/artifacts/${artifactId}`
+  const fingerprints = {
+    rendererFingerprint: createContentSha256(`${defaultFingerprint.id}@${defaultFingerprint.version}`),
+    themeFingerprint: createContentSha256(spec.rendererIntent.theme),
+    fontFingerprint: createContentSha256(spec.rendererIntent.fontFamily),
+  }
+  const entries = Object.freeze([
+    readyEntry('source', rendered.source, artifactId, directory, null, fingerprints),
+    derivativeEntry('preview', rendered.preview, artifactId, directory, fingerprints),
+    derivativeEntry('export', rendered.export, artifactId, directory, fingerprints),
+  ])
+  const ownedPaths = Object.freeze(entries
+    .flatMap((entry) => entry.status === 'ready' ? [entry.path] : [])
+    .sort())
+  const manifest: ArtifactManifest = Object.freeze({
+    version: 2,
+    artifactId,
+    canonicalTarget: spec.canonicalTarget,
+    sourcePath: source.path,
+    sourceRevision: source.revision,
+    entries,
+    ownedPaths,
+  })
+  const provenance = {
+    operationId: `artifact.plan.${spec.canonicalTarget}`,
+    sourceRefs: [source.path],
+    evidenceRefs: spec.evidenceRefs,
+  }
+  const mutations = entries.flatMap((entry) => {
+    if (entry.status !== 'ready') {
+      return []
+    }
+    const payload = payloadForEntry(entry, rendered)
+    return [mutationForPayload(entry.path, payload, provenance)]
+  })
+  const manifestPath = `${directory}/manifest.json`
+  const manifestContent = `${JSON.stringify(manifest, null, 2)}\n`
+  mutations.push(textMutation(manifestPath, manifestContent, 'application/json', provenance))
+
+  return createWorkspaceMutationPlan({ provenance, mutations })
 }
 
 function renderingCapability<Target extends SvgCanonicalTarget>(renderer: DiagramArtifactRenderer<Target>): ArtifactCapability {
@@ -244,7 +255,7 @@ function readyEntry(
   parentArtifactId: null,
   fingerprints: ArtifactFingerprints,
 ): ReadyArtifactManifestEntry {
-  const content = normalizedContent(payload)
+  const contentSha256 = artifactPayloadSha256(payload)
   return Object.freeze({
     id: `${artifactId}:${role}`,
     role,
@@ -252,8 +263,8 @@ function readyEntry(
     parentArtifactId,
     mediaType: payload.mediaType,
     path: `${directory}/${validatedFilename(payload.filename)}`,
-    contentSha256: createContentSha256(content),
-    ...fingerprints,
+    contentSha256,
+    ...payloadFingerprints(payload, fingerprints),
   })
 }
 
@@ -286,7 +297,7 @@ function derivativeEntry(
       ...fingerprints,
     })
   }
-  const content = normalizedContent(payload)
+  const contentSha256 = artifactPayloadSha256(payload)
   return Object.freeze({
     id: `${artifactId}:${role}`,
     role,
@@ -294,8 +305,8 @@ function derivativeEntry(
     parentArtifactId: artifactId,
     mediaType: payload.mediaType,
     path: `${directory}/${validatedFilename(payload.filename)}`,
-    contentSha256: createContentSha256(content),
-    ...fingerprints,
+    contentSha256,
+    ...payloadFingerprints(payload, fingerprints),
   })
 }
 
@@ -305,10 +316,10 @@ interface ArtifactFingerprints {
   readonly fontFingerprint: ContentSha256
 }
 
-function contentForEntry(
+function payloadForEntry(
   entry: ReadyArtifactManifestEntry,
   rendered: { readonly source: ReadyArtifactPayload; readonly preview: ArtifactDerivativePayload; readonly export: ArtifactDerivativePayload },
-): string {
+): ReadyArtifactPayload {
   const payload = entry.role === 'source'
     ? rendered.source
     : entry.role === 'preview'
@@ -317,19 +328,65 @@ function contentForEntry(
   if ('status' in payload) {
     throw new ArtifactManifestError(`Artifact entry ${entry.id} has no ready payload.`)
   }
-  const content = normalizedContent(payload)
-  if (createContentSha256(content) !== entry.contentSha256) {
+  if (artifactPayloadSha256(payload) !== entry.contentSha256) {
     throw new ArtifactManifestError(`Artifact entry content hash changed while planning: ${entry.id}`)
   }
-  return content
+  return payload
 }
 
 function normalizedContent(payload: ReadyArtifactPayload): string {
   validateMediaType(payload.mediaType)
-  if (typeof payload.content !== 'string') {
+  if (!('content' in payload) || typeof payload.content !== 'string') {
     throw new ArtifactManifestError('Artifact renderer payload content must be text.')
   }
   return payload.mediaType === 'image/svg+xml' ? sanitizeSvg(payload.content) : payload.content
+}
+
+function artifactPayloadSha256(payload: ReadyArtifactPayload): ContentSha256 {
+  validateMediaType(payload.mediaType)
+  if ('stagedAsset' in payload) {
+    if (payload.mediaType === 'image/svg+xml') {
+      throw new ArtifactManifestError('SVG derivatives must be sanitized text payloads before staging.')
+    }
+    if (payload.stagedAsset.mediaType !== payload.mediaType) {
+      throw new ArtifactManifestError('A staged artifact payload must match its declared media type.')
+    }
+    return payload.stagedAsset.sha256
+  }
+  return createContentSha256(normalizedContent(payload))
+}
+
+function payloadFingerprints(
+  payload: ReadyArtifactPayload,
+  defaults: ArtifactFingerprints,
+): ArtifactFingerprints {
+  if (payload.fingerprint === undefined) {
+    return defaults
+  }
+  return {
+    ...defaults,
+    rendererFingerprint: createContentSha256(`${payload.fingerprint.id}@${payload.fingerprint.version}`),
+  }
+}
+
+function mutationForPayload(
+  destination: string,
+  payload: ReadyArtifactPayload,
+  provenance: { readonly operationId: string; readonly sourceRefs: readonly string[]; readonly evidenceRefs: readonly string[] },
+): WorkspaceMutation {
+  if ('stagedAsset' in payload) {
+    return {
+      kind: 'write-bytes',
+      destination,
+      expectedRevision: 'absent',
+      provenance,
+      conflictPolicy: 'reject',
+      mediaType: payload.mediaType,
+      contentSha256: payload.stagedAsset.sha256,
+      stagedAsset: payload.stagedAsset,
+    }
+  }
+  return textMutation(destination, normalizedContent(payload), payload.mediaType, provenance)
 }
 
 function validatedFilename(filename: string): string {

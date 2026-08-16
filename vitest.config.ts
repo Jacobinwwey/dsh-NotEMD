@@ -13,6 +13,18 @@ export default defineConfig({
       '@notemd-harness/artifacts': fileURLToPath(
         new URL('./packages/notemd-artifacts/src/index.ts', import.meta.url),
       ),
+      '@notemd-harness/process': fileURLToPath(
+        new URL('./packages/notemd-process/src/index.ts', import.meta.url),
+      ),
+      '@notemd-harness/render-drawio': fileURLToPath(
+        new URL('./packages/notemd-render-drawio/src/index.ts', import.meta.url),
+      ),
+      '@notemd-harness/render-drawnix': fileURLToPath(
+        new URL('./packages/notemd-render-drawnix/src/index.ts', import.meta.url),
+      ),
+      '@notemd-harness/render-circuitikz': fileURLToPath(
+        new URL('./packages/notemd-render-circuitikz/src/index.ts', import.meta.url),
+      ),
       '@notemd-harness/jobs': fileURLToPath(new URL('./packages/notemd-jobs/src/index.ts', import.meta.url)),
       '@notemd-harness/documents': fileURLToPath(
         new URL('./packages/notemd-documents/src/index.ts', import.meta.url),

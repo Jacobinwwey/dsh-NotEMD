@@ -209,11 +209,11 @@ interface NotemdLlmRoute {
 - 新建：`packages/notemd-render-{drawio,drawnix,circuitikz}/`
 - 修改：`packages/notemd-bundle/{cordis.patch.yml,src/artifacts.ts}`
 
-- [ ] 为 Draw.io、Tectonic、PDF/PNG conversion、稳定 Drawnix 定义 command profile，在 provider 边界校验 executable identity、固定参数构造、output root、timeout、byte budget、环境 allowlist。
-- [ ] 只迁移已提交的 Drawnix 行为。排除 `drawnixCrossRootRouter.ts`、`drawnixMindMapProjection.ts`、`drawnixRelationLaneLayout.ts`、其关联改动和未跟踪 fixture，直至未来源提交被固定。
-- [ ] Draw.io XML、Drawnix source、Circuitikz `.tex` 为 canonical source，preview/export 只能经具名 provider 生成。
-- [ ] 测试缺 executable、非零退出、坏输出、output path escape、timeout、取消以及 source/preview digest lineage。
-- [ ] 在 Windows 运行 provider 测试，在未安装 optional binary 环境运行 unavailable 测试；更新进度并提交 `feat: add guarded specialist diagram providers`。
+- [x] 为 Draw.io、Tectonic、PDF/PNG conversion、稳定 Drawnix 定义 command profile，在 provider 边界校验 executable identity、固定参数构造、output root、timeout、byte budget、环境 allowlist。
+- [x] 只迁移已提交的 Drawnix 行为。排除 `drawnixCrossRootRouter.ts`、`drawnixMindMapProjection.ts`、`drawnixRelationLaneLayout.ts`、其关联改动和未跟踪 fixture，直至未来源提交被固定。
+- [x] Draw.io XML、Drawnix source、Circuitikz `.tex` 为 canonical source，preview/export 只能经具名 provider 生成。
+- [x] 测试缺 executable、非零退出、坏输出、output path escape、timeout、取消以及 source/preview digest lineage。
+- [x] 在 Windows 运行 provider 测试，在未安装 optional binary 环境运行 unavailable 测试；更新进度并提交 `feat: add guarded specialist diagram providers`。
 
 ### Task 10：增加 Slidev 与媒体导出 Provider
 

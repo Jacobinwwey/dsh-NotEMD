@@ -16,3 +16,7 @@
 - id: notemd-research
   config:
     workspaceRoot: !!js process.cwd() + '/fixtures/workspace'
+
+- id: notemd-artifacts
+  config:
+    workspaceRoot: !!js process.cwd() + '/fixtures/workspace'

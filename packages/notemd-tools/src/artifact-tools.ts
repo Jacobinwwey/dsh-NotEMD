@@ -1,8 +1,9 @@
 import {
   validateDiagramSpec,
+  type ArtifactCapability,
+  type DiagramCanonicalTarget,
   type DiagramSpec,
   type DiagramSpecFor,
-  type SvgCanonicalTarget,
 } from '@notemd-harness/artifacts'
 
 import type { NotemdToolContext } from './notemd-services.js'
@@ -25,6 +26,9 @@ export function registerArtifactTools(context: NotemdToolContext, defineTool: To
   registerJsonCanvasArtifactTools(context, defineTool)
   registerHtmlArtifactTools(context, defineTool)
   registerEditableSvgArtifactTools(context, defineTool)
+  registerDrawioArtifactTools(context, defineTool)
+  registerDrawnixArtifactTools(context, defineTool)
+  registerCircuitikzArtifactTools(context, defineTool)
 
   context.tools.register(defineTool({
     name: 'notemd_artifact_export_status',
@@ -162,10 +166,76 @@ function registerEditableSvgArtifactTools(context: NotemdToolContext, defineTool
   ))
 }
 
+function registerDrawioArtifactTools(context: NotemdToolContext, defineTool: ToolDefinitionFactory): void {
+  context.tools.register(defineTool({
+    name: 'notemd_plan_drawio_artifact',
+    description: 'Create a reviewable Draw.io XML source, labelled SVG projection, and capability-gated native SVG export plan.',
+    parameters: { spec: graphDiagramSpecParameter('drawio') },
+    output: planOutput,
+    async execute(args, execution) {
+      return executeTool(async () => {
+        const spec = diagramSpecFrom(requiredObject(args, 'spec'), 'drawio')
+        const source = await context.notemdVault.read(spec.source.path, execution?.signal)
+        return { plan: await context.notemdArtifacts.planDrawioArtifact(spec, source, execution?.signal) }
+      })
+    },
+  }))
+  context.tools.register(renderStatusTool(
+    'notemd_drawio_render_status',
+    'Report whether controlled Draw.io native SVG export is available.',
+    (signal) => context.notemdArtifacts.drawioRenderingCapability(signal),
+    defineTool,
+  ))
+}
+
+function registerDrawnixArtifactTools(context: NotemdToolContext, defineTool: ToolDefinitionFactory): void {
+  context.tools.register(defineTool({
+    name: 'notemd_plan_drawnix_artifact',
+    description: 'Create a versioned Drawnix semantic source, labelled SVG projection, and optional adapter-native SVG export plan.',
+    parameters: { spec: graphDiagramSpecParameter('drawnix') },
+    output: planOutput,
+    async execute(args, execution) {
+      return executeTool(async () => {
+        const spec = diagramSpecFrom(requiredObject(args, 'spec'), 'drawnix')
+        const source = await context.notemdVault.read(spec.source.path, execution?.signal)
+        return { plan: await context.notemdArtifacts.planDrawnixArtifact(spec, source, execution?.signal) }
+      })
+    },
+  }))
+  context.tools.register(renderStatusTool(
+    'notemd_drawnix_render_status',
+    'Report whether the optional controlled notemd-drawnix-render adapter is available.',
+    (signal) => context.notemdArtifacts.drawnixRenderingCapability(signal),
+    defineTool,
+  ))
+}
+
+function registerCircuitikzArtifactTools(context: NotemdToolContext, defineTool: ToolDefinitionFactory): void {
+  context.tools.register(defineTool({
+    name: 'notemd_plan_circuitikz_artifact',
+    description: 'Create a reviewable Circuitikz source, labelled SVG projection, and capability-gated staged PDF export plan.',
+    parameters: { spec: circuitDiagramSpecParameter('circuitikz') },
+    output: planOutput,
+    async execute(args, execution) {
+      return executeTool(async () => {
+        const spec = diagramSpecFrom(requiredObject(args, 'spec'), 'circuitikz')
+        const source = await context.notemdVault.read(spec.source.path, execution?.signal)
+        return { plan: await context.notemdArtifacts.planCircuitikzArtifact(spec, source, execution?.signal) }
+      })
+    },
+  }))
+  context.tools.register(renderStatusTool(
+    'notemd_circuitikz_render_status',
+    'Report whether controlled Tectonic PDF export is available for Circuitikz.',
+    (signal) => context.notemdArtifacts.circuitikzRenderingCapability(signal),
+    defineTool,
+  ))
+}
+
 function renderStatusTool(
   name: string,
   description: string,
-  capability: () => ReturnType<NotemdToolContext['notemdArtifacts']['mermaidRenderingCapability']>,
+  capability: (signal?: AbortSignal) => ArtifactCapability | Promise<ArtifactCapability>,
   defineTool: ToolDefinitionFactory,
 ) {
   return defineTool({
@@ -173,8 +243,8 @@ function renderStatusTool(
     description,
     parameters: {},
     output: capabilityOutput,
-    async execute() {
-      return executeTool(async () => ({ capability: capability() }))
+    async execute(_args, execution) {
+      return executeTool(async () => ({ capability: await capability(execution?.signal) }))
     },
   })
 }
@@ -182,7 +252,7 @@ function renderStatusTool(
 const planOutput = outcomeOutput({ plan: workspaceMutationPlanSchema }, ['plan'])
 const capabilityOutput = outcomeOutput({ capability: artifactCapabilitySchema }, ['capability'])
 
-function graphDiagramSpecParameter(target: 'mermaid' | 'json-canvas' | 'html' | 'editable-svg') {
+function graphDiagramSpecParameter(target: 'mermaid' | 'json-canvas' | 'html' | 'editable-svg' | 'drawio' | 'drawnix') {
   return {
     type: 'object',
     required: true,
@@ -206,7 +276,19 @@ function chartDiagramSpecParameter(target: 'vega-lite') {
   } as const
 }
 
-function diagramSpecBaseProperties(target: SvgCanonicalTarget) {
+function circuitDiagramSpecParameter(target: 'circuitikz') {
+  return {
+    type: 'object',
+    required: true,
+    additionalProperties: false,
+    properties: {
+      ...diagramSpecBaseProperties(target),
+      circuit: circuitParameter,
+    },
+  } as const
+}
+
+function diagramSpecBaseProperties(target: DiagramCanonicalTarget) {
   return {
     version: { type: 'integer', required: true, const: 2 },
     title: { type: 'string', required: true },
@@ -256,15 +338,7 @@ const graphParameter = {
     nodes: {
       type: 'array',
       required: true,
-      items: {
-        type: 'object',
-        additionalProperties: false,
-        properties: {
-          id: { type: 'string', required: true },
-          label: { type: 'string', required: true },
-          kind: { type: 'string' },
-        },
-      },
+      items: graphNodeParameter(8),
     },
     edges: {
       type: 'array',
@@ -282,6 +356,58 @@ const graphParameter = {
     },
   },
 } as const
+
+const circuitParameter = {
+  type: 'object',
+  required: true,
+  additionalProperties: false,
+  properties: {
+    components: {
+      type: 'array',
+      required: true,
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          id: { type: 'string', required: true },
+          kind: { type: 'string', required: true },
+          label: { type: 'string', required: true },
+        },
+      },
+    },
+    connections: {
+      type: 'array',
+      required: true,
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          from: { type: 'string', required: true },
+          to: { type: 'string', required: true },
+          net: { type: 'string' },
+        },
+      },
+    },
+  },
+} as const
+
+function graphNodeParameter(depth: number): Record<string, unknown> {
+  return {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      id: { type: 'string', required: true },
+      label: { type: 'string', required: true },
+      kind: { type: 'string' },
+      ...(depth === 0 ? {} : {
+        children: {
+          type: 'array',
+          items: graphNodeParameter(depth - 1),
+        },
+      }),
+    },
+  }
+}
 
 const chartParameter = {
   type: 'object',
@@ -316,7 +442,7 @@ const chartParameter = {
   },
 } as const
 
-function diagramSpecFrom<Target extends SvgCanonicalTarget>(
+function diagramSpecFrom<Target extends DiagramCanonicalTarget>(
   value: Record<string, unknown>,
   expectedTarget: Target,
 ): DiagramSpecFor<Target> {

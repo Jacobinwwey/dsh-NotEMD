@@ -71,6 +71,9 @@ export async function acceptDshProfile(): Promise<void> {
     assert(evidence.jobState === 'completed', 'The installed formula planning job did not complete.')
     assert(evidence.researchStatus === 'unavailable', 'The installed research Tool did not report an unconfigured DSH web capability as unavailable.')
     assert(evidence.mermaidRendererStatus === 'available', 'The installed Mermaid renderer did not report its capability.')
+    assert(['available', 'unavailable'].includes(evidence.drawioRendererStatus), 'The installed Draw.io capability Tool returned an invalid status.')
+    assert(['available', 'unavailable'].includes(evidence.drawnixRendererStatus), 'The installed Drawnix capability Tool returned an invalid status.')
+    assert(['available', 'unavailable'].includes(evidence.circuitikzRendererStatus), 'The installed Circuitikz capability Tool returned an invalid status.')
     assert(evidence.legacyProviderToolMissing, 'The default DSH bridge registered a legacy provider diagnostic Tool.')
 
     process.stdout.write('Clean DeepSeek Harness profile acceptance passed.\n')
@@ -131,6 +134,9 @@ function parseRunnerEvidence(stdout: string): {
   readonly jobState: string
   readonly researchStatus: string
   readonly mermaidRendererStatus: string
+  readonly drawioRendererStatus: string
+  readonly drawnixRendererStatus: string
+  readonly circuitikzRendererStatus: string
   readonly legacyProviderToolMissing: boolean
 } {
   const line = stdout.trim().split(/\r?\n/u).at(-1)
@@ -145,6 +151,9 @@ function parseRunnerEvidence(stdout: string): {
     readonly jobState: string
     readonly researchStatus: string
     readonly mermaidRendererStatus: string
+    readonly drawioRendererStatus: string
+    readonly drawnixRendererStatus: string
+    readonly circuitikzRendererStatus: string
     readonly legacyProviderToolMissing: boolean
   }
 }
@@ -174,6 +183,10 @@ const profileOverlay = `- id: notemd-vault
   config:
     workspaceRoot: !!js process.env.NOTEMD_ACCEPTANCE_WORKSPACE
     approvalTtlMs: 300000
+
+- id: notemd-artifacts
+  config:
+    workspaceRoot: !!js process.env.NOTEMD_ACCEPTANCE_WORKSPACE
 `
 
 const runtimeAcceptanceRunner = String.raw`import { readFile, writeFile } from 'node:fs/promises'
@@ -184,6 +197,7 @@ import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import LlmRuntime, { CallId } from '@deepseek-ai/dsh-llm'
 import WebRuntime from '@deepseek-ai/dsh-web'
+import { LocalSubprocessRuntime } from '@deepseek-ai/dsh-subprocess-local'
 
 import NotemdArtifactsService from '@jacobinwwey/notemd-deepseek-harness/artifacts'
 import NotemdJobsService from '@jacobinwwey/notemd-deepseek-harness/jobs'
@@ -215,6 +229,7 @@ assert(typeof workspaceRoot === 'string' && workspaceRoot.length > 0, 'The accep
 const ctx = new Context()
 await ctx.plugin(LlmRuntime)
 await ctx.plugin(WebRuntime, {})
+await ctx.plugin(LocalSubprocessRuntime)
 await ctx.plugin(SystemPrompt, {})
 await ctx.plugin(ToolRuntime, { mode: 'native' })
 await ctx.plugin(AllowOnceApprovalService)
@@ -232,7 +247,7 @@ await ctx.plugin(NotemdWorkflowsService)
 await ctx.plugin(NotemdResearchService, { workspaceRoot })
 await ctx.plugin(NotemdJobsService, { workspaceRoot, concurrency: 2 })
 await ctx.plugin(NotemdKnowledgeService)
-await ctx.plugin(NotemdArtifactsService)
+await ctx.plugin(NotemdArtifactsService, { workspaceRoot })
 await ctx.plugin(Object.assign(applyTools, { inject: toolsInject }))
 
 let callNumber = 0
@@ -258,9 +273,15 @@ assert(legacyProviderToolMissing, 'The default DSH bridge unexpectedly registere
 const research = await invoke('notemd_research_discover', { query: 'research capability test', maxResults: 1 })
 assert(research.status === 'unavailable' && research.code === 'capability-unavailable', 'The empty DSH web runtime did not report research as unavailable.')
 const mermaidRenderStatus = await invoke('notemd_mermaid_render_status', {})
+const drawioRenderStatus = await invoke('notemd_drawio_render_status', {})
+const drawnixRenderStatus = await invoke('notemd_drawnix_render_status', {})
+const circuitikzRenderStatus = await invoke('notemd_circuitikz_render_status', {})
 const exportStatus = await invoke('notemd_artifact_export_status', {})
 assert(mermaidRenderStatus.status === 'success' && mermaidRenderStatus.capability.status === 'available', 'The core bundle did not load the Mermaid renderer.')
 assert(exportStatus.status === 'success' && exportStatus.capability.status === 'unavailable', 'The core bundle unexpectedly claimed a portable export provider.')
+assert(drawioRenderStatus.status === 'success' && ['available', 'unavailable'].includes(drawioRenderStatus.capability.status), 'The Draw.io capability Tool returned an invalid result: ' + JSON.stringify(drawioRenderStatus))
+assert(drawnixRenderStatus.status === 'success' && ['available', 'unavailable'].includes(drawnixRenderStatus.capability.status), 'The Drawnix capability Tool returned an invalid result: ' + JSON.stringify(drawnixRenderStatus))
+assert(circuitikzRenderStatus.status === 'success' && ['available', 'unavailable'].includes(circuitikzRenderStatus.capability.status), 'The Circuitikz capability Tool returned an invalid result: ' + JSON.stringify(circuitikzRenderStatus))
 
 const artifact = await invoke('notemd_plan_mermaid_artifact', {
   spec: {
@@ -285,6 +306,30 @@ const artifact = await invoke('notemd_plan_mermaid_artifact', {
 assert(artifact.status === 'success', 'The installed Mermaid planning Tool did not create an artifact proposal.')
 assert(artifact.plan.mutations.some(mutation => mutation.destination.endsWith('/diagram.mmd')), 'The Mermaid artifact proposal omitted its canonical source.')
 assert(artifact.plan.mutations.some(mutation => mutation.destination.endsWith('/preview.svg')), 'The Mermaid artifact proposal omitted its SVG preview.')
+
+const drawioArtifact = await invoke('notemd_plan_drawio_artifact', {
+  spec: {
+    version: 2,
+    title: 'Approval Lifecycle',
+    source: { path: read.document.path, revision: read.document.revision },
+    evidenceRefs: [],
+    generation: {
+      promptPolicyId: 'notemd.acceptance.drawio.v2',
+      provider: 'deepseek',
+      model: 'deepseek-chat',
+    },
+    rendererIntent: { theme: 'light', fontFamily: 'Inter' },
+    canonicalTarget: 'drawio',
+    graph: {
+      intent: 'flowchart',
+      nodes: [{ id: 'plan', label: 'Plan' }, { id: 'apply', label: 'Apply' }],
+      edges: [{ from: 'plan', to: 'apply', label: 'approved' }],
+    },
+  },
+})
+assert(drawioArtifact.status === 'success', 'The installed Draw.io planning Tool did not create an artifact proposal.')
+assert(drawioArtifact.plan.mutations.some(mutation => mutation.destination.endsWith('/diagram.drawio')), 'The Draw.io artifact proposal omitted its canonical XML source.')
+assert(drawioArtifact.plan.mutations.some(mutation => mutation.destination.endsWith('/preview.svg')), 'The Draw.io artifact proposal omitted its labelled SVG projection.')
 
 const jobStarted = await invoke('notemd_job_start_formula_repair', {
   idempotencyKey: 'acceptance-formula-repair',
@@ -332,6 +377,9 @@ process.stdout.write(JSON.stringify({
   jobState: completedJob.state,
   researchStatus: research.status,
   mermaidRendererStatus: mermaidRenderStatus.capability.status,
+  drawioRendererStatus: drawioRenderStatus.capability.status,
+  drawnixRendererStatus: drawnixRenderStatus.capability.status,
+  circuitikzRendererStatus: circuitikzRenderStatus.capability.status,
   legacyProviderToolMissing,
 }) + '\n')
 

@@ -281,12 +281,12 @@ interface ResearchEvidence {
 - Modify: `packages/notemd-bundle/cordis.patch.yml`
 - Modify: `packages/notemd-bundle/src/artifacts.ts`
 
-- [ ] Define command profiles for Draw.io, Tectonic, PDF/PNG conversion, and stable Drawnix rendering. Validate executable identity, fixed argument construction, output root, timeout, byte budget, and environment allowlist at the provider boundary.
-- [ ] Port only committed Drawnix behavior. Exclude `drawnixCrossRootRouter.ts`, `drawnixMindMapProjection.ts`, `drawnixRelationLaneLayout.ts`, their touched support files, and untracked fixtures until a later source commit is pinned.
-- [ ] Persist Draw.io XML, Drawnix source, and Circuitikz `.tex` as canonical sources. Generate preview/export derivatives only through their named providers.
-- [ ] Test missing executable, nonzero exit, malformed output, output path escape, timeout, cancellation, and source/preview digest lineage.
-- [ ] Run provider tests on Windows and capability-unavailable tests without optional binaries.
-- [ ] Update progress records and commit `feat: add guarded specialist diagram providers`.
+- [x] Define command profiles for Draw.io, Tectonic, PDF/PNG conversion, and stable Drawnix rendering. Validate executable identity, fixed argument construction, output root, timeout, byte budget, and environment allowlist at the provider boundary.
+- [x] Port only committed Drawnix behavior. Exclude `drawnixCrossRootRouter.ts`, `drawnixMindMapProjection.ts`, `drawnixRelationLaneLayout.ts`, their touched support files, and untracked fixtures until a later source commit is pinned.
+- [x] Persist Draw.io XML, Drawnix source, and Circuitikz `.tex` as canonical sources. Generate preview/export derivatives only through their named providers.
+- [x] Test missing executable, nonzero exit, malformed output, output path escape, timeout, cancellation, and source/preview digest lineage.
+- [x] Run provider tests on Windows and capability-unavailable tests without optional binaries.
+- [x] Update progress records and commit `feat: add guarded specialist diagram providers`.
 
 ### Task 10: Add Slidev and Media Export Providers
 

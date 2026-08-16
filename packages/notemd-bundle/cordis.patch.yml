@@ -24,7 +24,9 @@
 
     - id: notemd-artifacts
       name: '@jacobinwwey/notemd-deepseek-harness/artifacts'
-      inject: [notemdVault]
+      inject: [notemdVault, subprocess]
+      config:
+        workspaceRoot: !!js process.cwd()
 
     - id: notemd-llm
       name: '@jacobinwwey/notemd-deepseek-harness/llm'
