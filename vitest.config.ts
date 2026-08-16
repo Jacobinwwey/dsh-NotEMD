@@ -16,6 +16,15 @@ export default defineConfig({
       '@notemd-harness/process': fileURLToPath(
         new URL('./packages/notemd-process/src/index.ts', import.meta.url),
       ),
+      '@notemd-harness/export-slidev': fileURLToPath(
+        new URL('./packages/notemd-export-slidev/src/index.ts', import.meta.url),
+      ),
+      '@notemd-harness/export-pptx': fileURLToPath(
+        new URL('./packages/notemd-export-pptx/src/index.ts', import.meta.url),
+      ),
+      '@notemd-harness/export-media': fileURLToPath(
+        new URL('./packages/notemd-export-media/src/index.ts', import.meta.url),
+      ),
       '@notemd-harness/render-drawio': fileURLToPath(
         new URL('./packages/notemd-render-drawio/src/index.ts', import.meta.url),
       ),

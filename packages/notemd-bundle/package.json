@@ -77,6 +77,9 @@
   "dependencies": {
     "@notemd-harness/artifacts": "workspace:*",
     "@notemd-harness/documents": "workspace:*",
+    "@notemd-harness/export-media": "workspace:*",
+    "@notemd-harness/export-pptx": "workspace:*",
+    "@notemd-harness/export-slidev": "workspace:*",
     "@notemd-harness/jobs": "workspace:*",
     "@notemd-harness/knowledge": "workspace:*",
     "@notemd-harness/llm-dsh": "workspace:*",
@@ -102,6 +105,9 @@
   "bundledDependencies": [
     "@notemd-harness/artifacts",
     "@notemd-harness/documents",
+    "@notemd-harness/export-media",
+    "@notemd-harness/export-pptx",
+    "@notemd-harness/export-slidev",
     "@notemd-harness/jobs",
     "@notemd-harness/knowledge",
     "@notemd-harness/llm-dsh",

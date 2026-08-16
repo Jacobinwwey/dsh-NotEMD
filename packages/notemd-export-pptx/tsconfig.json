@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "rootDir": "src",
+    "outDir": "lib",
+    "tsBuildInfoFile": "tsconfig.tsbuildinfo"
+  },
+  "references": [
+    { "path": "../notemd-artifacts" },
+    { "path": "../notemd-export-slidev" },
+    { "path": "../notemd-process" },
+    { "path": "../notemd-vault" },
+    { "path": "../notemd-vault-local" }
+  ],
+  "include": ["src/**/*.ts"]
+}

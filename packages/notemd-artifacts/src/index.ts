@@ -1,6 +1,7 @@
 export * from './artifact-manifest.js'
 export * from './artifact-renderer.js'
 export * from './diagram-spec.js'
+export * from './document-export.js'
 export * from './svg-sanitizer.js'
 export * from './svg-projection.js'
 export * from './specialist-artifact.js'

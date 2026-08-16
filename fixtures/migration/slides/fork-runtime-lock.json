@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "origin": "github:Jacobinwwey/slidev",
+  "repository": "https://github.com/Jacobinwwey/slidev",
+  "revision": "bbcb2efae709c2ebaa96bda522cd6c192476817c",
+  "packageName": "@slidev/cli",
+  "version": "52.16.0",
+  "command": "slidev",
+  "releaseTag": "notemd-standalone-v52.16.0-1",
+  "releaseAsset": "slidev-cli-notemd-standalone-v52.16.0-1.tgz",
+  "tarballUrl": "https://github.com/Jacobinwwey/slidev/releases/download/notemd-standalone-v52.16.0-1/slidev-cli-notemd-standalone-v52.16.0-1.tgz",
+  "requiredBuildOptions": ["--out", "--format", "--standalone-bundle"]
+}

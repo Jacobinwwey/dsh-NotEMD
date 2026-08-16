@@ -50,6 +50,15 @@ importers:
       '@notemd-harness/documents':
         specifier: workspace:*
         version: link:../notemd-documents
+      '@notemd-harness/export-media':
+        specifier: workspace:*
+        version: link:../notemd-export-media
+      '@notemd-harness/export-pptx':
+        specifier: workspace:*
+        version: link:../notemd-export-pptx
+      '@notemd-harness/export-slidev':
+        specifier: workspace:*
+        version: link:../notemd-export-slidev
       '@notemd-harness/jobs':
         specifier: workspace:*
         version: link:../notemd-jobs
@@ -122,6 +131,57 @@ importers:
       '@notemd-harness/vault':
         specifier: workspace:*
         version: link:../notemd-vault
+
+  packages/notemd-export-media:
+    dependencies:
+      '@notemd-harness/artifacts':
+        specifier: workspace:*
+        version: link:../notemd-artifacts
+      '@notemd-harness/export-slidev':
+        specifier: workspace:*
+        version: link:../notemd-export-slidev
+      '@notemd-harness/process':
+        specifier: workspace:*
+        version: link:../notemd-process
+      '@notemd-harness/vault':
+        specifier: workspace:*
+        version: link:../notemd-vault
+      '@notemd-harness/vault-local':
+        specifier: workspace:*
+        version: link:../notemd-vault-local
+
+  packages/notemd-export-pptx:
+    dependencies:
+      '@notemd-harness/artifacts':
+        specifier: workspace:*
+        version: link:../notemd-artifacts
+      '@notemd-harness/export-slidev':
+        specifier: workspace:*
+        version: link:../notemd-export-slidev
+      '@notemd-harness/process':
+        specifier: workspace:*
+        version: link:../notemd-process
+      '@notemd-harness/vault':
+        specifier: workspace:*
+        version: link:../notemd-vault
+      '@notemd-harness/vault-local':
+        specifier: workspace:*
+        version: link:../notemd-vault-local
+
+  packages/notemd-export-slidev:
+    dependencies:
+      '@notemd-harness/artifacts':
+        specifier: workspace:*
+        version: link:../notemd-artifacts
+      '@notemd-harness/process':
+        specifier: workspace:*
+        version: link:../notemd-process
+      '@notemd-harness/vault':
+        specifier: workspace:*
+        version: link:../notemd-vault
+      '@notemd-harness/vault-local':
+        specifier: workspace:*
+        version: link:../notemd-vault-local
 
   packages/notemd-jobs:
     dependencies:

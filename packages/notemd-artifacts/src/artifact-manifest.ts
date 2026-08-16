@@ -24,8 +24,17 @@ import {
   type SvgCanonicalTarget,
 } from './diagram-spec.js'
 import { sanitizeSvg } from './svg-sanitizer.js'
+import type {
+  SlidevHtmlExportSpec,
+  SlidevMp4ExportSpec,
+  SlidevPdfExportSpec,
+  SlidevPngExportSpec,
+  SlidevPptxExportSpec,
+  SlidevSourceSpec,
+} from './document-export.js'
 
-export type ArtifactEntryRole = 'source' | 'preview' | 'export'
+export type ArtifactEntryRole = 'source' | 'preview' | 'report' | 'export'
+export type ArtifactCanonicalTarget = DiagramCanonicalTarget | 'slidev'
 export type ArtifactEntryStatus = 'ready' | 'unavailable' | 'failed'
 
 interface ArtifactManifestEntryBase {
@@ -60,7 +69,7 @@ export type ArtifactManifestEntry = ReadyArtifactManifestEntry | UnavailableArti
 export interface ArtifactManifest {
   readonly version: 2
   readonly artifactId: string
-  readonly canonicalTarget: DiagramCanonicalTarget
+  readonly canonicalTarget: ArtifactCanonicalTarget
   readonly sourcePath: string
   readonly sourceRevision: Revision
   readonly entries: readonly ArtifactManifestEntry[]
@@ -91,6 +100,12 @@ export interface NotemdArtifacts {
   planDrawioArtifact(spec: DiagramSpecFor<'drawio'>, source: VaultDocument, signal?: AbortSignal): Promise<WorkspaceMutationPlan>
   planDrawnixArtifact(spec: DiagramSpecFor<'drawnix'>, source: VaultDocument, signal?: AbortSignal): Promise<WorkspaceMutationPlan>
   planCircuitikzArtifact(spec: DiagramSpecFor<'circuitikz'>, source: VaultDocument, signal?: AbortSignal): Promise<WorkspaceMutationPlan>
+  planSlidevSource(spec: SlidevSourceSpec, source: VaultDocument, signal?: AbortSignal): Promise<WorkspaceMutationPlan>
+  planSlidevHtmlExport(spec: SlidevHtmlExportSpec, source: VaultDocument, signal?: AbortSignal): Promise<WorkspaceMutationPlan>
+  planSlidevPdfExport(spec: SlidevPdfExportSpec, source: VaultDocument, signal?: AbortSignal): Promise<WorkspaceMutationPlan>
+  planSlidevPngExport(spec: SlidevPngExportSpec, source: VaultDocument, signal?: AbortSignal): Promise<WorkspaceMutationPlan>
+  planSlidevPptxExport(spec: SlidevPptxExportSpec, source: VaultDocument, signal?: AbortSignal): Promise<WorkspaceMutationPlan>
+  planSlidevMp4Export(spec: SlidevMp4ExportSpec, source: VaultDocument, signal?: AbortSignal): Promise<WorkspaceMutationPlan>
   planCleanup(artifactId: string): Promise<readonly string[]>
   mermaidRenderingCapability(): ArtifactCapability
   vegaLiteRenderingCapability(): ArtifactCapability
@@ -100,7 +115,12 @@ export interface NotemdArtifacts {
   drawioRenderingCapability(signal?: AbortSignal): Promise<ArtifactCapability>
   drawnixRenderingCapability(signal?: AbortSignal): Promise<ArtifactCapability>
   circuitikzRenderingCapability(signal?: AbortSignal): Promise<ArtifactCapability>
-  documentExportCapability(): ArtifactCapability
+  slidevSourceCapability(signal?: AbortSignal): Promise<ArtifactCapability>
+  slidevHtmlExportCapability(signal?: AbortSignal): Promise<ArtifactCapability>
+  slidevPdfExportCapability(signal?: AbortSignal): Promise<ArtifactCapability>
+  slidevPngExportCapability(signal?: AbortSignal): Promise<ArtifactCapability>
+  slidevPptxExportCapability(signal?: AbortSignal): Promise<ArtifactCapability>
+  slidevMp4ExportCapability(signal?: AbortSignal): Promise<ArtifactCapability>
 }
 
 export class ArtifactPlanner {
@@ -162,14 +182,6 @@ export class ArtifactPlanner {
 
   editableSvgRenderingCapability(): ArtifactCapability {
     return renderingCapability(this.renderers.editableSvg)
-  }
-
-  documentExportCapability(): ArtifactCapability {
-    return {
-      capability: 'document-export',
-      status: 'unavailable',
-      reason: 'Slidev and media export providers are not installed.',
-    }
   }
 
   private planArtifact<Target extends SvgCanonicalTarget>(
@@ -455,7 +467,7 @@ function parseManifestOwnedPaths(content: string, expectedArtifactId: string): r
   if (!isRecord(value) || value.artifactId !== expectedArtifactId || !Array.isArray(value.ownedPaths)) {
     throw new ArtifactManifestError('Artifact manifest has an invalid shape.')
   }
-  if (value.version !== 1 && value.version !== 2) {
+  if (value.version !== 1 && value.version !== 2 && value.version !== 3) {
     throw new ArtifactManifestError('Artifact manifest has an unsupported version.')
   }
   if (value.ownedPaths.some((path) => typeof path !== 'string' || !isArtifactOwnedPath(path, expectedArtifactId))) {

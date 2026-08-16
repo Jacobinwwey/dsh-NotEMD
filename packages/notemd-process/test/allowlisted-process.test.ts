@@ -173,6 +173,95 @@ describe('AllowlistedProcessBoundary', () => {
 
     expect(runtime.waitForExitCalls).toBe(2)
   })
+
+  test('exports Slidev HTML and PNG directories as deterministic archives', async () => {
+    const runtime = new FakeSubprocessRuntime(async (spec) => {
+      if (spec.argv.includes('build')) {
+        await mkdir(join(spec.cwd, 'output-html'))
+        await writeFile(join(spec.cwd, 'output-html', 'index-standalone.html'), '<!doctype html><html><body>deck</body></html>')
+        await writeFile(join(spec.cwd, 'output-html', 'assets.css'), 'body{}')
+      } else {
+        await mkdir(join(spec.cwd, 'output-png'))
+        await writeFile(join(spec.cwd, 'output-png', '02.png'), validPng())
+        await writeFile(join(spec.cwd, 'output-png', '01.png'), validPng())
+      }
+      return { exitCode: 0, signal: null }
+    })
+    const boundary = new AllowlistedProcessBoundary(runtime, workspaceRoot)
+
+    const html = await boundary.renderSlidevHtml('---\ntheme: default\n---\n# Deck')
+    const png = await boundary.renderSlidevPng('---\ntheme: default\n---\n# Deck', { withClicks: true, imageScale: 2 })
+
+    expect(html).toMatchObject({ status: 'ready', mediaType: 'application/zip' })
+    expect(png).toMatchObject({ status: 'ready', mediaType: 'application/zip' })
+    expect(Array.from(html.status === 'ready' ? html.bytes.slice(0, 4) : [])).toEqual([0x50, 0x4b, 0x03, 0x04])
+    expect(Array.from(png.status === 'ready' ? png.bytes.slice(0, 4) : [])).toEqual([0x50, 0x4b, 0x03, 0x04])
+    expect(runtime.spawns[0]?.argv).toEqual([
+      runtime.resolvedPath('slidev'), 'build', 'source.md', '--out', 'output-html', '--standalone-bundle',
+    ])
+    expect(runtime.spawns[1]?.argv).toEqual([
+      runtime.resolvedPath('slidev'), 'export', '--format', 'png', '--output', 'output-png',
+      '--with-clicks', '--scale', '2', '--per-slide', '--wait-until', 'networkidle', '--wait', '3000', 'source.md',
+    ])
+    expect(await readdir(join(workspaceRoot, '.notemd', 'staging', 'process'))).toEqual([])
+  })
+
+  test('keeps PDF, PPTX, and MP4 capabilities as actual binary targets', async () => {
+    const runtime = new FakeSubprocessRuntime(async (spec) => {
+      if (spec.argv.includes('--format') && spec.argv.includes('pdf')) {
+        await writeFile(join(spec.cwd, 'output.pdf'), validPdf())
+      } else if (spec.argv.includes('--format') && spec.argv.includes('pptx')) {
+        await writeFile(join(spec.cwd, 'output.pptx'), validPptx())
+      } else if (spec.argv[0]?.toLowerCase().includes('ffmpeg')) {
+        await writeFile(join(spec.cwd, 'output.mp4'), validMp4())
+      } else {
+        await writeFile(join(spec.cwd, 'output-frames', '01.png'), validPng())
+      }
+      return { exitCode: 0, signal: null }
+    })
+    const boundary = new AllowlistedProcessBoundary(runtime, workspaceRoot)
+
+    await expect(boundary.renderSlidevPdf('# Deck')).resolves.toMatchObject({
+      status: 'ready', mediaType: 'application/pdf',
+    })
+    await expect(boundary.renderSlidevPptx('# Deck')).resolves.toMatchObject({
+      status: 'ready', mediaType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    })
+    await expect(boundary.renderSlidevMp4('# Deck', { withClicks: false, imageScale: 1, fps: 1, crf: 23 })).resolves.toMatchObject({
+      status: 'ready', mediaType: 'video/mp4',
+    })
+    expect(runtime.spawns.map((spawn) => spawn.argv[0] && basename(spawn.argv[0]).replace(/\.(?:exe|cmd|bat)$/iu, ''))).toEqual([
+      'slidev', 'slidev', 'slidev', 'ffmpeg',
+    ])
+  })
+
+  test('probes the fork runtime and every required executable without spawning', async () => {
+    const runtime = new FakeSubprocessRuntime(async () => ({ exitCode: 0, signal: null }))
+    const boundary = new AllowlistedProcessBoundary(runtime, workspaceRoot)
+
+    await expect(boundary.slidevHtmlCapability()).resolves.toMatchObject({ status: 'available' })
+    await expect(boundary.slidevPptxCapability()).resolves.toMatchObject({ status: 'available' })
+    await expect(boundary.slidevMp4Capability()).resolves.toMatchObject({ status: 'available' })
+
+    expect(runtime.resolutions).toEqual(['slidev', 'slidev', 'playwright', 'slidev', 'playwright', 'ffmpeg'])
+    expect(runtime.spawns).toEqual([])
+  })
+
+  test('disposes active process trees before releasing each staging run', async () => {
+    const runtime = new FakeSubprocessRuntime(waitForAbort)
+    const boundary = new AllowlistedProcessBoundary(runtime, workspaceRoot)
+    const running = boundary.renderSlidevHtml('# Deck')
+
+    await runtime.waitForSpawns(1)
+    await boundary.dispose()
+
+    await expect(running).resolves.toEqual({ status: 'cancelled', code: 'process-disposed' })
+    await expect(boundary.renderSlidevHtml('# After dispose')).resolves.toEqual({
+      status: 'cancelled',
+      code: 'process-disposed',
+    })
+    expect(await readdir(join(workspaceRoot, '.notemd', 'staging', 'process'))).toEqual([])
+  })
 })
 
 class FakeSubprocessRuntime implements DshSubprocessRuntime {
@@ -249,4 +338,12 @@ function validPdf(): Uint8Array {
 
 function validPng(): Uint8Array {
   return Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00])
+}
+
+function validPptx(): Uint8Array {
+  return Uint8Array.from([0x50, 0x4b, 0x03, 0x04, 0x14, 0x00])
+}
+
+function validMp4(): Uint8Array {
+  return Uint8Array.from([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d])
 }

@@ -4,6 +4,12 @@ import {
   type DiagramCanonicalTarget,
   type DiagramSpec,
   type DiagramSpecFor,
+  type SlidevHtmlExportSpec,
+  type SlidevMp4ExportSpec,
+  type SlidevPdfExportSpec,
+  type SlidevPngExportSpec,
+  type SlidevPptxExportSpec,
+  type SlidevSourceSpec,
 } from '@notemd-harness/artifacts'
 
 import type { NotemdToolContext } from './notemd-services.js'
@@ -14,6 +20,7 @@ import {
   outcomeOutput,
   requiredObject,
   requiredString,
+  isRecord,
   stringSchema,
   ToolInputError,
   type ToolDefinitionFactory,
@@ -29,16 +36,7 @@ export function registerArtifactTools(context: NotemdToolContext, defineTool: To
   registerDrawioArtifactTools(context, defineTool)
   registerDrawnixArtifactTools(context, defineTool)
   registerCircuitikzArtifactTools(context, defineTool)
-
-  context.tools.register(defineTool({
-    name: 'notemd_artifact_export_status',
-    description: 'Report whether a portable document export provider is available to this NoteMD bundle.',
-    parameters: {},
-    output: capabilityOutput,
-    async execute() {
-      return executeTool(async () => ({ capability: context.notemdArtifacts.documentExportCapability() }))
-    },
-  }))
+  registerSlidevExportTools(context, defineTool)
 
   context.tools.register(defineTool({
     name: 'notemd_artifact_cleanup',
@@ -54,6 +52,128 @@ export function registerArtifactTools(context: NotemdToolContext, defineTool: To
       })
     },
   }))
+}
+
+function registerSlidevExportTools(context: NotemdToolContext, defineTool: ToolDefinitionFactory): void {
+  context.tools.register(defineTool({
+    name: 'notemd_plan_slidev_source',
+    description: 'Create deterministic source-bound Slidev Markdown and its layout report as a reviewable mutation proposal.',
+    parameters: { spec: slidevSourceSpecParameter },
+    output: planOutput,
+    async execute(args, execution) {
+      return executeTool(async () => {
+        const spec = slidevSourceSpecFrom(requiredObject(args, 'spec'))
+        const source = await context.notemdVault.read(spec.source.path, execution?.signal)
+        return { plan: await context.notemdArtifacts.planSlidevSource(spec, source, execution?.signal) }
+      })
+    },
+  }))
+  context.tools.register(renderStatusTool(
+    'notemd_slidev_source_status',
+    'Report deterministic Slidev source-preparation availability.',
+    (signal) => context.notemdArtifacts.slidevSourceCapability(signal),
+    defineTool,
+  ))
+
+  context.tools.register(defineTool({
+    name: 'notemd_plan_slidev_html_export',
+    description: 'Create a staged standalone HTML ZIP export through the pinned NoteMD Slidev fork.',
+    parameters: { spec: slidevSourceSpecParameter },
+    output: planOutput,
+    async execute(args, execution) {
+      return executeTool(async () => {
+        const spec = slidevHtmlSpecFrom(requiredObject(args, 'spec'))
+        const source = await context.notemdVault.read(spec.source.path, execution?.signal)
+        return { plan: await context.notemdArtifacts.planSlidevHtmlExport(spec, source, execution?.signal) }
+      })
+    },
+  }))
+  context.tools.register(renderStatusTool(
+    'notemd_slidev_html_export_status',
+    'Report pinned-fork standalone HTML export availability.',
+    (signal) => context.notemdArtifacts.slidevHtmlExportCapability(signal),
+    defineTool,
+  ))
+
+  context.tools.register(defineTool({
+    name: 'notemd_plan_slidev_pdf_export',
+    description: 'Create a staged PDF export through the pinned NoteMD Slidev fork and Playwright.',
+    parameters: { spec: slidevSourceSpecParameter },
+    output: planOutput,
+    async execute(args, execution) {
+      return executeTool(async () => {
+        const spec = slidevPdfSpecFrom(requiredObject(args, 'spec'))
+        const source = await context.notemdVault.read(spec.source.path, execution?.signal)
+        return { plan: await context.notemdArtifacts.planSlidevPdfExport(spec, source, execution?.signal) }
+      })
+    },
+  }))
+  context.tools.register(renderStatusTool(
+    'notemd_slidev_pdf_export_status',
+    'Report pinned-fork PDF export availability.',
+    (signal) => context.notemdArtifacts.slidevPdfExportCapability(signal),
+    defineTool,
+  ))
+
+  context.tools.register(defineTool({
+    name: 'notemd_plan_slidev_png_export',
+    description: 'Create a staged deterministic ZIP of Slidev PNG frames.',
+    parameters: { spec: slidevPngSpecParameter },
+    output: planOutput,
+    async execute(args, execution) {
+      return executeTool(async () => {
+        const spec = slidevPngSpecFrom(requiredObject(args, 'spec'))
+        const source = await context.notemdVault.read(spec.source.path, execution?.signal)
+        return { plan: await context.notemdArtifacts.planSlidevPngExport(spec, source, execution?.signal) }
+      })
+    },
+  }))
+  context.tools.register(renderStatusTool(
+    'notemd_slidev_png_export_status',
+    'Report pinned-fork PNG sequence export availability.',
+    (signal) => context.notemdArtifacts.slidevPngExportCapability(signal),
+    defineTool,
+  ))
+
+  context.tools.register(defineTool({
+    name: 'notemd_plan_slidev_pptx_export',
+    description: 'Create a staged native PPTX export through the pinned NoteMD Slidev fork.',
+    parameters: { spec: slidevSourceSpecParameter },
+    output: planOutput,
+    async execute(args, execution) {
+      return executeTool(async () => {
+        const spec = slidevPptxSpecFrom(requiredObject(args, 'spec'))
+        const source = await context.notemdVault.read(spec.source.path, execution?.signal)
+        return { plan: await context.notemdArtifacts.planSlidevPptxExport(spec, source, execution?.signal) }
+      })
+    },
+  }))
+  context.tools.register(renderStatusTool(
+    'notemd_slidev_pptx_export_status',
+    'Report pinned-fork native PPTX export availability.',
+    (signal) => context.notemdArtifacts.slidevPptxExportCapability(signal),
+    defineTool,
+  ))
+
+  context.tools.register(defineTool({
+    name: 'notemd_plan_slidev_mp4_export',
+    description: 'Create a staged MP4 through the pinned NoteMD Slidev fork PNG sequence and FFmpeg.',
+    parameters: { spec: slidevMp4SpecParameter },
+    output: planOutput,
+    async execute(args, execution) {
+      return executeTool(async () => {
+        const spec = slidevMp4SpecFrom(requiredObject(args, 'spec'))
+        const source = await context.notemdVault.read(spec.source.path, execution?.signal)
+        return { plan: await context.notemdArtifacts.planSlidevMp4Export(spec, source, execution?.signal) }
+      })
+    },
+  }))
+  context.tools.register(renderStatusTool(
+    'notemd_slidev_mp4_export_status',
+    'Report pinned-fork PNG plus FFmpeg MP4 export availability.',
+    (signal) => context.notemdArtifacts.slidevMp4ExportCapability(signal),
+    defineTool,
+  ))
 }
 
 function registerMermaidArtifactTools(context: NotemdToolContext, defineTool: ToolDefinitionFactory): void {
@@ -251,6 +371,157 @@ function renderStatusTool(
 
 const planOutput = outcomeOutput({ plan: workspaceMutationPlanSchema }, ['plan'])
 const capabilityOutput = outcomeOutput({ capability: artifactCapabilitySchema }, ['capability'])
+
+const slidevSourceProperties = {
+  version: { type: 'integer', required: true, const: 1 },
+  title: { type: 'string', required: true },
+  source: {
+    type: 'object',
+    required: true,
+    additionalProperties: false,
+    properties: {
+      path: { type: 'string', required: true },
+      revision: { type: 'string', required: true },
+    },
+  },
+  theme: { type: 'string', required: true },
+} as const
+
+const slidevSourceSpecParameter = {
+  type: 'object',
+  required: true,
+  additionalProperties: false,
+  properties: slidevSourceProperties,
+} as const
+
+const slidevPngSpecParameter = {
+  type: 'object',
+  required: true,
+  additionalProperties: false,
+  properties: {
+    ...slidevSourceProperties,
+    withClicks: { type: 'boolean', required: true },
+    imageScale: { type: 'number', required: true },
+  },
+} as const
+
+const slidevMp4SpecParameter = {
+  type: 'object',
+  required: true,
+  additionalProperties: false,
+  properties: {
+    ...slidevSourceProperties,
+    withClicks: { type: 'boolean', required: true },
+    imageScale: { type: 'number', required: true },
+    fps: { type: 'number', required: true },
+    crf: { type: 'integer', required: true },
+  },
+} as const
+
+const slidevSourcePropertyNames = Object.freeze(['version', 'title', 'source', 'theme'])
+const slidevPngPropertyNames = Object.freeze([...slidevSourcePropertyNames, 'withClicks', 'imageScale'])
+const slidevMp4PropertyNames = Object.freeze([...slidevPngPropertyNames, 'fps', 'crf'])
+
+function slidevSourceSpecFrom(specRecord: Record<string, unknown>): SlidevSourceSpec {
+  assertExactProperties(specRecord, slidevSourcePropertyNames, 'Slidev source specification')
+  return slidevBaseFields(specRecord)
+}
+
+function slidevHtmlSpecFrom(specRecord: Record<string, unknown>): SlidevHtmlExportSpec {
+  assertExactProperties(specRecord, slidevSourcePropertyNames, 'Slidev HTML export specification')
+  return slidevBaseFields(specRecord)
+}
+
+function slidevPdfSpecFrom(specRecord: Record<string, unknown>): SlidevPdfExportSpec {
+  assertExactProperties(specRecord, slidevSourcePropertyNames, 'Slidev PDF export specification')
+  return slidevBaseFields(specRecord)
+}
+
+function slidevPptxSpecFrom(specRecord: Record<string, unknown>): SlidevPptxExportSpec {
+  assertExactProperties(specRecord, slidevSourcePropertyNames, 'Slidev PPTX export specification')
+  return slidevBaseFields(specRecord)
+}
+
+function slidevPngSpecFrom(specRecord: Record<string, unknown>): SlidevPngExportSpec {
+  assertExactProperties(specRecord, slidevPngPropertyNames, 'Slidev PNG export specification')
+  const imageScale = requiredFiniteNumber(specRecord, 'imageScale')
+  if (imageScale < 1 || imageScale > 8) {
+    throw new ToolInputError('Slidev PNG imageScale must be between 1 and 8.')
+  }
+  return {
+    ...slidevBaseFields(specRecord),
+    withClicks: requiredBoolean(specRecord, 'withClicks'),
+    imageScale,
+  }
+}
+
+function slidevMp4SpecFrom(specRecord: Record<string, unknown>): SlidevMp4ExportSpec {
+  assertExactProperties(specRecord, slidevMp4PropertyNames, 'Slidev MP4 export specification')
+  const imageScale = requiredFiniteNumber(specRecord, 'imageScale')
+  const fps = requiredFiniteNumber(specRecord, 'fps')
+  const crf = requiredFiniteNumber(specRecord, 'crf')
+  if (imageScale < 1 || imageScale > 8 || fps <= 0 || fps > 60 || !Number.isInteger(crf) || crf < 0 || crf > 51) {
+    throw new ToolInputError('Slidev MP4 options require imageScale in [1, 8], fps in (0, 60], and integer crf in [0, 51].')
+  }
+  return {
+    ...slidevBaseFields(specRecord),
+    withClicks: requiredBoolean(specRecord, 'withClicks'),
+    imageScale,
+    fps,
+    crf,
+  }
+}
+
+function slidevBaseFields(specRecord: Record<string, unknown>): SlidevSourceSpec {
+  if (specRecord.version !== 1) {
+    throw new ToolInputError('Slidev specifications require version 1.')
+  }
+  const sourceRecord = specRecord.source
+  if (!isRecord(sourceRecord)) {
+    throw new ToolInputError('Slidev specifications require a source object.')
+  }
+  assertExactProperties(sourceRecord, ['path', 'revision'], 'Slidev source binding')
+  return {
+    version: 1,
+    title: requiredRecordString(specRecord, 'title'),
+    source: {
+      path: requiredRecordString(sourceRecord, 'path'),
+      revision: requiredRecordString(sourceRecord, 'revision'),
+    },
+    theme: requiredRecordString(specRecord, 'theme'),
+  }
+}
+
+function assertExactProperties(record: Record<string, unknown>, allowedNames: readonly string[], label: string): void {
+  const allowed = new Set(allowedNames)
+  if (Object.keys(record).some((name) => !allowed.has(name)) || allowedNames.some((name) => !Object.hasOwn(record, name))) {
+    throw new ToolInputError(`${label} must contain exactly its declared properties.`)
+  }
+}
+
+function requiredRecordString(record: Record<string, unknown>, name: string): string {
+  const field = record[name]
+  if (typeof field !== 'string' || field.trim().length === 0) {
+    throw new ToolInputError(`Slidev specification property "${name}" must be a non-empty string.`)
+  }
+  return field
+}
+
+function requiredBoolean(record: Record<string, unknown>, name: string): boolean {
+  const field = record[name]
+  if (typeof field !== 'boolean') {
+    throw new ToolInputError(`Slidev specification property "${name}" must be boolean.`)
+  }
+  return field
+}
+
+function requiredFiniteNumber(record: Record<string, unknown>, name: string): number {
+  const field = record[name]
+  if (typeof field !== 'number' || !Number.isFinite(field)) {
+    throw new ToolInputError(`Slidev specification property "${name}" must be a finite number.`)
+  }
+  return field
+}
 
 function graphDiagramSpecParameter(target: 'mermaid' | 'json-canvas' | 'html' | 'editable-svg' | 'drawio' | 'drawnix') {
   return {

@@ -276,12 +276,32 @@ const mermaidRenderStatus = await invoke('notemd_mermaid_render_status', {})
 const drawioRenderStatus = await invoke('notemd_drawio_render_status', {})
 const drawnixRenderStatus = await invoke('notemd_drawnix_render_status', {})
 const circuitikzRenderStatus = await invoke('notemd_circuitikz_render_status', {})
-const exportStatus = await invoke('notemd_artifact_export_status', {})
+const genericExportToolMissing = await toolIsMissing('notemd_artifact_export_status')
 assert(mermaidRenderStatus.status === 'success' && mermaidRenderStatus.capability.status === 'available', 'The core bundle did not load the Mermaid renderer.')
-assert(exportStatus.status === 'success' && exportStatus.capability.status === 'unavailable', 'The core bundle unexpectedly claimed a portable export provider.')
+assert(genericExportToolMissing, 'The generic document export Tool must not be registered.')
 assert(drawioRenderStatus.status === 'success' && ['available', 'unavailable'].includes(drawioRenderStatus.capability.status), 'The Draw.io capability Tool returned an invalid result: ' + JSON.stringify(drawioRenderStatus))
 assert(drawnixRenderStatus.status === 'success' && ['available', 'unavailable'].includes(drawnixRenderStatus.capability.status), 'The Drawnix capability Tool returned an invalid result: ' + JSON.stringify(drawnixRenderStatus))
 assert(circuitikzRenderStatus.status === 'success' && ['available', 'unavailable'].includes(circuitikzRenderStatus.capability.status), 'The Circuitikz capability Tool returned an invalid result: ' + JSON.stringify(circuitikzRenderStatus))
+
+const slidevSourceSpec = {
+  version: 1,
+  title: 'Approval Lifecycle',
+  source: { path: read.document.path, revision: read.document.revision },
+  theme: 'default',
+}
+const slidevSourceStatus = await invoke('notemd_slidev_source_status', {})
+const slidevHtmlStatus = await invoke('notemd_slidev_html_export_status', {})
+const slidevPdfStatus = await invoke('notemd_slidev_pdf_export_status', {})
+const slidevPngStatus = await invoke('notemd_slidev_png_export_status', {})
+const slidevPptxStatus = await invoke('notemd_slidev_pptx_export_status', {})
+const slidevMp4Status = await invoke('notemd_slidev_mp4_export_status', {})
+assert(slidevSourceStatus.status === 'success' && slidevSourceStatus.capability.status === 'available', 'Slidev source preparation is not available.')
+for (const status of [slidevHtmlStatus, slidevPdfStatus, slidevPngStatus, slidevPptxStatus, slidevMp4Status]) {
+  assert(status.status === 'success' && ['available', 'unavailable'].includes(status.capability.status), 'Slidev export capability returned an invalid result: ' + JSON.stringify(status))
+}
+const slidevSourcePlan = await invoke('notemd_plan_slidev_source', { spec: slidevSourceSpec })
+assert(slidevSourcePlan.status === 'success', 'The installed Slidev source Tool did not create a proposal.')
+assert(slidevSourcePlan.plan.mutations.some(mutation => mutation.destination.endsWith('/slides.md')), 'The Slidev source proposal omitted prepared Markdown.')
 
 const artifact = await invoke('notemd_plan_mermaid_artifact', {
   spec: {

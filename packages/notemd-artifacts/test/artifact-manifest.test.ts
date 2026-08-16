@@ -29,17 +29,12 @@ test('never deletes an artifact absent from its manifest', async () => {
   await expect(artifacts.planCleanup('unknown-id')).resolves.toEqual([])
 })
 
-test('reports installed renderers and the still-absent document export capability truthfully', async () => {
+test('reports installed SVG renderers without claiming document export ownership', async () => {
   const artifacts = createPlanner(await LocalVault.open(workspaceRoot))
 
   expect(artifacts.mermaidRenderingCapability()).toMatchObject({
     capability: 'diagram-rendering',
     status: 'available',
-  })
-  expect(artifacts.documentExportCapability()).toEqual({
-    capability: 'document-export',
-    status: 'unavailable',
-    reason: 'Slidev and media export providers are not installed.',
   })
 })
 

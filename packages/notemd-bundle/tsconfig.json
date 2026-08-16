@@ -9,6 +9,9 @@
   "references": [
     { "path": "../notemd-artifacts" },
     { "path": "../notemd-documents" },
+    { "path": "../notemd-export-media" },
+    { "path": "../notemd-export-pptx" },
+    { "path": "../notemd-export-slidev" },
     { "path": "../notemd-jobs" },
     { "path": "../notemd-knowledge" },
     { "path": "../notemd-llm-dsh" },

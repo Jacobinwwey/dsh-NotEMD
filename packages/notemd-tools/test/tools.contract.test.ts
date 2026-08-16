@@ -220,13 +220,24 @@ function registerFixture(
       planJsonCanvasArtifact: () => plan,
       planHtmlArtifact: () => plan,
       planEditableSvgArtifact: () => plan,
+      planSlidevSource: async () => plan,
+      planSlidevHtmlExport: async () => plan,
+      planSlidevPdfExport: async () => plan,
+      planSlidevPngExport: async () => plan,
+      planSlidevPptxExport: async () => plan,
+      planSlidevMp4Export: async () => plan,
       planCleanup: async () => [],
       mermaidRenderingCapability: () => ({ capability: 'diagram-rendering', status: 'available', reason: 'not configured' }),
       vegaLiteRenderingCapability: () => ({ capability: 'diagram-rendering', status: 'available', reason: 'not configured' }),
       jsonCanvasRenderingCapability: () => ({ capability: 'diagram-rendering', status: 'available', reason: 'not configured' }),
       htmlRenderingCapability: () => ({ capability: 'diagram-rendering', status: 'available', reason: 'not configured' }),
       editableSvgRenderingCapability: () => ({ capability: 'diagram-rendering', status: 'available', reason: 'not configured' }),
-      documentExportCapability: () => ({ capability: 'document-export', status: 'unavailable', reason: 'not configured' }),
+      slidevSourceCapability: async () => ({ capability: 'document-export', status: 'available', reason: 'test source renderer' }),
+      slidevHtmlExportCapability: async () => ({ capability: 'document-export', status: 'unavailable', reason: 'not configured' }),
+      slidevPdfExportCapability: async () => ({ capability: 'document-export', status: 'unavailable', reason: 'not configured' }),
+      slidevPngExportCapability: async () => ({ capability: 'document-export', status: 'unavailable', reason: 'not configured' }),
+      slidevPptxExportCapability: async () => ({ capability: 'document-export', status: 'unavailable', reason: 'not configured' }),
+      slidevMp4ExportCapability: async () => ({ capability: 'document-export', status: 'unavailable', reason: 'not configured' }),
     },
     notemdTextTransformer: options.dshOnlyTransformer
       ? { complete: async () => ({ model: 'dsh-model', text: 'unused' }) }
@@ -406,6 +417,19 @@ test('registers named tools with closed canonical result schemas', () => {
   expect(names).toContain('notemd_drawnix_render_status')
   expect(names).toContain('notemd_plan_circuitikz_artifact')
   expect(names).toContain('notemd_circuitikz_render_status')
+  expect(names).toContain('notemd_plan_slidev_source')
+  expect(names).toContain('notemd_slidev_source_status')
+  expect(names).toContain('notemd_plan_slidev_html_export')
+  expect(names).toContain('notemd_slidev_html_export_status')
+  expect(names).toContain('notemd_plan_slidev_pdf_export')
+  expect(names).toContain('notemd_slidev_pdf_export_status')
+  expect(names).toContain('notemd_plan_slidev_png_export')
+  expect(names).toContain('notemd_slidev_png_export_status')
+  expect(names).toContain('notemd_plan_slidev_pptx_export')
+  expect(names).toContain('notemd_slidev_pptx_export_status')
+  expect(names).toContain('notemd_plan_slidev_mp4_export')
+  expect(names).toContain('notemd_slidev_mp4_export_status')
+  expect(names).not.toContain('notemd_artifact_export_status')
   expect(names).toContain('notemd_job_status')
   expect(names).not.toContain('notemd_run')
   expect(context.registered.every((tool) => schemaIsClosed(tool.output.schema))).toBe(true)
@@ -427,6 +451,49 @@ test('returns citation-bearing scoped knowledge retrieval through its named tool
       matches: [{ citationId: 'citation:notes/a.md#canonical-lock-ordering' }],
     },
   })
+})
+
+test('routes each named Slidev operation through its source-bound planner contract', async () => {
+  const plan = textPlan()
+  const context = registerFixture(plan)
+  const sourceSpec = {
+    version: 1,
+    title: 'Deck',
+    source: { path: 'notes/a.md', revision: 'rev-a' },
+    theme: 'default',
+  }
+  const operations = [
+    ['notemd_plan_slidev_source', sourceSpec],
+    ['notemd_plan_slidev_html_export', sourceSpec],
+    ['notemd_plan_slidev_pdf_export', sourceSpec],
+    ['notemd_plan_slidev_png_export', { ...sourceSpec, withClicks: true, imageScale: 2 }],
+    ['notemd_plan_slidev_pptx_export', sourceSpec],
+    ['notemd_plan_slidev_mp4_export', { ...sourceSpec, withClicks: false, imageScale: 1, fps: 24, crf: 23 }],
+  ] as const
+
+  for (const [toolName, spec] of operations) {
+    await expect(registeredTool(context, toolName).execute({ spec })).resolves.toMatchObject({ status: 'success', plan })
+  }
+})
+
+test('rejects unknown Slidev fields and unsafe media limits at the Tool edge', async () => {
+  const context = registerFixture(textPlan())
+  const sourceSpec = {
+    version: 1,
+    title: 'Deck',
+    source: { path: 'notes/a.md', revision: 'rev-a' },
+    theme: 'default',
+  }
+
+  await expect(registeredTool(context, 'notemd_plan_slidev_png_export').execute({
+    spec: { ...sourceSpec, withClicks: false, imageScale: 9 },
+  })).resolves.toEqual({ status: 'rejected', code: 'invalid-input' })
+  await expect(registeredTool(context, 'notemd_plan_slidev_mp4_export').execute({
+    spec: { ...sourceSpec, withClicks: false, imageScale: 1, fps: 24, crf: 23.5 },
+  })).resolves.toEqual({ status: 'rejected', code: 'invalid-input' })
+  await expect(registeredTool(context, 'notemd_plan_slidev_html_export').execute({
+    spec: { ...sourceSpec, format: 'pdf' },
+  })).resolves.toEqual({ status: 'rejected', code: 'invalid-input' })
 })
 
 test('executes document-semantic tools through named planner operations', async () => {
