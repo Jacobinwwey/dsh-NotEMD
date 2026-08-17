@@ -68,7 +68,7 @@ bundle patch 替换的是完整 config row，因此每次替换都必须按需�
 ## 发布证据
 
 - canonical remote：`git@github.com:Jacobinwwey/dsh-NotEMD.git`。
-- Phase 15/16 发布提交及非强制推送将在 gate 完成后记录；禁止 force update。
+- Phase 15/16 发布提交 `f8de6de`（`feat: harden workspace ownership and lock source intake`）已以非强制方式推送到 `git@github.com:Jacobinwwey/dsh-NotEMD.git`；最终 fetch 确认 `origin/main...main = 0 0`，工作区 clean。
 
 ## Phase 13 Optional-runtime 证据
 

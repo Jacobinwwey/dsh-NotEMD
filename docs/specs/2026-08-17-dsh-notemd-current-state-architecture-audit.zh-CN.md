@@ -3,7 +3,7 @@
 > English version: [2026-08-17-dsh-notemd-current-state-architecture-audit.md](2026-08-17-dsh-notemd-current-state-architecture-audit.md)
 
 **审计日期：** 2026-08-17
-**目标发布：** `488378fb6a1429683bf1789f418abca8992bd3a2`（`main`、`origin/main`）；Phase 15/16 release gate 已通过，发布提交另行记录。
+**目标发布：** `f8de6de`（`main`、`origin/main`）；Phase 15/16 release gate 与发布均已完成。
 **固定源行为 oracle：** `E:\convert\undo\obsidian-NoteMD_new`，提交 `4168a51cd19ad8c3d1e05f604b50936255461a31`
 **Source-intake candidate：** `cdf580c6c876190ecc1040caea08e5ba5bee004f`，checkout 为 dirty；见 `fixtures/migration/source-intake-lock.json`。
 **DSH reference：** `ref/deepseek-harness`，提交 `47f943859bef60e4160492346772ded9b24f765a`

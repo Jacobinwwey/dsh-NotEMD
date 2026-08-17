@@ -68,7 +68,7 @@ The bundle patch replaces complete config rows, so every replacement must restat
 ## Publication evidence
 
 - Canonical remote: `git@github.com:Jacobinwwey/dsh-NotEMD.git`.
-- The Phase 15/16 release commit and non-force push are recorded after the gate completes; no force update is permitted.
+- Phase 15/16 release commit `f8de6de` (`feat: harden workspace ownership and lock source intake`) was pushed non-force to `git@github.com:Jacobinwwey/dsh-NotEMD.git`; final fetch confirmed `origin/main...main = 0 0` and the worktree was clean.
 
 ## Phase 13 optional-runtime evidence
 

@@ -2,12 +2,12 @@
 
 > Chinese version: [2026-08-15-dsh-notemd-migration-progress.zh-CN.md](2026-08-15-dsh-notemd-migration-progress.zh-CN.md)
 
-**Status:** Phases 12-16 of the standalone migration are implemented and the full Phase 15/16 release gate has passed. Publication of the resulting commit is the remaining repository operation. The conformance boundary now executes typed fixture adapters rather than searching test source text. Slidev export remains pinned to the `Jacobinwwey/slidev` fork, never upstream Slidev.
+**Status:** Phases 12-16 of the standalone migration are implemented, the full Phase 15/16 release gate has passed, and publication commit `f8de6de` is synchronized with `origin/main`. The conformance boundary now executes typed fixture adapters rather than searching test source text. Slidev export remains pinned to the `Jacobinwwey/slidev` fork, never upstream Slidev.
 
 ## 1. Scope Baseline
 
 - Source baseline: `E:\convert\undo\obsidian-NoteMD_new` at `4168a51cd19ad8c3d1e05f604b50936255461a31`.
-- Target release: `E:\convert\undo\notemd-deepseek-harness` on `main`; the Phase 15/16 commit and remote synchronization are recorded after the release gate below.
+- Target release: `E:\convert\undo\notemd-deepseek-harness` on `main` at `f8de6de` (`origin/main` synchronized); the Phase 15/16 release gate is recorded below.
 - In scope: every non-Obsidian-host NoteMD workflow, including documents, knowledge, research, diagrams, artifact export, batch execution, and stable Drawnix behavior.
 - Deliberately out of scope: Obsidian UI and host APIs, direct provider configuration, and the source working tree's uncommitted Drawnix WIP.
 
@@ -123,6 +123,7 @@ The first verification segment ran against the documentation change on Node `v22
 - Node `v22.19.0` / pnpm `10.7.1` passed the strict sequence `test`, `test:coverage`, `build`, `pack:bundle`, `verify:bundle`, and `accept:dsh`; the final `git diff --check` also passed.
 - Vitest reported 52 files and 203 tests passing. Coverage is 77.68% statements, 73.00% branches, and 85.21% functions.
 - The packed tarball was verified and installed into a clean DeepSeek Harness profile; clean-profile acceptance passed with the source-intake lock and workspace ownership changes present.
+- Publication: `f8de6de` (`feat: harden workspace ownership and lock source intake`) was pushed non-force to `git@github.com:Jacobinwwey/dsh-NotEMD.git`; final fetch confirmed `origin/main...main = 0 0` and `git status --short --branch` reported only `## main`.
 
 ## 12. Phase 13 Verification
 

@@ -2,12 +2,12 @@
 
 > English version: [2026-08-15-dsh-notemd-migration-progress.md](2026-08-15-dsh-notemd-migration-progress.md)
 
-**状态：** standalone migration 的 Phase 12-16 已实现，Phase 15/16 完整 release gate 已通过；剩余动作是提交并同步本次发布。Conformance 边界现执行类型化 fixture adapter，不再搜索测试源码文本。Slidev export 仍固定使用 `Jacobinwwey/slidev` fork，绝不静默使用上游 Slidev。
+**状态：** standalone migration 的 Phase 12-16 已实现，Phase 15/16 完整 release gate 已通过，发布提交 `f8de6de` 已与 `origin/main` 同步。Conformance 边界现执行类型化 fixture adapter，不再搜索测试源码文本。Slidev export 仍固定使用 `Jacobinwwey/slidev` fork，绝不静默使用上游 Slidev。
 
 ## 1. 范围基线
 
 - 源基线：`E:\convert\undo\obsidian-NoteMD_new`，提交 `4168a51cd19ad8c3d1e05f604b50936255461a31`。
-- 目标发布：`E:\convert\undo\notemd-deepseek-harness` 的 `main`；Phase 15/16 提交与远端同步将在下方 release gate 后记录。
+- 目标发布：`E:\convert\undo\notemd-deepseek-harness` 的 `main`，提交 `f8de6de`（`origin/main` 已同步）；下方记录 Phase 15/16 release gate。
 - 范围内：全部非 Obsidian 宿主的 NoteMD 工作流，包括文档、知识库、研究、图表、工件导出、批处理和稳定 Drawnix 能力。
 - 明确排除：Obsidian UI 与宿主 API、直连 Provider 配置，以及源工作树中尚未提交的 Drawnix WIP。
 
@@ -118,6 +118,7 @@
 - Node `v22.19.0` / pnpm `10.7.1` 严格执行 `test`、`test:coverage`、`build`、`pack:bundle`、`verify:bundle`、`accept:dsh`，最后的 `git diff --check` 也通过。
 - Vitest 通过 52 个文件、203 个测试；coverage 为 statement 77.68%、branch 73.00%、function 85.21%。
 - packed tarball 已验证并安装到 clean DeepSeek Harness profile；source-intake lock 与 workspace ownership 变更均通过 clean-profile acceptance。
+- 发布：`f8de6de`（`feat: harden workspace ownership and lock source intake`）已以非强制方式推送到 `git@github.com:Jacobinwwey/dsh-NotEMD.git`；最终 fetch 确认 `origin/main...main = 0 0`，`git status --short --branch` 只报告 `## main`。
 
 第一段验证已在 Node `v22.19.0` 上针对本次文档变更执行：
 

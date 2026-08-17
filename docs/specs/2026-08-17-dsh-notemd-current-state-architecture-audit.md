@@ -3,7 +3,7 @@
 > Chinese version: [2026-08-17-dsh-notemd-current-state-architecture-audit.zh-CN.md](2026-08-17-dsh-notemd-current-state-architecture-audit.zh-CN.md)
 
 **Audit date:** 2026-08-17
-**Target release:** `488378fb6a1429683bf1789f418abca8992bd3a2` (`main`, `origin/main`); the Phase 15/16 release gate has passed and its publication commit is recorded separately.
+**Target release:** `f8de6de` (`main`, `origin/main`); the Phase 15/16 release gate and publication are complete.
 **Pinned source oracle:** `E:\convert\undo\obsidian-NoteMD_new` at `4168a51cd19ad8c3d1e05f604b50936255461a31`
 **Source-intake candidate:** `cdf580c6c876190ecc1040caea08e5ba5bee004f` with a dirty checkout; see `fixtures/migration/source-intake-lock.json`.
 **DSH reference:** `ref/deepseek-harness` at `47f943859bef60e4160492346772ded9b24f765a`
