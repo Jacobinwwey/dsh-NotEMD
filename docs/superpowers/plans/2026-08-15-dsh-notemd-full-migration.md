@@ -337,19 +337,23 @@ rtk proxy git diff --check
 
 ## Plan Review
 
-- Coverage: Tasks 1-4 establish the only safe mutation path; Tasks 5-7 recover DSH-native semantic workflows; Tasks 8-10 add renderer and export parity; Task 11 proves and publishes the result.
+- Coverage: Tasks 1-4 establish the only safe mutation path; Tasks 5-7 recover DSH-native semantic workflows; Tasks 8-10 add renderer and export parity; Tasks 11-12 prove and publish the result.
 - Failure model: deterministic fixture mismatches, DSH provider absence, renderer absence, stale revisions, and recovery transitions are all explicit test cases, never hidden fallbacks.
 - Scope control: source host UI, DSH provider configuration, and current Drawnix WIP remain outside the conformance matrix.
 
 ## Post-release continuation plan (2026-08-17)
 
-Tasks 1-11 are closed by the published release and are not reopened. This section is the executable continuation plan from target commit `488378fb6a1429683bf1789f418abca8992bd3a2`, with the source oracle still pinned to `4168a51cd19ad8c3d1e05f604b50936255461a31`.
+Tasks 1-12 are closed by the published release and are not reopened. This section is the executable continuation plan from target commit `488378fb6a1429683bf1789f418abca8992bd3a2`, with the source oracle still pinned to `4168a51cd19ad8c3d1e05f604b50936255461a31`.
 
 ### Phase 12: Executable conformance adapters
 
 - Replace free-form proof-term matching with typed fixture adapters under `fixtures/migration` and explicit operation-to-fixture mappings in `packages/notemd-workflows/test` and `packages/notemd-artifacts/test`.
 - Keep shared semantic fixtures explicit; require every included source operation to execute at least one mapped adapter, and fail closed when an excluded operation is reintroduced without a reason.
 - Exit evidence: deleting a mapping, skipping an adapter, or changing a fixture digest fails the conformance suite with the operation ID and fixture ID.
+- [x] Implemented manifest v2 with `adapterId`, `sourceOperationIds`, and executable `operationIds`; removed `testPath`/`proofTerms` as a conformance mechanism.
+- [x] Added fourteen temporary-workspace adapters covering nineteen observations, including auxiliary `knowledge.retrieve`, real workflow/artifact/Slidev source planner execution, source revision normalization, and `finally` cleanup.
+- [x] Corrected fixture contracts from observed source behavior: chapter `_chapters` ownership, `_Extracted` original-text output, language-folder translation, content-addressed artifact lineage, source bindings, and operation-specific duplicate schemas.
+- [x] Exit gate passed: focused conformance 1 file/2 tests; full Vitest 48 files/185 tests; coverage 77.63% statements, 72.35% branches, 85.33% functions; typecheck, lint, build, bundle verification, clean DSH acceptance, and diff check all passed.
 
 ### Phase 13: Real optional-runtime capability lane
 
@@ -377,4 +381,4 @@ Tasks 1-11 are closed by the published release and are not reopened. This sectio
 
 ### Execution order and record protocol
 
-Run Phase 12, then 13, then 14. Run Phase 15 only when the deployment contract requires multiple workspace processes. Run Phase 16 whenever a new source commit is available. Each phase must update both progress files with source/target locks, changed files and owners, measured tests, capability limits, rejected alternatives, risks, and its exit evidence.
+Phase 12 is complete. Continue with Phase 13, then 14. Run Phase 15 only when the deployment contract requires multiple workspace processes. Run Phase 16 whenever a new source commit is available. Each phase must update both progress files with source/target locks, changed files and owners, measured tests, capability limits, rejected alternatives, risks, and its exit evidence.

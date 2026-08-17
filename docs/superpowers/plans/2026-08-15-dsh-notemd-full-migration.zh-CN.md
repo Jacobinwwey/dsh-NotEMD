@@ -256,19 +256,23 @@ rtk proxy git diff --check
 
 ## 计划复核
 
-- 覆盖：Task 1-4 建立唯一安全 mutation path；Task 5-7 恢复 DSH-native 语义工作流；Task 8-10 完成 renderer/export 对齐；Task 11 证明并发布结果。
+- 覆盖：Task 1-4 建立唯一安全 mutation path；Task 5-7 恢复 DSH-native 语义工作流；Task 8-10 完成 renderer/export 对齐；Task 11-12 证明并发布结果。
 - 失败模型：fixture mismatch、DSH provider 缺失、renderer 缺失、陈旧修订和恢复转换均为显式测试，禁止隐藏 fallback。
 - 范围控制：源 host UI、DSH Provider 配置、当前 Drawnix WIP 始终不进入 conformance matrix。
 
 ## 发布后延续计划（2026-08-17）
 
-Task 1-11 已由已发布版本关闭，不重新打开。本节从目标提交 `488378fb6a1429683bf1789f418abca8992bd3a2` 继续执行，source oracle 仍固定为 `4168a51cd19ad8c3d1e05f604b50936255461a31`。
+Task 1-12 已由已发布版本关闭，不重新打开。本节从目标提交 `488378fb6a1429683bf1789f418abca8992bd3a2` 继续执行，source oracle 仍固定为 `4168a51cd19ad8c3d1e05f604b50936255461a31`。
 
 ### Phase 12：可执行 Conformance Adapter
 
 - 在 `fixtures/migration`、`packages/notemd-workflows/test` 与 `packages/notemd-artifacts/test` 中，用类型化 fixture adapter 和显式 operation-to-fixture 映射替换自由文本 proof-term 匹配。
 - 保留共享语义 fixture 的显式关系；每个 included source operation 至少执行一个映射 adapter；excluded operation 未附 reason 重新进入时必须 fail closed。
 - 退出证据：删除映射、跳过 adapter 或改变 fixture digest 时，conformance suite 必须给出 operation ID 和 fixture ID 并失败。
+- [x] 已实现 manifest v2，包含 `adapterId`、`sourceOperationIds` 和可执行 `operationIds`；`testPath`/`proofTerms` 不再是 conformance 机制。
+- [x] 已增加 14 个临时 workspace adapter，覆盖 19 个 observation，包括 auxiliary `knowledge.retrieve`、真实 workflow/artifact/Slidev source planner 执行、source revision normalization 和 `finally` 清理。
+- [x] 已根据源行为纠正 fixture contract：chapter `_chapters` ownership、`_Extracted` original-text output、language-folder translation、content-addressed artifact lineage、source binding 和 operation-specific duplicate schema。
+- [x] 退出 gate 已通过：focused conformance 1 文件/2 测试；完整 Vitest 48 文件/185 测试；statement 77.63%、branch 72.35%、function 85.33%；typecheck、lint、build、bundle verification、clean DSH acceptance 和 diff check 均通过。
 
 ### Phase 13：真实 Optional Runtime Capability Lane
 
@@ -296,4 +300,4 @@ Task 1-11 已由已发布版本关闭，不重新打开。本节从目标提交 
 
 ### 执行顺序与记录协议
 
-按 Phase 12、13、14 顺序执行；只有部署契约要求多个 workspace process 时执行 Phase 15；每当 source 有新提交时执行 Phase 16。每个阶段都必须同步更新两份 progress 文件，记录 source/target lock、变更文件与 owner、实测测试、capability 限制、拒绝方案、风险和退出证据。
+Phase 12 已完成。继续执行 Phase 13、Phase 14；只有部署契约要求多个 workspace process 时执行 Phase 15；每当 source 有新提交时执行 Phase 16。每个阶段都必须同步更新两份 progress 文件，记录 source/target lock、变更文件与 owner、实测测试、capability 限制、拒绝方案、风险和退出证据。

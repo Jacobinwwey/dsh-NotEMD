@@ -64,9 +64,20 @@
       "inputSha256": "4049379edb0dcf49f1eeeeab3cce4d9e1824489a7cb0df5d506c41975c005910",
       "expected": {
         "outputSchema": "workspace-mutation-plan/v1",
-        "targetPaths": ["chapters/Planning.md", "chapters/Execution.md"],
+        "targetPaths": [
+          "notes/chapters_chapters/.notemd-chapter-split.json",
+          "notes/chapters_chapters/01-planning.md",
+          "notes/chapters_chapters/02-execution.md",
+          "notes/chapters_chapters/chapters_TOC.md"
+        ],
         "citationIds": [],
-        "mutationPreconditions": { "notes/chapters.md": "source-revision", "chapters/Planning.md": "absent" }
+        "mutationPreconditions": {
+          "notes/chapters.md": "source-revision",
+          "notes/chapters_chapters/.notemd-chapter-split.json": "absent",
+          "notes/chapters_chapters/01-planning.md": "absent",
+          "notes/chapters_chapters/02-execution.md": "absent",
+          "notes/chapters_chapters/chapters_TOC.md": "absent"
+        }
       }
     },
     {
@@ -88,7 +99,7 @@
         "outputSchema": "workspace-mutation-plan/v1",
         "targetPaths": ["translations/de/notes/source.md"],
         "citationIds": [],
-        "mutationPreconditions": { "translations/de/notes/source.md": "absent" }
+        "mutationPreconditions": { "notes/source.md": "source-revision", "translations/de/notes/source.md": "absent" }
       }
     },
     {
@@ -99,7 +110,7 @@
         "outputSchema": "workspace-mutation-plan/v1",
         "targetPaths": ["concepts/Atomic Writes.md"],
         "citationIds": [],
-        "mutationPreconditions": { "concepts/Atomic Writes.md": "absent" }
+        "mutationPreconditions": { "concepts/Atomic Writes.md": "absent", "notes/concepts.md": "source-revision" }
       }
     },
     {
@@ -108,9 +119,9 @@
       "inputSha256": "ac01e84764f7e7dd93f2bdecc5d8bffbd310bb38911ede970c76716b6d667547",
       "expected": {
         "outputSchema": "workspace-mutation-plan/v1",
-        "targetPaths": ["originals/notes/original.md"],
+        "targetPaths": ["notes/original_Extracted.md"],
         "citationIds": [],
-        "mutationPreconditions": { "originals/notes/original.md": "absent" }
+        "mutationPreconditions": { "notes/original.md": "source-revision", "notes/original_Extracted.md": "absent" }
       }
     },
     {
@@ -121,7 +132,11 @@
         "outputSchema": "workspace-mutation-plan/v1",
         "targetPaths": ["concepts/Atomic Writes.md", "generated/Atomic Writes.md"],
         "citationIds": [],
-        "mutationPreconditions": { "concepts/Atomic Writes.md": "absent", "generated/Atomic Writes.md": "absent" }
+        "mutationPreconditions": {
+          "concepts/Atomic Writes.md": "absent",
+          "generated/Atomic Writes.md": "absent",
+          "notes/concepts.md": "source-revision"
+        }
       }
     },
     {
@@ -133,6 +148,20 @@
         "targetPaths": ["notes/duplicates.md"],
         "citationIds": [],
         "mutationPreconditions": { "notes/duplicates.md": "source-revision" }
+      },
+      "expectedByOperation": {
+        "duplicate.check-file": {
+          "outputSchema": "duplicate-diagnostic/v1",
+          "targetPaths": ["notes/duplicates.md"],
+          "citationIds": [],
+          "mutationPreconditions": { "notes/duplicates.md": "source-revision" }
+        },
+        "concept.dedupe": {
+          "outputSchema": "duplicate-mutation-plan/v1",
+          "targetPaths": ["notes/duplicates.md"],
+          "citationIds": [],
+          "mutationPreconditions": { "notes/duplicates.md": "source-revision" }
+        }
       }
     },
     {
@@ -174,9 +203,20 @@
       "inputSha256": "ae1f4196d536d876abd148e051eb85d089b14c9ba4133ba1d1e768b190eca8b9",
       "expected": {
         "outputSchema": "diagram-spec-and-artifact-plan/v1",
-        "targetPaths": [".notemd/artifacts/diagram-source/diagram.json"],
+        "targetPaths": [
+          ".notemd/artifacts/notemd-artifact-9a9e469f716c93be0bbe/diagram.mmd",
+          ".notemd/artifacts/notemd-artifact-9a9e469f716c93be0bbe/export.svg",
+          ".notemd/artifacts/notemd-artifact-9a9e469f716c93be0bbe/manifest.json",
+          ".notemd/artifacts/notemd-artifact-9a9e469f716c93be0bbe/preview.svg"
+        ],
         "citationIds": [],
-        "mutationPreconditions": { ".notemd/artifacts/diagram-source/diagram.json": "absent" },
+        "mutationPreconditions": {
+          ".notemd/artifacts/notemd-artifact-9a9e469f716c93be0bbe/diagram.mmd": "absent",
+          ".notemd/artifacts/notemd-artifact-9a9e469f716c93be0bbe/export.svg": "absent",
+          ".notemd/artifacts/notemd-artifact-9a9e469f716c93be0bbe/manifest.json": "absent",
+          ".notemd/artifacts/notemd-artifact-9a9e469f716c93be0bbe/preview.svg": "absent",
+          "notes/diagram.md": "source-revision"
+        },
         "artifactSha256": "ae1f4196d536d876abd148e051eb85d089b14c9ba4133ba1d1e768b190eca8b9"
       }
     },
@@ -186,9 +226,18 @@
       "inputSha256": "7413bb40f0457dd79efae0feb5b38a17ff48932e45e4a65f7dc413e0d5ae0b7d",
       "expected": {
         "outputSchema": "slide-source-and-layout-report/v1",
-        "targetPaths": [".notemd/artifacts/slide-source/slides.md"],
+        "targetPaths": [
+          ".notemd/artifacts/notemd-artifact-18df0e3d22a876569406/layout-report.json",
+          ".notemd/artifacts/notemd-artifact-18df0e3d22a876569406/manifest.json",
+          ".notemd/artifacts/notemd-artifact-18df0e3d22a876569406/slides.md"
+        ],
         "citationIds": [],
-        "mutationPreconditions": { ".notemd/artifacts/slide-source/slides.md": "absent" },
+        "mutationPreconditions": {
+          ".notemd/artifacts/notemd-artifact-18df0e3d22a876569406/layout-report.json": "absent",
+          ".notemd/artifacts/notemd-artifact-18df0e3d22a876569406/manifest.json": "absent",
+          ".notemd/artifacts/notemd-artifact-18df0e3d22a876569406/slides.md": "absent",
+          "slides/architecture.md": "source-revision"
+        },
         "artifactSha256": "7413bb40f0457dd79efae0feb5b38a17ff48932e45e4a65f7dc413e0d5ae0b7d"
       }
     }

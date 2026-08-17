@@ -1,75 +1,89 @@
 {
-  "version": 1,
+  "version": 2,
   "implementations": [
     {
       "fixtureId": "wiki-links",
-      "testPath": "packages/notemd-workflows/test/workflow-planning.test.ts",
-      "proofTerms": ["link, title, and research transformations"]
+      "adapterId": "wiki-links",
+      "sourceOperationIds": ["file.process-add-links", "file.process-folder-add-links"],
+      "operationIds": ["file.process-add-links", "file.process-folder-add-links"]
     },
     {
       "fixtureId": "title-generation",
-      "testPath": "packages/notemd-workflows/test/workflow-planning.test.ts",
-      "proofTerms": ["link, title, and research transformations"]
+      "adapterId": "title-generation",
+      "sourceOperationIds": ["content.generate-from-title", "content.batch-generate-from-titles"],
+      "operationIds": ["content.generate-from-title", "content.batch-generate-from-titles"]
     },
     {
       "fixtureId": "chapter-split",
-      "testPath": "packages/notemd-documents/test/chapter-split.test.ts",
-      "proofTerms": ["emits chapter, toc, manifest"]
+      "adapterId": "chapter-split",
+      "sourceOperationIds": ["content.split-note-by-chapters"],
+      "operationIds": ["content.split-note-by-chapters"]
     },
     {
       "fixtureId": "research-synthesis",
-      "testPath": "packages/notemd-workflows/test/workflow-planning.test.ts",
-      "proofTerms": ["research synthesis"]
+      "adapterId": "research-synthesis",
+      "sourceOperationIds": ["research.summarize-topic"],
+      "operationIds": ["research.summarize-topic"]
     },
     {
       "fixtureId": "translation",
-      "testPath": "packages/notemd-workflows/test/workflow-planning.test.ts",
-      "proofTerms": ["non-destructive target for a translation plan"]
+      "adapterId": "translation",
+      "sourceOperationIds": ["translate.file", "translate.folder-batch"],
+      "operationIds": ["translate.file", "translate.folder-batch"]
     },
     {
       "fixtureId": "concept-extraction",
-      "testPath": "packages/notemd-workflows/test/workflow-planning.test.ts",
-      "proofTerms": ["concept note"]
+      "adapterId": "concept-extraction",
+      "sourceOperationIds": ["concept.extract-file", "concept.extract-folder"],
+      "operationIds": ["concept.extract-file", "concept.extract-folder"]
     },
     {
       "fixtureId": "original-text",
-      "testPath": "packages/notemd-documents/test/original-text.test.ts",
-      "proofTerms": ["original-text destinations"]
+      "adapterId": "original-text",
+      "sourceOperationIds": ["content.extract-original-text"],
+      "operationIds": ["content.extract-original-text"]
     },
     {
       "fixtureId": "extract-and-generate",
-      "testPath": "packages/notemd-workflows/test/workflow-planning.test.ts",
-      "proofTerms": ["extract-and-generate"]
+      "adapterId": "extract-and-generate",
+      "sourceOperationIds": ["workflow.extract-and-generate"],
+      "operationIds": ["workflow.extract-and-generate"]
     },
     {
       "fixtureId": "duplicate-reconciliation",
-      "testPath": "packages/notemd-workflows/test/workflow-planning.test.ts",
-      "proofTerms": ["duplicate detection diagnostic"]
+      "adapterId": "duplicate-reconciliation",
+      "sourceOperationIds": ["duplicate.check-file", "concept.dedupe"],
+      "operationIds": ["duplicate.check-file", "concept.dedupe"]
     },
     {
       "fixtureId": "mermaid-repair",
-      "testPath": "packages/notemd-workflows/test/workflow-planning.test.ts",
-      "proofTerms": ["Mermaid replacement"]
+      "adapterId": "mermaid-repair",
+      "sourceOperationIds": ["mermaid.batch-fix"],
+      "operationIds": ["mermaid.batch-fix"]
     },
     {
       "fixtureId": "formula-repair",
-      "testPath": "packages/notemd-workflows/test/markdown-transforms.test.ts",
-      "proofTerms": ["formula"]
+      "adapterId": "formula-repair",
+      "sourceOperationIds": ["formula.fix-file", "formula.batch-fix"],
+      "operationIds": ["formula.fix-file", "formula.batch-fix"]
     },
     {
       "fixtureId": "local-retrieval",
-      "testPath": "packages/notemd-knowledge/test/knowledge-index.test.ts",
-      "proofTerms": ["citation:notes/knowledge.md#canonical-lock-ordering"]
+      "adapterId": "local-retrieval",
+      "sourceOperationIds": [],
+      "operationIds": ["knowledge.retrieve"]
     },
     {
       "fixtureId": "diagram-source",
-      "testPath": "packages/notemd-artifacts/test/source-artifact-contracts.test.ts",
-      "proofTerms": ["diagram-source"]
+      "adapterId": "diagram-source",
+      "sourceOperationIds": ["diagram.generate"],
+      "operationIds": ["diagram.generate"]
     },
     {
       "fixtureId": "slide-source",
-      "testPath": "packages/notemd-export-slidev/test/slidev-source.test.ts",
-      "proofTerms": ["source-bound layout report"]
+      "adapterId": "slide-source",
+      "sourceOperationIds": ["diagram.generate"],
+      "operationIds": ["diagram.generate"]
     }
   ]
 }

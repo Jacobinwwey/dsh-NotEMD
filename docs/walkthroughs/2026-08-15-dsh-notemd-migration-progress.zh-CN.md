@@ -2,7 +2,7 @@
 
 > English version: [2026-08-15-dsh-notemd-migration-progress.md](2026-08-15-dsh-notemd-migration-progress.md)
 
-**状态：** 十一阶段 standalone migration 已全部实现、验证并发布。Task 11 的 conformance、lifecycle、release gate 与非强制 mainline 同步均已完成。Slidev export 固定使用 `Jacobinwwey/slidev` fork，绝不静默使用上游 Slidev。
+**状态：** 十二阶段 standalone migration 已全部实现并验证；Phase 12 的发布记录见下文。Conformance 边界现执行类型化 fixture adapter，不再搜索测试源码文本。Slidev export 仍固定使用 `Jacobinwwey/slidev` fork，绝不静默使用上游 Slidev。
 
 ## 1. 范围基线
 
@@ -26,6 +26,7 @@
 - Task 8 已将 source-only artifact contract 替换为 `DiagramSpec` v2 与 source/preview/export lineage manifest。五个具名 renderer package 生成 canonical Mermaid、Vega-Lite、JSON Canvas、HTML 或 editable-SVG source 及清洗后的 SVG 派生产物；JSON Canvas SVG 被明确标记为 projection，不能替代 `.canvas`。每个 target 均有独立的 planning/status Tool，而 materialization 仍走既有 approval-gated mutation path。
 - Task 9 已增加 `@notemd-harness/process`，作为唯一 staging-only 外部进程边界。Draw.io、稳定 Drawnix 与 Circuitikz provider 生成确定性的 canonical source、明确标注的 SVG projection、真实的 native capability outcome，并在 Circuitikz 场景生成 digest-verified staged PDF。native export 不会直接写最终工作区；process boundary 负责 executable allowlist、固定 argv、有界 I/O、timeout/cancellation 分类、进程树 join、HMR dispose 与 staging cleanup。
 - Task 10 已增加 `@notemd-harness/export-slidev`、`@notemd-harness/export-pptx` 与 `@notemd-harness/export-media`。prepared Slidev Markdown 和 layout report 是 canonical source；HTML、PDF、PNG、PPTX、MP4 各自有具名 provider。process boundary 固定 `github:Jacobinwwey/slidev` revision `bbcb2efae709c2ebaa96bda522cd6c192476817c`，所有输出都经过 staging 与 digest 校验，支持 fork 的 `index-standalone.html`，且绝不把 SVG 当作 PPTX/MP4 parity。
+- Task 12 已用类型化、可执行 fixture adapter 替换间接 conformance proof term。每个 adapter 创建临时 workspace，调用真实 workflow、knowledge、artifact 或 Slidev source planner，只归一化 contract 级观察值，并在 `finally` 清理；v2 manifest 分离 source operation 映射与 auxiliary executable observation。
 
 ## 3. 已完成的代码审计
 
@@ -75,18 +76,19 @@
 | 9. Draw.io、稳定 Drawnix 与 Circuitikz provider | 已完成。`@notemd-harness/process` 强制固定 command profile 与 staging containment；三个具名 provider 和六个 planning/status Tool 已打包。Drawnix WIP 路径仍被排除；缺失可选 `notemd-drawnix-render` adapter 时如实返回 unavailable。 | 已通过 Windows process/provider 测试、全量 suite、packed-bundle 校验与 clean DSH profile acceptance。 |
 | 10. Slidev 与媒体导出 | 已完成。三个 package 提供 canonical source preparation，以及在同一 staging/process boundary 上的 HTML/PDF/PNG/PPTX/MP4 具名 provider。 | Task 10 focused/full gate 通过；真实 optional executable 缺失时如实返回 unavailable。 |
 | 11. Conformance、HMR 与发布 | 已完成。matrix conformance、lifecycle contract、完整 release gate、clean DSH profile 与非强制 mainline 同步全部通过。 | 后续能力变更必须继续保持 fork lock、optional capability boundary 与发布证据一致。 |
+| 12. 可执行 conformance adapter | 已完成。14 个类型化 adapter 执行 19 个 observation（18 个 included source operation 加 auxiliary local retrieval），duplicate 使用 operation-specific contract，artifact 使用确定性 lineage path。 | 任一 adapter 缺失、included operation 未映射、fixture digest 漂移或 contract mismatch，都必须在发布前的 focused conformance gate 失败。 |
 
 ## 6. 已记录方向
 
 - [权威架构](../specs/2026-08-15-dsh-notemd-full-migration-architecture.zh-CN.md) 定义了符合 DSH/Koishi/Cordis 的 service graph，并修正旧文档中默认 Provider 与 source-only artifact 的结论。
-- [可执行实施计划](../superpowers/plans/2026-08-15-dsh-notemd-full-migration.zh-CN.md) 将迁移拆为 11 个可独立测试的任务。
+- [可执行实施计划](../superpowers/plans/2026-08-15-dsh-notemd-full-migration.zh-CN.md) 将迁移拆为 12 个可独立测试的任务。
 - Task 1 的特征化 fixture 阻止后续实现静默丢失章节 manifest cleanup、原文抽取、任务级检索或按目标导出等源语义。
 
 ## 7. 后续推进方向
 
 1. 保持 fork lock：`github:Jacobinwwey/slidev@bbcb2efae709c2ebaa96bda522cd6c192476817c`；更新它是兼容性决策，不是普通依赖刷新。
 2. HMR 时必须保留待审批/materialization 的 staged asset；dispose 只停止进程和 timer，不能提前删除审批输入。
-3. 后续能力变更必须把 conformance manifest、release gate 与 clean-profile acceptance 作为强制证据。
+3. 后续能力变更必须把类型化 conformance manifest、release gate 与 clean-profile acceptance 作为强制证据。
 
 ## 8. 约束
 
@@ -94,6 +96,16 @@
 - 使用 `ctx.llm` 与 `ctx.web` 替代 NoteMD 自有 Provider 与联网传输配置。
 - 渲染和导出能力如实报告可用性；SVG 仅对支持 SVG 的目标充当预览派生产物。
 - 工作区变更必须显式、审批门控、绑定修订，并支持恢复。
+
+## 11. Phase 12 验证
+
+- 范围：`fixtures/migration/conformance-implementations.json` 从 manifest v1（`testPath`/`proofTerms`）升级为 v2（`adapterId`、`sourceOperationIds`、`operationIds`）。`packages/notemd-workflows/test/migration-fixture-adapters.ts` 现在拥有 14 个临时 workspace adapter，覆盖 19 个 executable observation。
+- 契约纠偏均有运行证据：章节拆分记录 source-sibling `_chapters` manifest/chapters/TOC 集合；original-text 使用固定的 `_Extracted` sibling policy；translation 同时记录 language-folder policy 与 source revision；diagram 和 Slidev 输出使用确定性的 content-addressed artifact directory；duplicate diagnostic 与 dedupe 使用 operation-specific schema。
+- conformance test 校验 included operation 完整覆盖、auxiliary operation 分离、adapter registry parity、operation-to-fixture 声明、source revision normalization、target path、citation 和 mutation precondition。expected 不从 adapter 结果或测试源码推导。
+- focused 证据：`rtk proxy pnpm.cmd exec vitest run --config vitest.config.ts packages/notemd-workflows/test/migration-conformance.test.ts` 通过 1 个文件、2 个测试。
+- Node `v22.19.0` / pnpm `10.7.1` 的完整证据：`pnpm test` 通过 48 个文件、185 个测试；`pnpm test:coverage` 通过，statement 77.63%、branch 72.35%、function 85.33%；`pnpm typecheck`、`pnpm lint`、`pnpm build`、`pnpm pack:bundle`、`pnpm verify:bundle`、`pnpm accept:dsh` 与 `git diff --check` 均通过。
+- capability 边界：这些 adapter 证明确定性的 planner/renderer contract，不证明 live DSH provider 质量，也不宣称 Playwright/FFmpeg/Draw.io/Tectonic/Drawnix 已安装互操作；这些属于 Phase 13 optional-runtime 证据。
+- 已拒绝方案：测试源码 proof-term 匹配、从 observed output 生成 expected、用共享 duplicate contract 隐藏 read-only 与 delete 语义，以及丢弃 lineage identity 的简化 artifact path。
 
 ## 9. 验证与发布
 
@@ -207,22 +219,22 @@
 
 - parity oracle 仍是 `obsidian-NoteMD_new` 的 `4168a51cd19ad8c3d1e05f604b50936255461a31`。源工作区随后已到 `5efd4285f2d1861e725f520cfa8a02d1bf898eb7`，并且处于 dirty 状态，包含 diagram-gallery、cache、render-target 与 Drawnix 相关变更；这些变更不属于本发布。
 - 目标仓库有 26 个 workspace package，`notemd-bundle` 是 Cordis composition root，`notemd-vault-local` 是唯一 workspace mutation authority。DSH 的 LLM/Web/Tool 服务仍是由宿主拥有的 optional peer seam。
-- 新鲜 release gate 证据为 Node `v22.19.0`、pnpm `10.7.1`、48 个 Vitest 文件和 184 个测试；statement coverage `77.03%`、branch coverage `71.87%`、function coverage `84.54%`。在本次文档-only 更新前，typecheck、lint、build、packed-bundle verification、clean-profile acceptance 和 `git diff --check` 均通过。
+- 新鲜 Phase 12 release gate 证据为 Node `v22.19.0`、pnpm `10.7.1`、48 个 Vitest 文件和 185 个测试；statement coverage `77.63%`、branch coverage `72.35%`、function coverage `85.33%`。在 adapter migration 后，typecheck、lint、build、packed-bundle verification、clean-profile acceptance 和 `git diff --check` 均通过。
 
 ### 对账与边界
 
-- 十一阶段迁移已在固定的非 Obsidian 宿主行为契约范围内完成。这不宣称每个部署都安装并互操作 Playwright、固定的 `github:Jacobinwwey/slidev` fork、FFmpeg、Draw.io、Tectonic 或可选 Drawnix adapter。
-- Conformance 是 fixture/proof gate：共享语义 fixture 和 local-retrieval fixture 使其不是逐个执行所有 source registry operation 的单体测试。这是验证质量限制，不是遗漏源操作。
+- 十二阶段迁移已在固定的非 Obsidian 宿主行为契约范围内完成。这不宣称每个部署都安装并互操作 Playwright、固定的 `github:Jacobinwwey/slidev` fork、FFmpeg、Draw.io、Tectonic 或可选 Drawnix adapter。
+- Conformance 现为可执行的类型化 adapter gate：共享语义 fixture 仍避免为每个 source operation 构造单体调用，但每个 included operation 都有显式映射并被执行，auxiliary local retrieval 保持独立。这是验证质量边界，不是遗漏源操作。
 - 工件版本有意分离：DiagramSpec/diagram lineage 为 `v2`，document export manifest 为 `v3`。下一阶段必须明确这个 family 边界，不应为统一版本号而合并。
 - File-backed job 仅保证单 workspace process 安全。逐目标锁不能提供分布式调度，也不能阻止两个 DSH 进程重复 planning。
 
 ### 发布后延续
 
-1. Phase 12：用类型化、可执行的 fixture adapter 和显式 operation-to-fixture 映射替换自由文本 conformance proof。
+1. Phase 12 已完成：用类型化、可执行的 fixture adapter 和显式 operation-to-fixture 映射替换自由文本 conformance proof。
 2. Phase 13：为 fork 和 specialist exporter 增加独立 optional-runtime 通道，记录 executable fingerprint、原生工件、digest、取消和 staging 清理证据。
 3. Phase 14：发布并强制执行 DiagramSpec/lineage `v2` 与 export manifest `v3` 的工件 schema registry。
 4. Phase 15：只有在需要多进程部署时，才选择明确的 single-process guard 或经过测试的 durable workspace lease。
 5. Phase 16：固定新的 source commit，刷新 matrix 与 fixture，分类 gallery/cache/render-target 漂移，并单独评审 Drawnix WIP。
 
-本审计不重新打开已完成的 Task 1-11；下一阶段从当前发布提交和固定 source lock 开始。
+本审计不重新打开已完成的 Task 1-12；下一阶段从当前发布提交和固定 source lock 开始。
 - 最终 fetch 确认 `origin/main...main = 0 0`；工作区只报告 `## main`，没有任何路径。Slidev lock 仍为 `github:Jacobinwwey/slidev@bbcb2efae709c2ebaa96bda522cd6c192476817c`。

@@ -2,7 +2,7 @@
 
 > English version: [2026-08-15-dsh-notemd-full-migration-validation.md](2026-08-15-dsh-notemd-full-migration-validation.md)
 
-本文档记录十一阶段迁移的发布证据。判断标准不是“代码存在”，而是具名 contract、失败行为、packed distribution 和 DSH profile 边界都经过验证后，才可称为完成。
+本文档记录十二阶段迁移的发布证据。判断标准不是“代码存在”，而是具名 contract、失败行为、packed distribution 和 DSH profile 边界都经过验证后，才可称为完成。
 
 ## 范围与所有权
 
@@ -13,7 +13,7 @@
 
 ## Contract 证据
 
-`fixtures/migration/source-operation-matrix.json` 固定 29 个源 operation ID、18 个 included operation、11 个设计排除、四个精确 Drawnix WIP 排除和 14 个 SHA-256 fixture。`packages/notemd-workflows/test/migration-conformance.test.ts` 同时消费该 matrix 与 `fixtures/migration/conformance-implementations.json`；任何 included fixture 缺少通过的 proof test 都会使 suite 失败。
+`fixtures/migration/source-operation-matrix.json` 固定 29 个源 operation ID、18 个 included operation、11 个设计排除、四个精确 Drawnix WIP 排除和 14 个 SHA-256 fixture。`packages/notemd-workflows/test/migration-conformance.test.ts` 同时消费该 matrix 与 v2 `fixtures/migration/conformance-implementations.json`；每个 included operation 都必须经类型化 adapter 执行，local retrieval 等 auxiliary observation 则显式保留。
 
 所有工作区写入遵循：
 
@@ -45,7 +45,14 @@ rtk proxy pnpm.cmd accept:dsh
 rtk git diff --check
 ```
 
-最终运行的所有命令均已通过。Vitest 报告 48 个文件、184 个测试；coverage 报告 statement 77.03%、branch 71.87%、function 84.54%。`accept:dsh` 将 packed tarball 安装到隔离 DSH profile，验证 bundle patch 与依赖图，加载 clean runtime，执行 source/diagram/export/research Tool contract，然后删除临时 profile 状态。
+Phase 12 发布运行的所有命令均已通过。Vitest 报告 48 个文件、185 个测试；coverage 报告 statement 77.63%、branch 72.35%、function 85.33%。`accept:dsh` 将 packed tarball 安装到隔离 DSH profile，验证 bundle patch 与依赖图，加载 clean runtime，执行 source/diagram/export/research Tool contract，然后删除临时 profile 状态。
+
+## Phase 12 Adapter 证据
+
+- Manifest v2 使用 `adapterId`、显式 `sourceOperationIds` 和可执行 `operationIds`，替换源码 `proofTerms`。
+- 14 个 adapter 创建隔离临时 workspace，调用真实 workflow、knowledge、diagram 或 Slidev source planner；只返回类型化 contract observation，并在 `finally` 删除 workspace。
+- Matrix 记录真实源行为：source-sibling chapter ownership、`_Extracted` original-text output、translation language folder、content-addressed diagram/Slidev lineage、source revision binding 和 operation-specific duplicate schema。
+- focused gate 通过 1 个文件、2 个测试。adapter gate 不宣称 live DSH provider 质量或已安装的 optional native runtime；这些 capability lane 由 Phase 13 负责。
 
 ## Provider 限制
 

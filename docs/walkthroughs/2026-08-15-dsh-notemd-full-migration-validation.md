@@ -2,7 +2,7 @@
 
 > Chinese version: [2026-08-15-dsh-notemd-full-migration-validation.zh-CN.md](2026-08-15-dsh-notemd-full-migration-validation.zh-CN.md)
 
-This walkthrough records the release evidence for the eleven-phase migration. It is intentionally evidence-oriented: a capability is complete only when its named contract, failure behavior, packed distribution, and DSH profile boundary are verified.
+This walkthrough records the release evidence for the twelve-phase migration. It is intentionally evidence-oriented: a capability is complete only when its named contract, failure behavior, packed distribution, and DSH profile boundary are verified.
 
 ## Scope and ownership
 
@@ -13,7 +13,7 @@ This walkthrough records the release evidence for the eleven-phase migration. It
 
 ## Contract evidence
 
-`fixtures/migration/source-operation-matrix.json` pins 29 source operation IDs, 18 included operations, 11 design exclusions, four exact Drawnix WIP exclusions, and 14 SHA-256-pinned fixtures. `packages/notemd-workflows/test/migration-conformance.test.ts` consumes that matrix and `fixtures/migration/conformance-implementations.json`; an included fixture without a passing proof test fails the suite.
+`fixtures/migration/source-operation-matrix.json` pins 29 source operation IDs, 18 included operations, 11 design exclusions, four exact Drawnix WIP exclusions, and 14 SHA-256-pinned fixtures. `packages/notemd-workflows/test/migration-conformance.test.ts` consumes that matrix and the v2 `fixtures/migration/conformance-implementations.json`; each included operation must execute through a typed adapter, while auxiliary observations such as local retrieval remain explicit.
 
 All workspace writes follow:
 
@@ -45,7 +45,14 @@ rtk proxy pnpm.cmd accept:dsh
 rtk git diff --check
 ```
 
-The final run passed every command above. Vitest reported 48 files and 184 tests; coverage reported 77.03% statements, 71.87% branches, and 84.54% functions. `accept:dsh` installed the packed tarball into an isolated DSH profile, verified the bundle patch and dependency graph, loaded the clean runtime, exercised source/diagram/export/research Tool contracts, and removed temporary profile state.
+The Phase 12 release run passed every command above. Vitest reported 48 files and 185 tests; coverage reported 77.63% statements, 72.35% branches, and 85.33% functions. `accept:dsh` installed the packed tarball into an isolated DSH profile, verified the bundle patch and dependency graph, loaded the clean runtime, exercised source/diagram/export/research Tool contracts, and removed temporary profile state.
+
+## Phase 12 adapter evidence
+
+- Manifest v2 replaces source-text `proofTerms` with `adapterId`, explicit `sourceOperationIds`, and executable `operationIds`.
+- Fourteen adapters create isolated temporary workspaces and invoke the real workflow, knowledge, diagram, or Slidev source planner. They return only typed contract observations and remove the workspace in `finally`.
+- The matrix records actual source behavior: source-sibling chapter ownership, `_Extracted` original-text output, translation language folders, content-addressed diagram/Slidev lineage, source revision bindings, and operation-specific duplicate schemas.
+- The focused gate passed 1 file and 2 tests. The adapter gate does not claim live DSH provider quality or installed native optional runtimes; Phase 13 owns those capability lanes.
 
 ## Provider limits
 

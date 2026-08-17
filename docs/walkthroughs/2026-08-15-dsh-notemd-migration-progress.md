@@ -2,7 +2,7 @@
 
 > Chinese version: [2026-08-15-dsh-notemd-migration-progress.zh-CN.md](2026-08-15-dsh-notemd-migration-progress.zh-CN.md)
 
-**Status:** The complete eleven-phase standalone migration is implemented, verified, and published. Task 11 conformance, lifecycle, release-gate, and non-force mainline synchronization are complete. Slidev export is pinned to the `Jacobinwwey/slidev` fork, never upstream Slidev.
+**Status:** The complete twelve-phase standalone migration is implemented and verified; Phase 12 publication is recorded below. The conformance boundary now executes typed fixture adapters rather than searching test source text. Slidev export remains pinned to the `Jacobinwwey/slidev` fork, never upstream Slidev.
 
 ## 1. Scope Baseline
 
@@ -26,6 +26,7 @@
 - Task 8 replaces the source-only artifact contract with `DiagramSpec` v2 and a source/preview/export lineage manifest. Five named renderer packages generate canonical Mermaid, Vega-Lite, JSON Canvas, HTML, or editable-SVG sources plus sanitized SVG derivatives; the JSON Canvas SVG is explicitly a projection, not a `.canvas` replacement. Each target has separate named planning/status Tools, while materialization remains on the existing approval-gated mutation path.
 - Task 9 adds `@notemd-harness/process` as the only staging-only external process boundary. Draw.io, stable Drawnix, and Circuitikz providers emit deterministic canonical source, labelled SVG projections, truthful native capability outcomes, and (for Circuitikz) digest-verified staged PDF assets. Native exports never write final workspace paths; the process boundary owns executable allowlists, fixed argv, bounded I/O, timeout/cancellation classification, process-tree joining, HMR disposal, and staging cleanup.
 - Task 10 adds `@notemd-harness/export-slidev`, `@notemd-harness/export-pptx`, and `@notemd-harness/export-media`. Prepared Slidev Markdown and layout reports are canonical source artifacts; HTML, PDF, PNG, PPTX, and MP4 each have a named provider. The process boundary pins `github:Jacobinwwey/slidev` revision `bbcb2efae709c2ebaa96bda522cd6c192476817c`, stages all output, verifies byte digests, accepts the fork's `index-standalone.html`, and never treats SVG as PPTX/MP4 parity.
+- Task 12 replaces indirect conformance proof terms with typed executable fixture adapters. Each adapter creates a temporary workspace, invokes the real workflow, knowledge, artifact, or Slidev source planner, normalizes only contract-level observations, and cleans up in `finally`; the v2 manifest separates source operation mapping from auxiliary executable observations.
 
 ## 3. Completed Code Audit
 
@@ -75,18 +76,19 @@ The table records code state, not planned completion. A passing baseline release
 | 9. Draw.io, stable Drawnix, and Circuitikz providers | Complete. `@notemd-harness/process` enforces fixed command profiles and staging containment; three named providers and six planning/status Tools are bundled. Drawnix WIP paths remain excluded, and the optional `notemd-drawnix-render` adapter is reported unavailable when absent. | Delivered with Windows process/provider tests, full suite, packed-bundle verification, and clean DSH profile acceptance. |
 | 10. Slidev and media exporters | Complete. Three packages provide canonical source preparation plus named HTML/PDF/PNG/PPTX/MP4 providers over one staging/process boundary. | Task 10 focused and full gates pass; optional real executables report unavailable rather than being emulated. |
 | 11. Conformance, HMR, and publication | Complete. The matrix conformance and lifecycle contracts, full release gate, clean DSH profile, and non-force mainline synchronization all pass. | Keep the fork lock, optional capability boundaries, and publication evidence aligned when future changes update the bundle. |
+| 12. Executable conformance adapters | Complete. Fourteen typed adapters execute nineteen observations (eighteen included source operations plus auxiliary local retrieval), with operation-specific duplicate contracts and deterministic artifact lineage paths. | Any missing adapter, unmapped included operation, fixture digest drift, or contract mismatch must fail the focused conformance gate before publication. |
 
 ## 6. Recorded Direction
 
 - [Authoritative architecture](../specs/2026-08-15-dsh-notemd-full-migration-architecture.md) defines the DSH/Koishi/Cordis-aligned service graph and corrects the earlier default-provider and source-only artifact decisions.
-- [Executable implementation plan](../superpowers/plans/2026-08-15-dsh-notemd-full-migration.md) breaks migration into eleven independently testable tasks.
+- [Executable implementation plan](../superpowers/plans/2026-08-15-dsh-notemd-full-migration.md) breaks migration into twelve independently testable tasks.
 - Task 1's characterization fixtures prevent later implementation from silently dropping chapter manifest cleanup, original-text extraction, task-scoped retrieval, or target-specific exports.
 
 ## 7. Next Direction
 
 1. Preserve the fork lock: `github:Jacobinwwey/slidev@bbcb2efae709c2ebaa96bda522cd6c192476817c`. Updating it is a compatibility decision, not a dependency refresh.
 2. Keep staged assets durable across HMR until approval/materialization completes; disposing a renderer must stop processes and timers without deleting pending approval inputs.
-3. Treat the conformance manifest, release gate, and clean-profile acceptance as mandatory evidence for future capability changes.
+3. Treat the typed conformance manifest, release gate, and clean-profile acceptance as mandatory evidence for future capability changes.
 
 ## 8. Guardrails
 
@@ -94,6 +96,16 @@ The table records code state, not planned completion. A passing baseline release
 - `ctx.llm` and `ctx.web` replace NoteMD-owned provider and web transport configuration.
 - Renderer and exporter availability is reported truthfully; SVG is a preview derivative only for SVG-capable targets.
 - Workspace changes remain explicit, approval-gated, revision-bound, and recoverable.
+
+## 11. Phase 12 Verification
+
+- Scope: `fixtures/migration/conformance-implementations.json` moved from manifest v1 (`testPath`/`proofTerms`) to v2 (`adapterId`, `sourceOperationIds`, `operationIds`). `packages/notemd-workflows/test/migration-fixture-adapters.ts` now owns fourteen temporary-workspace adapters covering nineteen executable observations.
+- Contract corrections are evidence-based: chapter split records the source-sibling `_chapters` manifest/chapters/TOC set; original-text uses the pinned `_Extracted` sibling policy; translation records the current language-folder policy plus source revision; diagram and Slidev outputs use deterministic content-addressed artifact directories; duplicate diagnostic and dedupe use operation-specific schemas.
+- The conformance test verifies exact included-operation coverage, auxiliary-operation separation, adapter registry parity, operation-to-fixture declarations, source revision normalization, target paths, citations, and mutation preconditions. No expected value is read from the adapter result or test source text.
+- Focused evidence: `rtk proxy pnpm.cmd exec vitest run --config vitest.config.ts packages/notemd-workflows/test/migration-conformance.test.ts` passed 1 file and 2 tests.
+- Full evidence on Node `v22.19.0` / pnpm `10.7.1`: `pnpm test` passed 48 files and 185 tests; `pnpm test:coverage` passed with 77.63% statements, 72.35% branches, and 85.33% functions; `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm pack:bundle`, `pnpm verify:bundle`, `pnpm accept:dsh`, and `git diff --check` passed.
+- Capability boundary: these adapters prove deterministic planner and renderer contracts, not live DSH provider quality or installed Playwright/FFmpeg/Draw.io/Tectonic/Drawnix interoperability; those remain Phase 13 optional-runtime evidence.
+- Rejected alternatives: source text proof-term matching, deriving expected values from observed output, a shared duplicate fixture contract that hides read-only versus delete semantics, and simplified artifact paths that discard lineage identity.
 
 ## 9. Verification and Publication
 
@@ -207,22 +219,22 @@ The publication-record commit is now `488378fb6a1429683bf1789f418abca8992bd3a2` 
 
 - The parity oracle remains `obsidian-NoteMD_new` at `4168a51cd19ad8c3d1e05f604b50936255461a31`. The source checkout has since advanced to `5efd4285f2d1861e725f520cfa8a02d1bf898eb7` and is dirty, with diagram-gallery, cache, render-target, and Drawnix-related changes; those changes are not part of this release.
 - The target has 26 workspace packages, with `notemd-bundle` as the Cordis composition root and `notemd-vault-local` as the only workspace mutation authority. DSH LLM/Web/tool services remain optional peer-owned seams.
-- Fresh release-gate evidence is Node `v22.19.0`, pnpm `10.7.1`, 48 Vitest files and 184 tests; statement coverage is `77.03%`, branch coverage `71.87%`, and function coverage `84.54%`. Typecheck, lint, build, packed-bundle verification, clean-profile acceptance, and `git diff --check` passed before this documentation-only update.
+- Fresh Phase 12 release-gate evidence is Node `v22.19.0`, pnpm `10.7.1`, 48 Vitest files and 185 tests; statement coverage is `77.63%`, branch coverage `72.35%`, and function coverage `85.33%`. Typecheck, lint, build, packed-bundle verification, clean-profile acceptance, and `git diff --check` passed after the adapter migration.
 
 ### Reconciliation and limits
 
-- The eleven-phase migration is complete for the pinned non-Obsidian-host behavior contract. It does not claim that Playwright, the pinned `github:Jacobinwwey/slidev` fork, FFmpeg, Draw.io, Tectonic, or the optional Drawnix adapter are installed and interoperable on every deployment.
-- Conformance is a fixture/proof gate: shared semantic fixtures and the local-retrieval fixture mean it is not one monolithic invocation of every source registry operation. This is a verification-quality limitation, not an omitted source operation.
+- The twelve-phase migration is complete for the pinned non-Obsidian-host behavior contract. It does not claim that Playwright, the pinned `github:Jacobinwwey/slidev` fork, FFmpeg, Draw.io, Tectonic, or the optional Drawnix adapter are installed and interoperable on every deployment.
+- Conformance is now an executable typed-adapter gate: shared semantic fixtures still avoid one monolithic invocation per source operation, but every included operation is explicitly mapped and executed, with auxiliary local retrieval kept separate. This is a verification-quality boundary, not an omitted source operation.
 - Artifact versions are intentionally split: DiagramSpec/diagram lineage `v2`; document export manifest `v3`. The next phase must make that family boundary explicit rather than flattening versions.
 - File-backed jobs are safe for one workspace process. Per-target locks do not provide distributed scheduling or prevent duplicate planning across two DSH processes.
 
 ### Post-release continuation
 
-1. Phase 12: replace free-form conformance proof terms with typed executable fixture adapters and explicit operation-to-fixture mappings.
+1. Phase 12 is complete: typed executable fixture adapters and explicit operation-to-fixture mappings replaced free-form conformance proof terms.
 2. Phase 13: add a separate optional-runtime lane with pinned executable fingerprints, native artifacts, digest checks, cancellation, and staging cleanup for the fork and specialist exporters.
 3. Phase 14: publish and enforce an artifact schema registry for DiagramSpec/lineage `v2` and export manifest `v3`.
 4. Phase 15: add either a clear single-process guard or a tested durable workspace lease only if multi-process deployment is required.
 5. Phase 16: pin a new source commit, refresh the matrix and fixtures, classify gallery/cache/render-target drift, and review Drawnix WIP separately.
 
-No completed Task 1-11 is reopened by this audit; the next phase starts from the current release commit and the pinned source lock.
+No completed Task 1-12 is reopened by this audit; the next phase starts from the current release commit and the pinned source lock.
 - A final fetch confirmed `origin/main...main = 0 0`; the worktree reported only `## main` with no paths. The Slidev lock remains `github:Jacobinwwey/slidev@bbcb2efae709c2ebaa96bda522cd6c192476817c`.
