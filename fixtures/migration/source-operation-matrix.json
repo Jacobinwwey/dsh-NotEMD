@@ -2,7 +2,12 @@
   "version": 1,
   "source": {
     "commit": "4168a51cd19ad8c3d1e05f604b50936255461a31",
-    "registryPath": "src/operations/registry.ts"
+    "registryPath": "src/operations/registry.ts",
+    "intake": {
+      "lockPath": "fixtures/migration/source-intake-lock.json",
+      "candidateCommit": "cdf580c6c876190ecc1040caea08e5ba5bee004f",
+      "status": "audit-only"
+    }
   },
   "operations": [
     { "id": "provider.diagnostic.run", "disposition": "excluded-by-design", "reason": "DSH owns provider diagnostics and credential routing.", "fixtureIds": [] },

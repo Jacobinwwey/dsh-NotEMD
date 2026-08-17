@@ -2,7 +2,7 @@
 
 > English version: [2026-08-15-dsh-notemd-full-migration-validation.md](2026-08-15-dsh-notemd-full-migration-validation.md)
 
-本文档记录十二阶段基线与发布后 capability lane 的证据。判断标准不是“代码存在”，而是具名 contract、失败行为、packed distribution 和 DSH profile 边界都经过验证后，才可称为完成。
+本文档记录十六阶段 standalone migration 的发布证据。判断标准不是“代码存在”，而是具名 contract、失败行为、packed distribution 和 DSH profile 边界都经过验证后，才可称为完成。
 
 ## 范围与所有权
 
@@ -45,7 +45,7 @@ rtk proxy pnpm.cmd accept:dsh
 rtk git diff --check
 ```
 
-Phase 12 发布运行的所有命令均已通过。Vitest 报告 48 个文件、185 个测试；coverage 报告 statement 77.63%、branch 72.35%、function 85.33%。`accept:dsh` 将 packed tarball 安装到隔离 DSH profile，验证 bundle patch 与依赖图，加载 clean runtime，执行 source/diagram/export/research Tool contract，然后删除临时 profile 状态。
+历史 Phase 12 发布运行的所有命令均已通过，共 48 个文件、185 个测试。最新 Phase 15/16 gate 严格执行 `test`、`test:coverage`、`build`、`pack:bundle`、`verify:bundle`、`accept:dsh`，随后执行 `git diff --check`；Vitest 通过 52 个文件、203 个测试，statement 77.68%、branch 73.00%、function 85.21%。`accept:dsh` 将 packed tarball 安装到隔离 DSH profile，验证 bundle patch 与依赖图，加载 clean runtime，执行 source/diagram/export/research Tool contract，然后删除临时 profile 状态。
 
 ## Phase 12 Adapter 证据
 
@@ -68,8 +68,7 @@ bundle patch 替换的是完整 config row，因此每次替换都必须按需�
 ## 发布证据
 
 - canonical remote：`git@github.com:Jacobinwwey/dsh-NotEMD.git`。
-- 发布提交 `73480df`（`test: prove full NoteMD migration conformance`）在新鲜 release gate 通过后，以非强制方式推送到 `origin/main`。推送前分歧为 `0 11`；远端没有领先提交，因此无需 rebase。
-- 最终 fetch 确认 `origin/main...main = 0 0`。`rtk git status --short --branch` 只输出 `## main`，其后没有任何路径。
+- Phase 15/16 发布提交及非强制推送将在 gate 完成后记录；禁止 force update。
 
 ## Phase 13 Optional-runtime 证据
 
@@ -86,3 +85,17 @@ Artifact envelope 现在携带一个显式 family discriminator：`diagram-spec@
 Registry suite 通过 8 tests。inspection API 对缺失/未知 family、缺失/未知 version、非法 family/version 组合和坏 metadata 返回结构化 diagnostic。生成的 diagram/document manifest 在 mutation planning 前强制断言预期 registry entry。`schemaFamily` 进入 canonical DiagramSpec identity 后，conformance fixture directory 从 `notemd-artifact-9a9e469f716c93be0bbe` 变为 `notemd-artifact-ff9a6d55ec0208286fed`；matrix 已同步，conformance adapter 通过 1 file/2 tests。
 
 `verify-bundle` 解压 tarball，动态加载打包后的 artifacts registry，接受合法 v2/v3 fixture，并要求 `diagram-spec@3` 返回 `invalid-combination`。这样可以阻止 source registry 通过而分发包发生 drift。
+
+## Phase 15 Workspace ownership 证据
+
+当前 bundle 以 `WorkspaceOwnershipGuard` 作为 single-process 边界。它在 `.notemd/runtime/workspace-owner.json` 写入 allowlisted metadata；live second owner 返回 `workspace-process-already-owned`；只有记录 PID 已 dead 且 heartbeat 已 expired 才能恢复。release 要求 owner revision 匹配并返回 cleanup-health fact；`LocalVault.open()` 失败时，vault 初始化会先释放 guard。
+
+聚焦关口通过 `workspace-ownership.test.ts`（5 tests）、既有 local-vault/mutation suite（26 tests）、`runtime-boundary.test.ts`、typecheck 与 lint。SQLite、distributed lease、无条件删除 stale lock 和多进程 planning serialization 仍被明确拒绝。上方 52 文件/203 测试的完整 release gate 也已通过。
+
+## Phase 16 Source-intake 证据
+
+`fixtures/migration/source-intake-lock.json` 固定候选 `obsidian-NoteMD_new@cdf580c6c876190ecc1040caea08e5ba5bee004f`，记录 parent 与 dirty checkout path，并从 `source-operation-matrix.json` 链接，但不改变已固定的 behavior contract commit。candidate 与 baseline 都有 29 个 operation ID；migration fixture 没有 hash 变化。唯一 registry schema delta 是移除 Drawnix-only 的 `drawnixKnowledgeMapDelivery` input field。
+
+Lock 将 diagram-gallery、response-cache、render-target 与 Mermaid normalization 分开分类。Provider cache policy 因 DSH 拥有 provider/model routing 被拒绝；host gallery/preview/save 行为排除；target descriptor 延后到具名 bundle adapter；Mermaid normalization 是需要独立 deterministic conformance fixture 的后续候选。Quarantine 明确列出 candidate 的 committed Drawnix path、四个 baseline exclusion、candidate-only Drawnix fixture 和五个 dirty path。没有从 dirty checkout 复制任何 source implementation。
+
+聚焦 intake gate 已通过 `migration-source-intake.test.ts` 与 `migration-conformance.test.ts`。上方完整 release gate 已重新执行全量 suite、coverage、build、packed-bundle verification、clean DSH acceptance 与 `git diff --check`，全部通过。

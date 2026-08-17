@@ -2,12 +2,12 @@
 
 > Chinese version: [2026-08-15-dsh-notemd-migration-progress.zh-CN.md](2026-08-15-dsh-notemd-migration-progress.zh-CN.md)
 
-**Status:** The complete twelve-phase standalone migration is implemented and verified; Phase 12 publication is recorded below. The conformance boundary now executes typed fixture adapters rather than searching test source text. Slidev export remains pinned to the `Jacobinwwey/slidev` fork, never upstream Slidev.
+**Status:** Phases 12-16 of the standalone migration are implemented and the full Phase 15/16 release gate has passed. Publication of the resulting commit is the remaining repository operation. The conformance boundary now executes typed fixture adapters rather than searching test source text. Slidev export remains pinned to the `Jacobinwwey/slidev` fork, never upstream Slidev.
 
 ## 1. Scope Baseline
 
 - Source baseline: `E:\convert\undo\obsidian-NoteMD_new` at `4168a51cd19ad8c3d1e05f604b50936255461a31`.
-- Target release: `E:\convert\undo\notemd-deepseek-harness` on `main` at publication-record commit `488378f` (`docs: record final migration publication`); conformance was established by predecessor `73480df`.
+- Target release: `E:\convert\undo\notemd-deepseek-harness` on `main`; the Phase 15/16 commit and remote synchronization are recorded after the release gate below.
 - In scope: every non-Obsidian-host NoteMD workflow, including documents, knowledge, research, diagrams, artifact export, batch execution, and stable Drawnix behavior.
 - Deliberately out of scope: Obsidian UI and host APIs, direct provider configuration, and the source working tree's uncommitted Drawnix WIP.
 
@@ -78,9 +78,9 @@ The table records code state, not planned completion. A passing baseline release
 | 11. Conformance, HMR, and publication | Complete. The matrix conformance and lifecycle contracts, full release gate, clean DSH profile, and non-force mainline synchronization all pass. | Keep the fork lock, optional capability boundaries, and publication evidence aligned when future changes update the bundle. |
 | 12. Executable conformance adapters | Complete. Fourteen typed adapters execute nineteen observations (eighteen included source operations plus auxiliary local retrieval), with operation-specific duplicate contracts and deterministic artifact lineage paths. | Any missing adapter, unmapped included operation, fixture digest drift, or contract mismatch must fail the focused conformance gate before publication. |
 | 13. Optional-runtime capability lane | Complete. The opt-in lane records executable fingerprints, native output digests, cancellation, and staging cleanup. This Windows run reports `pdftocairo` SVG/PNG ready and missing Slidev fork, Draw.io, Tectonic, Drawnix, and FFmpeg as truthful unavailable. | Native strictness stays opt-in; portable-core gates must remain green when optional binaries are absent. |
-| 14. Artifact schema registry | In progress. DiagramSpec, diagram lineage, and document-export manifests still need explicit family/version enforcement and structured diagnostics. | Registry tests and packed-bundle verification must accept only the closed v2/v3 family combinations. |
-| 15. Workspace operation hardening | Pending implementation. The current file-backed job model is single-process safe but has no workspace ownership guard. | The bundle must reject a second owner with a recoverable diagnostic before claiming multi-process safety. |
-| 16. Source intake and Drawnix review | Pending source audit. The source checkout is newer and dirty; no post-baseline behavior is accepted yet. | A committed source lock, matrix/fixture diff, and named Drawnix quarantine must land before any intake implementation. |
+| 14. Artifact schema registry | Complete. `diagram-spec@2`, `diagram-lineage@2`, and `document-export@3` are enforced by the packaged registry with structured diagnostics and a metadata-only extension point. | Keep matrix paths and artifact identity aligned whenever schema fields change. |
+| 15. Workspace operation hardening | Complete for the current single-process contract. `WorkspaceOwnershipGuard` rejects live second owners, recovers only dead stale owners, records recovery counters, and reports cleanup health through the vault lifecycle. | A durable lease/job backend is still required before claiming multi-process scheduling semantics. |
+| 16. Source intake and Drawnix review | Complete as an audit-only intake. Candidate `cdf580c6...` is locked with a dirty-path inventory; registry IDs and migration fixture hashes are unchanged; Mermaid is a follow-up candidate and Drawnix remains quarantined. | Do not implement candidate behavior until its own deterministic contract/fixtures are accepted; do not consume any dirty Drawnix path. |
 
 ## 6. Recorded Direction
 
@@ -118,6 +118,12 @@ The first verification segment ran against the documentation change on Node `v22
 - Relative-link validation across both READMEs and all six new documents found no missing target.
 - `git diff --check` completed without whitespace errors.
 
+### Phase 15/16 release gate
+
+- Node `v22.19.0` / pnpm `10.7.1` passed the strict sequence `test`, `test:coverage`, `build`, `pack:bundle`, `verify:bundle`, and `accept:dsh`; the final `git diff --check` also passed.
+- Vitest reported 52 files and 203 tests passing. Coverage is 77.68% statements, 73.00% branches, and 85.21% functions.
+- The packed tarball was verified and installed into a clean DeepSeek Harness profile; clean-profile acceptance passed with the source-intake lock and workspace ownership changes present.
+
 ## 12. Phase 13 Verification
 
 - Scope and owner: `packages/notemd-process/src/allowlisted-process.ts` owns the fixed executable profiles and byte fingerprints; `packages/notemd-process/src/capability-lane.ts` and `scripts/optional-runtime-capability-lane.ts` own the opt-in observation/report protocol. No optional binary was added to core dependencies.
@@ -135,6 +141,14 @@ The first verification segment ran against the documentation change on Node `v22
 - Focused evidence: `schema-registry.test.ts` passed 8 tests; the artifact/renderer/tool focused gate passed 17 files/38 tests; `pnpm typecheck` and `pnpm lint` passed. Full conformance passed 1 file/2 tests after the canonical diagram artifact id changed from `notemd-artifact-9a9e469f716c93be0bbe` to `notemd-artifact-ff9a6d55ec0208286fed`.
 - Packed verification contract: `scripts/verify-bundle.ts` dynamically loads `@notemd-harness/artifacts/lib/index.js` from the extracted tarball, accepts all three valid fixtures, and requires a structured `invalid-combination` diagnostic for `diagram-spec@3`.
 - Rejected alternatives and risks: one global version number, silent legacy-family inference, arbitrary metadata at the top level, and string-only migration errors were rejected. Existing version-1 cleanup data now fails closed with an attached diagnostic instead of being treated as a current diagram lineage manifest.
+
+## 14. Phase 15 Verification
+
+- Scope and owner: `packages/notemd-vault-local/src/workspace-ownership.ts` owns the file-backed process guard; `packages/notemd-bundle/src/vault-local.ts` acquires it before opening the local vault and registers async Cordis cleanup. No scheduler or database was added.
+- Lock contract: `.notemd/runtime/workspace-owner.json` is created with exclusive open and contains only version, PID, process-start token, canonical workspace root, owner revision, timestamps, recovery count, and optional recovered revision. Heartbeats update the same owner revision; release removes the lock only when ownership still matches.
+- Concurrency/recovery evidence: `workspace-ownership.test.ts` passed 5 tests covering acquisition/release, live second-owner rejection (`workspace-process-already-owned`), dead stale-owner recovery, malformed metadata fail-closed, and unhealthy cleanup after external lock removal. Existing local-vault/mutation tests passed 26/26.
+- Lifecycle evidence: `NotemdVaultLocalService` releases the guard from `ctx.effect()` and releases it on `LocalVault.open()` failure. Bundle runtime-boundary coverage asserts the ownership effect is present; typecheck and lint passed.
+- Rejected alternatives and risks: SQLite, distributed lease, unconditional stale lock deletion, and treating a live PID with a stale heartbeat as reclaimable were rejected. A lock with a live/unknown owner or malformed metadata is blocked; only a dead PID plus expired heartbeat is recoverable. Multi-process model-planning serialization is not claimed.
 - `pnpm typecheck` and `pnpm lint` completed successfully.
 - `pnpm test` completed successfully: 16 test files and 50 tests passed.
 
@@ -233,30 +247,40 @@ This publication records architecture, planning, audit, and baseline verificatio
 - Release commit `73480df` (`test: prove full NoteMD migration conformance`) contains the conformance tests, runtime-boundary checks, bilingual architecture/plan/progress updates, and validation walkthroughs.
 - The commit was pushed non-force to `git@github.com:Jacobinwwey/dsh-NotEMD.git` after the fresh release gate. The fetch-before-push divergence was `0 11` (no remote-ahead commits); post-push `origin/main` resolved to `73480df`.
 
-## 10. Current-State Audit (2026-08-17)
+## 10. Current-State Audit (2026-08-17, historical snapshot)
 
-The publication-record commit is now `488378fb6a1429683bf1789f418abca8992bd3a2` on `main`; the paired [current-state architecture audit](../specs/2026-08-17-dsh-notemd-current-state-architecture-audit.md) is the authoritative post-release record.
+The earlier publication-record commit was `488378fb6a1429683bf1789f418abca8992bd3a2`; the paired [current-state architecture audit](../specs/2026-08-17-dsh-notemd-current-state-architecture-audit.md) remains the architectural record, while the Phase 15/16 completion evidence is recorded below.
 
 ### Evidence lock
 
 - The parity oracle remains `obsidian-NoteMD_new` at `4168a51cd19ad8c3d1e05f604b50936255461a31`. The source checkout has since advanced to `5efd4285f2d1861e725f520cfa8a02d1bf898eb7` and is dirty, with diagram-gallery, cache, render-target, and Drawnix-related changes; those changes are not part of this release.
 - The target has 26 workspace packages, with `notemd-bundle` as the Cordis composition root and `notemd-vault-local` as the only workspace mutation authority. DSH LLM/Web/tool services remain optional peer-owned seams.
-- Fresh Phase 12 release-gate evidence is Node `v22.19.0`, pnpm `10.7.1`, 48 Vitest files and 185 tests; statement coverage is `77.63%`, branch coverage `72.35%`, and function coverage `85.33%`. Typecheck, lint, build, packed-bundle verification, clean-profile acceptance, and `git diff --check` passed after the adapter migration.
+- The historical Phase 12 release-gate evidence was Node `v22.19.0`, pnpm `10.7.1`, 48 Vitest files and 185 tests; the current Phase 15/16 gate supersedes it with 52 files and 203 tests (77.68% statements, 73.00% branches, 85.21% functions).
 
 ### Reconciliation and limits
 
-- The twelve-phase migration is complete for the pinned non-Obsidian-host behavior contract. It does not claim that Playwright, the pinned `github:Jacobinwwey/slidev` fork, FFmpeg, Draw.io, Tectonic, or the optional Drawnix adapter are installed and interoperable on every deployment.
+- The migration is complete for the pinned non-Obsidian-host behavior contract and the Phase 15/16 audit boundary. It does not claim that Playwright, the pinned `github:Jacobinwwey/slidev` fork, FFmpeg, Draw.io, Tectonic, or the optional Drawnix adapter are installed and interoperable on every deployment.
 - Conformance is now an executable typed-adapter gate: shared semantic fixtures still avoid one monolithic invocation per source operation, but every included operation is explicitly mapped and executed, with auxiliary local retrieval kept separate. This is a verification-quality boundary, not an omitted source operation.
 - Artifact versions are intentionally split: DiagramSpec/diagram lineage `v2`; document export manifest `v3`. The next phase must make that family boundary explicit rather than flattening versions.
 - File-backed jobs are safe for one workspace process. Per-target locks do not provide distributed scheduling or prevent duplicate planning across two DSH processes.
 
-### Post-release continuation
+### Post-release continuation (historical decisions, now implemented)
 
 1. Phase 12 is complete: typed executable fixture adapters and explicit operation-to-fixture mappings replaced free-form conformance proof terms.
-2. Phase 13: add a separate optional-runtime lane with pinned executable fingerprints, native artifacts, digest checks, cancellation, and staging cleanup for the fork and specialist exporters.
-3. Phase 14: publish and enforce an artifact schema registry for DiagramSpec/lineage `v2` and export manifest `v3`.
-4. Phase 15: add either a clear single-process guard or a tested durable workspace lease only if multi-process deployment is required.
-5. Phase 16: pin a new source commit, refresh the matrix and fixtures, classify gallery/cache/render-target drift, and review Drawnix WIP separately.
+2. Phase 13 is complete: the optional-runtime lane records pinned executable fingerprints, native artifacts, digest checks, cancellation, and staging cleanup.
+3. Phase 14 is complete: the packaged registry enforces DiagramSpec/lineage `v2` and export manifest `v3`.
+4. Phase 15 is complete for the single-process contract; a durable lease remains conditional on a real multi-process deployment requirement.
+5. Phase 16 is complete as audit-only source intake; Mermaid normalization is the next candidate and Drawnix remains quarantined.
+6. Future work must first add a deterministic contract and fixture set for any candidate behavior before implementation.
 
 No completed Task 1-12 is reopened by this audit; the next phase starts from the current release commit and the pinned source lock.
 - A final fetch confirmed `origin/main...main = 0 0`; the worktree reported only `## main` with no paths. The Slidev lock remains `github:Jacobinwwey/slidev@bbcb2efae709c2ebaa96bda522cd6c192476817c`.
+
+## 15. Phase 16 Source Intake Verification
+
+- Source lock: `fixtures/migration/source-intake-lock.json` records candidate `obsidian-NoteMD_new@cdf580c6c876190ecc1040caea08e5ba5bee004f`, parent `426d0e8d...`, and the five dirty checkout paths. The candidate commit itself is reproducible; the checkout is not treated as a parity oracle.
+- Registry comparison: both baseline and candidate expose 29 operation IDs with no additions or removals. The only schema delta removes `diagram.generate.input.properties.drawnixKnowledgeMapDelivery`, which is already outside the non-host matrix.
+- Fixture comparison: the target matrix retains 14 fixture IDs and no input hash changes. The candidate-only `src/tests/fixtures/drawnixArchitectureDocumentTreeFixture.ts` is explicitly quarantined.
+- Category decisions: diagram-gallery is deferred as source-side presentation/fixture governance; response-cache is rejected because DSH owns provider endpoint/model policy; render-target descriptors are deferred behind named bundle adapters; Mermaid family detection/fence/ER normalization is accepted only as a follow-up candidate with no current implementation claim.
+- Drawnix quarantine names the baseline exclusions, committed candidate paths, and all five dirty paths. No Drawnix implementation or fixture was copied into the bundle.
+- Focused evidence: `migration-source-intake.test.ts` and `migration-conformance.test.ts` passed; typecheck, lint, the full 52-file/203-test suite, coverage, build, packed-bundle verification, clean DSH acceptance, and `git diff --check` all passed in the release gate above.

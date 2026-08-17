@@ -3,8 +3,9 @@
 > English version: [2026-08-17-dsh-notemd-current-state-architecture-audit.md](2026-08-17-dsh-notemd-current-state-architecture-audit.md)
 
 **审计日期：** 2026-08-17
-**目标发布：** `488378fb6a1429683bf1789f418abca8992bd3a2`（`main`、`origin/main`）
+**目标发布：** `488378fb6a1429683bf1789f418abca8992bd3a2`（`main`、`origin/main`）；Phase 15/16 release gate 已通过，发布提交另行记录。
 **固定源行为 oracle：** `E:\convert\undo\obsidian-NoteMD_new`，提交 `4168a51cd19ad8c3d1e05f604b50936255461a31`
+**Source-intake candidate：** `cdf580c6c876190ecc1040caea08e5ba5bee004f`，checkout 为 dirty；见 `fixtures/migration/source-intake-lock.json`。
 **DSH reference：** `ref/deepseek-harness`，提交 `47f943859bef60e4160492346772ded9b24f765a`
 **运行时：** Node `v22.19.0`、pnpm `10.7.1`
 
@@ -14,7 +15,7 @@
 
 这个结论不等于“所有本机 runtime 都已安装，也不等于当前源仓库最新状态已经镜像”。当前 acceptance suite 证明的是确定性 contract 与真实的 capability reporting，不是每台机器都安装了 Playwright、固定 Slidev fork、FFmpeg、Draw.io、Tectonic 或可选 Drawnix adapter。这些仍然是显式环境 capability。
 
-当前源仓库不能直接作为新的 parity oracle：它已经到 `5efd4285f2d1861e725f520cfa8a02d1bf898eb7`，相对固定 baseline 又有一个提交，并且工作区包含大量已修改文件和未跟踪 diagram-gallery 资源。未重新固定 source commit 就迁移这些差异，会使结果不可复现。因此当前 bundle 正确地继续固定 `4168a51`，并隔离 Drawnix WIP。
+当前源仓库不能直接作为新的 parity oracle：候选 commit `cdf580c6c876190ecc1040caea08e5ba5bee004f` 本身可复现，但 checkout 仍有五个未提交的 Drawnix/planner 路径。intake lock 已相对 `4168a51` 对比并记录 operation ID 与 fixture hash 未变化，同时隔离全部 dirty/Drawnix 路径。本发布不接受任何候选实现。
 
 ## 1. 已实现架构
 
@@ -68,7 +69,7 @@ source artifact -> staging process -> bounded bytes -> digest-verified asset -> 
 | Full plan Task 5-7 | DSH LLM/Web consumer、document semantic、section retrieval、folder policy | 已通过具名 service 与仅 evidence-id 的 research durable input 交付。 |
 | Full plan Task 8-10 | DiagramSpec v2、artifact lineage、specialist provider、Slidev fork exporter | 已按 capability gate 交付；core bundle 不假定真实 binary 存在。 |
 | Full plan Task 11 | conformance manifest、lifecycle test、clean DSH profile、普通 push 到 `origin/main` | 已交付。conformance 是 fixture/proof gate，不是一次性单体调用所有 source operation。 |
-| Source operation matrix | 29 个 source ID、18 included、11 excluded-by-design、14 fixture、4 组精确 Drawnix-WIP exclusion | 对固定 commit `4168a51` 已完成；source drift 必须先新建 lock 才能进入。 |
+| Source operation matrix | 29 个 source ID、18 included、11 excluded-by-design、14 fixture、4 组 baseline Drawnix-WIP exclusion；intake lock 增加 candidate `cdf580c6...` 与五个 dirty path | registry ID 与 migration fixture hash 未变化；candidate behavior 仅审计，Drawnix 继续 quarantine。 |
 | Slidev 要求 | `github:Jacobinwwey/slidev`，revision `bbcb2efae709c2ebaa96bda522cd6c192476817c`，`@slidev/cli@52.16.0` | 硬兼容锁；上游 Slidev 不能互换。 |
 
 ## 3. 关键缺口与风险
@@ -87,9 +88,9 @@ source artifact -> staging process -> bounded bytes -> digest-verified asset -> 
 
 ### P1：Source drift 明确未迁移
 
-当前 source 在固定 baseline 之后已有 committed delta，工作区还包含 diagram catalog、gallery asset、response cache、render-target 增量和 Drawnix 相关改动。把它们隐式当作需求会违反 pinned oracle，并重新引入 WIP 歧义。
+candidate source 在 `4168a51` 之后包含 committed diagram catalog、gallery asset、response cache、render-target 与 Mermaid normalization 增量，另有五个 dirty Drawnix/planner path。把这些变更隐式当作需求会违反 pinned oracle，并重新引入 WIP 歧义。
 
-**决策：** 增加 source-intake phase：先固定新的 source commit，再分类 registry 变化、刷新 fixture hash，并逐项接受或排除 Drawnix 变化。不能从 dirty source tree 直接实现。
+**决策：** 以 audit-only lock 完成 source intake：固定 `cdf580c6...`，分类 registry/fixture/category 漂移并明确 quarantine Drawnix。Mermaid normalization 只登记为后续候选；不能从 dirty source tree 直接实现。
 
 ### P1：Artifact contract version 已分裂，但文档不足
 
@@ -140,24 +141,24 @@ source artifact -> staging process -> bounded bytes -> digest-verified asset -> 
 ### Phase 15：Workspace operations hardening
 
 **Owner：** `notemd-jobs`、`notemd-workspace-events`、`notemd-vault-local`。
-**工作：** 在 single-process guard 与 durable workspace lease 之间作出选择；增加结构化 job lifecycle diagnostic、recovery counter、cleanup health fact。
-**出口：** 并发进程行为要么被清晰阻断，要么由经过测试的 lease backend 串行化；不得静默重复 model planning。
+**工作：** 当前 bundle 采用 file-backed single-process guard；增加结构化 owner lifecycle diagnostic、recovery counter、heartbeat 与 cleanup health fact，不引入 scheduler/database。
+**出口：** live second owner 返回清晰 diagnostic；只有 dead PID 且 heartbeat expired 才可恢复，并明确不宣称多进程 planning serialization。
 
 ### Phase 16：Source-intake 与 Drawnix review
 
 **Owner：** source matrix 与双语 architecture/progress record。
 **工作：** 固定下一个 source commit，对比 `4168a51` 的 registry ID 与 semantic fixture，分类 diagram-gallery/cache/render-target 变化，并逐项审查 Drawnix WIP。
-**出口：** 新 source lock 和 matrix commit 必须先存在，才能实现新的 source behavior；拒绝的 WIP 必须继续被命名和隔离。
+**出口：** `fixtures/migration/source-intake-lock.json` 与 matrix intake link 已在实现任何新 source behavior 前落盘；candidate 有 29 个未变化的 operation ID、无 migration fixture hash 漂移，并列出 committed/dirty Drawnix quarantine 路径。
 
 ## 6. 推荐顺序
 
-1. Phase 12：间接 conformance proof 是当前最大 verification-quality gap。
-2. Phase 13：用户真正关心 native export，而当前证据有意使用 fake/unavailable。
-3. Phase 14：在外部 consumer 出现前，先固化混合 artifact version 的兼容契约。
-4. Phase 15：仅在确实需要多进程部署时执行，不预先引入 database。
-5. Phase 16：源项目产生新的 pinned commit 时执行；绝不把 dirty source worktree 当 baseline。
+1. Phase 12 已完成：类型化可执行 adapter 已关闭 conformance proof 缺口。
+2. Phase 13 已完成：optional native capability 证据与 portable gate 分离。
+3. Phase 14 已完成：混合 artifact version 已有明确 registry contract。
+4. Phase 15 已完成当前 single-process deployment；只有真实且经过测试的多进程需求才引入 durable lease。
+5. Phase 16 已完成 audit-only intake；只有 source 产生新的 pinned commit 时重复执行，绝不把 dirty worktree 当 baseline。
 
-当前 release 不应重新引入 Obsidian host UI、直连 Provider 配置、generic renderer selector 或未提交 Drawnix experiment；这些做法会削弱十一阶段迁移已经建立的 ownership boundary。
+当前 release 不应重新引入 Obsidian host UI、直连 Provider 配置、generic renderer selector 或未提交 Drawnix experiment；这些做法会削弱十六阶段迁移已经建立的 ownership boundary。
 
 ## 7. 进度记录协议
 

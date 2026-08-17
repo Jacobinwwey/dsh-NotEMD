@@ -377,18 +377,29 @@ Tasks 1-12 are closed by the published release and are not reopened. This sectio
 - [x] Updated the diagram fixture's content-addressed paths after schemaFamily became part of the canonical spec identity (`9a9e...` -> `ff9a...`), and conformance passed 1 file/2 tests.
 - [x] Focused registry/artifact gate passed 17 files/38 tests plus typecheck and lint. The packed-bundle verifier now loads the packaged registry and accepts all three valid fixtures while rejecting `diagram-spec@3` with `invalid-combination`.
 
-### Phase 15: Workspace operations hardening (conditional)
+### Phase 15: Workspace operations hardening (implemented for the current single-process contract)
 
 - Only if multi-process deployment becomes a requirement, choose between an explicit single-process guard and a durable workspace lease/job backend; per-target file locks are not sufficient scheduling semantics.
 - Add lifecycle diagnostics, recovery counters, and cleanup-health facts without adding a database pre-emptively.
 - Exit evidence: concurrent processes are either rejected with a clear diagnostic or serialized by a tested lease; duplicate model planning is never silent.
+- [x] Selected the explicit single-process guard for the current deployment contract; no SQLite or distributed lease was introduced.
+- [x] `WorkspaceOwnershipGuard` owns `.notemd/runtime/workspace-owner.json`, allowlisted metadata (`pid`, process start token, workspace root, owner revision, heartbeat, recovery count), exclusive creation, heartbeat, owner-matched release, and cleanup-health facts.
+- [x] A live owner returns `workspace-process-already-owned`; malformed or unreadable lock metadata fails closed. Automatic recovery requires a dead PID and an expired heartbeat, then increments the durable recovery counter and records the recovered owner revision.
+- [x] `NotemdVaultLocalService` acquires the guard before `LocalVault.open()` and releases it through a Cordis effect. A vault-open failure releases the guard before propagating the error.
+- [x] Focused evidence passed: ownership tests 5/5, existing local-vault/mutation tests 26/26, typecheck, lint, and bundle lifecycle boundary checks. Multi-process serialization remains intentionally out of scope until a durable lease is required.
 
 ### Phase 16: Source intake and Drawnix review
 
 - Pin a new source commit before consuming any change after `4168a51`; diff registry IDs, semantic fixtures, and output policies against the existing matrix.
 - Classify diagram-gallery, response-cache, render-target, and Drawnix changes separately. Keep the current Drawnix WIP excluded until each path is tied to a committed source contract.
 - Exit evidence: a new source lock and matrix/fixture update land together before implementation; rejected WIP remains named and quarantined.
+- [x] Pinned candidate source commit `cdf580c6c876190ecc1040caea08e5ba5bee004f` and recorded its dirty checkout state in `fixtures/migration/source-intake-lock.json`.
+- [x] Confirmed 29 unchanged operation IDs, no migration fixture hash drift, and one Drawnix-only schema removal; linked the intake lock from `source-operation-matrix.json` without advancing the behavior contract commit.
+- [x] Classified diagram-gallery, response-cache, render-target, and Mermaid normalization changes. Provider cache and host preview/gallery behavior are rejected by the DSH/Obsidian boundary; Mermaid normalization is accepted only as a follow-up candidate.
+- [x] Named the committed and dirty Drawnix paths in the quarantine record. No source implementation or fixture from the dirty checkout entered the bundle.
+- [x] Focused intake gate passed: the typed source-intake lock test, migration conformance test, typecheck, lint, and `git diff --check`.
+- [x] Full Phase 15/16 release gate passed: Vitest 52 files/203 tests, coverage 77.68% statements/73.00% branches/85.21% functions, build, packed-bundle verification, clean DSH acceptance, and final `git diff --check`.
 
 ### Execution order and record protocol
 
-Phase 12 and Phase 13 are complete. Continue with Phase 14. Run Phase 15 as the explicit single-process hardening choice for the current bundle; a durable lease remains deferred until multi-process deployment is required. Run Phase 16 whenever a new source commit is available. Each phase must update both progress files with source/target locks, changed files and owners, measured tests, capability limits, rejected alternatives, risks, and its exit evidence.
+Phases 12-16 are complete for the pinned non-Obsidian-host contract. Phase 15 is the explicit single-process hardening choice for the current bundle; a durable lease remains deferred until multi-process deployment is required. Phase 16 is audit-only and should run again only when a new source commit is pinned. Each future phase must update both progress files with source/target locks, changed files and owners, measured tests, capability limits, rejected alternatives, risks, and its exit evidence.

@@ -28,6 +28,11 @@ interface SourceOperationMatrix {
   readonly source: {
     readonly commit: string
     readonly registryPath: string
+    readonly intake: {
+      readonly lockPath: string
+      readonly candidateCommit: string
+      readonly status: 'audit-only'
+    }
   }
   readonly operations: readonly MigrationOperation[]
   readonly fixtures: readonly MigrationFixture[]
@@ -123,6 +128,11 @@ test('classifies exactly the operation registry pinned for migration', async () 
   expect(matrix.source).toEqual({
     commit: '4168a51cd19ad8c3d1e05f604b50936255461a31',
     registryPath: 'src/operations/registry.ts',
+    intake: {
+      lockPath: 'fixtures/migration/source-intake-lock.json',
+      candidateCommit: 'cdf580c6c876190ecc1040caea08e5ba5bee004f',
+      status: 'audit-only',
+    },
   })
   expect(matrix.operations.map((operation) => operation.id).sort()).toEqual([...sourceOperationIds].sort())
   expect(new Set(matrix.operations.map((operation) => operation.id)).size).toBe(sourceOperationIds.length)

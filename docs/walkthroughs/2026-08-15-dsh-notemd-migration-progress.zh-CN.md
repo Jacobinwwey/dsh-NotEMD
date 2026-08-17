@@ -2,12 +2,12 @@
 
 > English version: [2026-08-15-dsh-notemd-migration-progress.md](2026-08-15-dsh-notemd-migration-progress.md)
 
-**状态：** 十二阶段 standalone migration 已全部实现并验证；Phase 12 的发布记录见下文。Conformance 边界现执行类型化 fixture adapter，不再搜索测试源码文本。Slidev export 仍固定使用 `Jacobinwwey/slidev` fork，绝不静默使用上游 Slidev。
+**状态：** standalone migration 的 Phase 12-16 已实现，Phase 15/16 完整 release gate 已通过；剩余动作是提交并同步本次发布。Conformance 边界现执行类型化 fixture adapter，不再搜索测试源码文本。Slidev export 仍固定使用 `Jacobinwwey/slidev` fork，绝不静默使用上游 Slidev。
 
 ## 1. 范围基线
 
 - 源基线：`E:\convert\undo\obsidian-NoteMD_new`，提交 `4168a51cd19ad8c3d1e05f604b50936255461a31`。
-- 目标发布：`E:\convert\undo\notemd-deepseek-harness`，`main` 上的发布记录提交 `488378f`（`docs: record final migration publication`）；conformance 由前置提交 `73480df` 建立。
+- 目标发布：`E:\convert\undo\notemd-deepseek-harness` 的 `main`；Phase 15/16 提交与远端同步将在下方 release gate 后记录。
 - 范围内：全部非 Obsidian 宿主的 NoteMD 工作流，包括文档、知识库、研究、图表、工件导出、批处理和稳定 Drawnix 能力。
 - 明确排除：Obsidian UI 与宿主 API、直连 Provider 配置，以及源工作树中尚未提交的 Drawnix WIP。
 
@@ -77,6 +77,10 @@
 | 10. Slidev 与媒体导出 | 已完成。三个 package 提供 canonical source preparation，以及在同一 staging/process boundary 上的 HTML/PDF/PNG/PPTX/MP4 具名 provider。 | Task 10 focused/full gate 通过；真实 optional executable 缺失时如实返回 unavailable。 |
 | 11. Conformance、HMR 与发布 | 已完成。matrix conformance、lifecycle contract、完整 release gate、clean DSH profile 与非强制 mainline 同步全部通过。 | 后续能力变更必须继续保持 fork lock、optional capability boundary 与发布证据一致。 |
 | 12. 可执行 conformance adapter | 已完成。14 个类型化 adapter 执行 19 个 observation（18 个 included source operation 加 auxiliary local retrieval），duplicate 使用 operation-specific contract，artifact 使用确定性 lineage path。 | 任一 adapter 缺失、included operation 未映射、fixture digest 漂移或 contract mismatch，都必须在发布前的 focused conformance gate 失败。 |
+| 13. Optional-runtime capability lane | 已完成。记录 executable fingerprint、native output digest、取消与 staging cleanup；缺失 binary 时保持 truthful `unavailable`。 | native strictness 仍为 opt-in；portable core 不依赖可选 binary。 |
+| 14. Artifact schema registry | 已完成。`diagram-spec@2`、`diagram-lineage@2` 与 `document-export@3` 由打包 registry 强制校验。 | schema family/version 变化必须同步 matrix artifact path 与 verifier。 |
+| 15. Workspace operation 加固 | 已完成当前 single-process contract。`WorkspaceOwnershipGuard` 负责 live-owner 拒绝、dead-stale 恢复、heartbeat、recovery counter 与 cleanup-health fact。 | 未引入 durable lease；多进程调度语义仍未声明。 |
+| 16. Source intake 与 Drawnix review | 已完成 audit-only intake。候选 `cdf580c6...` 已锁定，registry/fixture 无漂移；Mermaid 仅列为后续候选，Drawnix 已命名隔离。 | 新 source behavior 必须先有独立 deterministic contract/fixture；dirty Drawnix 路径不得进入实现。 |
 
 ## 6. 已记录方向
 
@@ -108,6 +112,12 @@
 - 已拒绝方案：测试源码 proof-term 匹配、从 observed output 生成 expected、用共享 duplicate contract 隐藏 read-only 与 delete 语义，以及丢弃 lineage identity 的简化 artifact path。
 
 ## 9. 验证与发布
+
+### Phase 15/16 release gate
+
+- Node `v22.19.0` / pnpm `10.7.1` 严格执行 `test`、`test:coverage`、`build`、`pack:bundle`、`verify:bundle`、`accept:dsh`，最后的 `git diff --check` 也通过。
+- Vitest 通过 52 个文件、203 个测试；coverage 为 statement 77.68%、branch 73.00%、function 85.21%。
+- packed tarball 已验证并安装到 clean DeepSeek Harness profile；source-intake lock 与 workspace ownership 变更均通过 clean-profile acceptance。
 
 第一段验证已在 Node `v22.19.0` 上针对本次文档变更执行：
 
@@ -211,30 +221,31 @@
 - 发布提交 `73480df`（`test: prove full NoteMD migration conformance`）包含 conformance 测试、runtime-boundary 检查、双语架构/计划/进度更新与 validation walkthrough。
 - 该提交在新鲜 release gate 通过后，以非强制方式推送到 `git@github.com:Jacobinwwey/dsh-NotEMD.git`。推送前 fetch 的分歧为 `0 11`（远端没有领先提交）；推送后 `origin/main` 已解析为 `73480df`。
 
-## 10. 当前状态审计（2026-08-17）
+## 10. 当前状态审计（2026-08-17，历史快照）
 
-发布记录提交现在是 `488378fb6a1429683bf1789f418abca8992bd3a2`，位于 `main`；配套的[当前架构审计](../specs/2026-08-17-dsh-notemd-current-state-architecture-audit.zh-CN.md)是发布后的权威记录。
+此前的发布记录提交为 `488378fb6a1429683bf1789f418abca8992bd3a2`；配套的[当前架构审计](../specs/2026-08-17-dsh-notemd-current-state-architecture-audit.zh-CN.md)仍是架构记录，Phase 15/16 的完成证据见下文。
 
 ### 证据锁
 
 - parity oracle 仍是 `obsidian-NoteMD_new` 的 `4168a51cd19ad8c3d1e05f604b50936255461a31`。源工作区随后已到 `5efd4285f2d1861e725f520cfa8a02d1bf898eb7`，并且处于 dirty 状态，包含 diagram-gallery、cache、render-target 与 Drawnix 相关变更；这些变更不属于本发布。
 - 目标仓库有 26 个 workspace package，`notemd-bundle` 是 Cordis composition root，`notemd-vault-local` 是唯一 workspace mutation authority。DSH 的 LLM/Web/Tool 服务仍是由宿主拥有的 optional peer seam。
-- 新鲜 Phase 12 release gate 证据为 Node `v22.19.0`、pnpm `10.7.1`、48 个 Vitest 文件和 185 个测试；statement coverage `77.63%`、branch coverage `72.35%`、function coverage `85.33%`。在 adapter migration 后，typecheck、lint、build、packed-bundle verification、clean-profile acceptance 和 `git diff --check` 均通过。
+- 历史 Phase 12 release gate 证据为 Node `v22.19.0`、pnpm `10.7.1`、48 个 Vitest 文件和 185 个测试；当前 Phase 15/16 gate 已以 52 个文件、203 个测试（statement 77.68%、branch 73.00%、function 85.21%）取代。
 
 ### 对账与边界
 
-- 十二阶段迁移已在固定的非 Obsidian 宿主行为契约范围内完成。这不宣称每个部署都安装并互操作 Playwright、固定的 `github:Jacobinwwey/slidev` fork、FFmpeg、Draw.io、Tectonic 或可选 Drawnix adapter。
+- 迁移已在固定的非 Obsidian 宿主行为契约与 Phase 15/16 审计边界内完成。这不宣称每个部署都安装并互操作 Playwright、固定的 `github:Jacobinwwey/slidev` fork、FFmpeg、Draw.io、Tectonic 或可选 Drawnix adapter。
 - Conformance 现为可执行的类型化 adapter gate：共享语义 fixture 仍避免为每个 source operation 构造单体调用，但每个 included operation 都有显式映射并被执行，auxiliary local retrieval 保持独立。这是验证质量边界，不是遗漏源操作。
 - 工件版本有意分离：DiagramSpec/diagram lineage 为 `v2`，document export manifest 为 `v3`。下一阶段必须明确这个 family 边界，不应为统一版本号而合并。
 - File-backed job 仅保证单 workspace process 安全。逐目标锁不能提供分布式调度，也不能阻止两个 DSH 进程重复 planning。
 
-### 发布后延续
+### 发布后延续（历史决策，现已实现）
 
 1. Phase 12 已完成：用类型化、可执行的 fixture adapter 和显式 operation-to-fixture 映射替换自由文本 conformance proof。
-2. Phase 13：为 fork 和 specialist exporter 增加独立 optional-runtime 通道，记录 executable fingerprint、原生工件、digest、取消和 staging 清理证据。
-3. Phase 14：发布并强制执行 DiagramSpec/lineage `v2` 与 export manifest `v3` 的工件 schema registry。
-4. Phase 15：只有在需要多进程部署时，才选择明确的 single-process guard 或经过测试的 durable workspace lease。
-5. Phase 16：固定新的 source commit，刷新 matrix 与 fixture，分类 gallery/cache/render-target 漂移，并单独评审 Drawnix WIP。
+2. Phase 13 已完成：optional-runtime 通道记录 executable fingerprint、原生工件、digest、取消和 staging 清理证据。
+3. Phase 14 已完成：打包 registry 强制执行 DiagramSpec/lineage `v2` 与 export manifest `v3`。
+4. Phase 15 已完成当前 single-process contract；只有真正需要多进程部署时才引入 durable lease。
+5. Phase 16 已完成 audit-only source intake；Mermaid normalization 是下一候选，Drawnix 继续隔离。
+6. 后续候选行为必须先提供独立 deterministic contract 与 fixture，再进入实现。
 
 本审计不重新打开已完成的 Task 1-12；下一阶段从当前发布提交和固定 source lock 开始。
 - 最终 fetch 确认 `origin/main...main = 0 0`；工作区只报告 `## main`，没有任何路径。Slidev lock 仍为 `github:Jacobinwwey/slidev@bbcb2efae709c2ebaa96bda522cd6c192476817c`。
@@ -256,3 +267,19 @@
 - focused 证据：`schema-registry.test.ts` 通过 8 tests；artifact/renderer/tool focused gate 通过 17 files/38 tests；`pnpm typecheck` 与 `pnpm lint` 通过。canonical diagram artifact id 从 `notemd-artifact-9a9e469f716c93be0bbe` 变为 `notemd-artifact-ff9a6d55ec0208286fed` 后，完整 conformance 通过 1 file/2 tests。
 - Packed verification contract：`scripts/verify-bundle.ts` 从解压 tarball 动态加载 `@notemd-harness/artifacts/lib/index.js`，接受三个合法 fixture，并要求 `diagram-spec@3` 返回结构化 `invalid-combination` diagnostic。
 - 拒绝方案与风险：单一全局 version、静默 legacy-family 推断、top-level 任意 metadata 和纯字符串迁移错误均被拒绝。现有 version-1 cleanup 数据现在 fail closed 并附带 diagnostic，不会被当作当前 diagram lineage manifest。
+
+## 14. Phase 15 验证
+
+- Owner：`packages/notemd-vault-local/src/workspace-ownership.ts` 拥有 file-backed process guard；`packages/notemd-bundle/src/vault-local.ts` 在 `LocalVault.open()` 前 acquire，并通过 Cordis effect 异步 release。没有引入 scheduler 或 database。
+- Lock contract：`.notemd/runtime/workspace-owner.json` 只包含 version、PID、process start token、canonical workspace root、owner revision、timestamps、recovery count 和可选 recovered revision；heartbeat 与 release 都要求 owner revision 匹配。
+- 并发/恢复证据：`workspace-ownership.test.ts` 通过 5 个测试，覆盖 acquire/release、live second-owner rejection、dead stale recovery、坏 metadata fail-closed 和外部删除后的 unhealthy cleanup；既有 local-vault/mutation focused suite 通过 26 个测试。
+- 被拒方案：SQLite、distributed lease、无条件 stale lock 删除，以及仅凭 stale heartbeat 回收 live PID。只有 PID dead 且 heartbeat expired 才可恢复；多进程 planning serialization 不在本阶段声明。
+
+## 15. Phase 16 Source Intake 验证
+
+- `fixtures/migration/source-intake-lock.json` 固定候选 `obsidian-NoteMD_new@cdf580c6c876190ecc1040caea08e5ba5bee004f`、parent `426d0e8d...` 与五个 dirty checkout path。候选 commit 可复现，但 dirty checkout 不作为 parity oracle。
+- Registry 对比：baseline 与 candidate 都有 29 个 operation ID，没有新增或删除；唯一 schema delta 是移除 `diagram.generate.input.properties.drawnixKnowledgeMapDelivery`，该字段本来就不在 non-host matrix。
+- Fixture 对比：target matrix 仍为 14 个 fixture ID，input hash 没有变化。candidate-only 的 `src/tests/fixtures/drawnixArchitectureDocumentTreeFixture.ts` 已明确 quarantine。
+- 分类决策：diagram-gallery 延后为 source-side presentation/fixture governance；response-cache 因 DSH 拥有 provider endpoint/model policy 被拒绝；render-target descriptor 延后到具名 bundle adapter；Mermaid family/fence/ER normalization 只作为后续候选，不宣称当前已实现。
+- Drawnix quarantine 同时列出 baseline exclusion、committed candidate path 与五个 dirty path；没有任何 Drawnix implementation 或 fixture 被复制进 bundle。
+- 聚焦证据：`migration-source-intake.test.ts` 与 `migration-conformance.test.ts` 通过；typecheck、lint、52 文件/203 测试全量 suite、coverage、build、packed-bundle verification、clean DSH acceptance 与 `git diff --check` 均已在上方 release gate 通过。

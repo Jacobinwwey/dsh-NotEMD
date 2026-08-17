@@ -2,7 +2,7 @@
 
 > Chinese version: [2026-08-15-dsh-notemd-full-migration-validation.zh-CN.md](2026-08-15-dsh-notemd-full-migration-validation.zh-CN.md)
 
-This walkthrough records the release evidence for the twelve-phase baseline and the post-release capability lanes. It is intentionally evidence-oriented: a capability is complete only when its named contract, failure behavior, packed distribution, and DSH profile boundary are verified.
+This walkthrough records release evidence for the sixteen-phase standalone migration. It is intentionally evidence-oriented: a capability is complete only when its named contract, failure behavior, packed distribution, and DSH profile boundary are verified.
 
 ## Scope and ownership
 
@@ -45,7 +45,7 @@ rtk proxy pnpm.cmd accept:dsh
 rtk git diff --check
 ```
 
-The Phase 12 release run passed every command above. Vitest reported 48 files and 185 tests; coverage reported 77.63% statements, 72.35% branches, and 85.33% functions. `accept:dsh` installed the packed tarball into an isolated DSH profile, verified the bundle patch and dependency graph, loaded the clean runtime, exercised source/diagram/export/research Tool contracts, and removed temporary profile state.
+The historical Phase 12 release run passed every command above with 48 files and 185 tests. The latest Phase 15/16 gate passed the strict sequence `test`, `test:coverage`, `build`, `pack:bundle`, `verify:bundle`, and `accept:dsh`, followed by `git diff --check`; Vitest reported 52 files and 203 tests, with 77.68% statements, 73.00% branches, and 85.21% functions. `accept:dsh` installed the packed tarball into an isolated DSH profile, verified the bundle patch and dependency graph, loaded the clean runtime, exercised source/diagram/export/research Tool contracts, and removed temporary profile state.
 
 ## Phase 12 adapter evidence
 
@@ -68,8 +68,7 @@ The bundle patch replaces complete config rows, so every replacement must restat
 ## Publication evidence
 
 - Canonical remote: `git@github.com:Jacobinwwey/dsh-NotEMD.git`.
-- Release commit `73480df` (`test: prove full NoteMD migration conformance`) was pushed to `origin/main` without force after the fresh release gate. Fetch-before-push divergence was `0 11`; there were no remote-ahead commits to rebase.
-- A final fetch confirmed `origin/main...main = 0 0`. `rtk git status --short --branch` reported exactly `## main` with no following paths.
+- The Phase 15/16 release commit and non-force push are recorded after the gate completes; no force update is permitted.
 
 ## Phase 13 optional-runtime evidence
 
@@ -86,3 +85,17 @@ Artifact envelopes now carry one explicit family discriminator: `diagram-spec@2`
 The registry suite passed 8 tests. Its inspection API returns structured diagnostics for missing/unknown family, missing/unknown version, invalid family/version combinations, and invalid metadata. The generated diagram and document manifests assert their expected registry entry before mutation planning. Adding `schemaFamily` to the canonical DiagramSpec identity changed the conformance fixture directory from `notemd-artifact-9a9e469f716c93be0bbe` to `notemd-artifact-ff9a6d55ec0208286fed`; the matrix was updated and the conformance adapter passed 1 file/2 tests.
 
 `verify-bundle` extracts the tarball, dynamically loads the packaged artifacts registry, accepts valid v2/v3 fixtures, and requires `invalid-combination` for `diagram-spec@3`. This prevents a source-only registry from passing while the distributed package drifts.
+
+## Phase 15 workspace ownership evidence
+
+`WorkspaceOwnershipGuard` is the single-process boundary for the current bundle. It creates `.notemd/runtime/workspace-owner.json` with allowlisted metadata, rejects a live second owner with `workspace-process-already-owned`, and recovers only when the recorded PID is dead and the heartbeat is expired. Release requires the owner revision to match and returns a cleanup-health fact; vault initialization releases the guard if `LocalVault.open()` fails.
+
+The focused gate passed `workspace-ownership.test.ts` (5 tests), the existing local-vault/mutation suites (26 tests), `runtime-boundary.test.ts`, typecheck, and lint. SQLite, distributed leases, unconditional stale-lock deletion, and multi-process planning serialization remain explicitly rejected. The full 52-file/203-test release gate above also passed.
+
+## Phase 16 source-intake evidence
+
+`fixtures/migration/source-intake-lock.json` pins candidate `obsidian-NoteMD_new@cdf580c6c876190ecc1040caea08e5ba5bee004f`, records its parent and dirty checkout paths, and links from `source-operation-matrix.json` without changing the pinned behavior contract commit. The candidate and baseline both expose 29 operation IDs; there are no migration fixture hash changes. The only registry schema delta removes the Drawnix-only `drawnixKnowledgeMapDelivery` input field.
+
+The lock classifies diagram-gallery, response-cache, render-target, and Mermaid normalization separately. Provider cache policy is rejected because DSH owns provider/model routing; host gallery/preview/save behavior is excluded; target descriptors are deferred behind named bundle adapters; Mermaid normalization is a follow-up candidate requiring its own deterministic conformance fixture. The committed candidate Drawnix paths, the four baseline exclusions, the candidate-only Drawnix fixture, and all five dirty paths are named in quarantine. No source implementation is copied from the dirty checkout.
+
+The focused intake gate passed `migration-source-intake.test.ts` and `migration-conformance.test.ts`. The full release gate above reran the complete suite, coverage, build, packed-bundle verification, clean DSH acceptance, and `git diff --check`; all passed.

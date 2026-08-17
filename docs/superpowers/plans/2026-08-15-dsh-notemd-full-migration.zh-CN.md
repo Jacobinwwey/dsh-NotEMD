@@ -296,18 +296,29 @@ Task 1-12 已由已发布版本关闭，不重新打开。本节从目标提交 
 - [x] schemaFamily 进入 canonical spec identity 后，已更新 diagram fixture 的 content-addressed 路径（`9a9e...` -> `ff9a...`）；conformance 通过 1 文件/2 测试。
 - [x] focused registry/artifact gate 通过 17 files/38 tests，typecheck 与 lint 通过。packed-bundle verifier 现在加载打包后的 registry，接受三个合法 fixture，并以 `invalid-combination` 拒绝 `diagram-spec@3`。
 
-### Phase 15：Workspace Operation 加固（条件阶段）
+### Phase 15：Workspace Operation 加固（当前 single-process contract 已实现）
 
 - 只有多进程部署成为要求时，才在明确的 single-process guard 与 durable workspace lease/job backend 之间做选择；逐目标文件锁不是调度语义。
 - 增加生命周期诊断、恢复计数和 cleanup-health fact，不预先引入数据库。
 - 退出证据：并发进程要么被明确诊断拒绝，要么由经过测试的 lease 串行化；不得静默重复 model planning。
+- [x] 根据当前部署契约选择显式 single-process guard；没有引入 SQLite 或 distributed lease。
+- [x] `WorkspaceOwnershipGuard` 拥有 `.notemd/runtime/workspace-owner.json`、allowlisted metadata（`pid`、process start token、workspace root、owner revision、heartbeat、recovery count）、exclusive create、heartbeat、owner-matched release 与 cleanup-health fact。
+- [x] live owner 返回 `workspace-process-already-owned`；坏或不可读 lock metadata fail closed。自动恢复要求 PID dead 且 heartbeat 过期，然后增加 durable recovery counter 并记录 recovered owner revision。
+- [x] `NotemdVaultLocalService` 在 `LocalVault.open()` 前 acquire guard，并通过 Cordis effect release；vault open 失败时先释放 guard 再传播错误。
+- [x] focused 证据通过：ownership tests 5/5，既有 local-vault/mutation tests 26/26，typecheck、lint 与 bundle lifecycle boundary 检查均通过。除非需要 durable lease，多进程串行化仍明确不在范围内。
 
 ### Phase 16：Source Intake 与 Drawnix Review
 
 - 在消费 `4168a51` 之后的任何变化前，先固定新的 source commit，并相对现有 matrix 比较 registry ID、语义 fixture 和 output policy。
 - 分别分类 diagram-gallery、response-cache、render-target 与 Drawnix 变更。每条当前 Drawnix WIP 路径都绑定到已提交 source contract 前保持排除。
 - 退出证据：新的 source lock 与 matrix/fixture 更新必须同批落盘后才能实现；被拒绝的 WIP 继续被命名并隔离。
+- [x] 固定候选 source commit `cdf580c6c876190ecc1040caea08e5ba5bee004f`，并在 `fixtures/migration/source-intake-lock.json` 记录其 dirty checkout 状态。
+- [x] 确认 29 个 operation ID 未变化、迁移 fixture hash 没有漂移，且只有一个 Drawnix-only schema 被移除；在不推进 behavior contract commit 的前提下，从 `source-operation-matrix.json` 链接 intake lock。
+- [x] 分别分类 diagram-gallery、response-cache、render-target 和 Mermaid normalization 变化。Provider cache 与 host preview/gallery 行为因 DSH/Obsidian 边界被拒绝；Mermaid normalization 仅作为后续候选接受。
+- [x] 在 quarantine 记录中逐项列出已提交和 dirty 的 Drawnix 路径。dirty checkout 中没有任何 source implementation 或 fixture 进入 bundle。
+- [x] intake 聚焦关口通过：typed source-intake lock test、migration conformance test、typecheck、lint 与 `git diff --check`。
+- [x] Phase 15/16 完整 release gate 通过：Vitest 52 files/203 tests，coverage statement 77.68%/branch 73.00%/function 85.21%，build、packed-bundle verification、clean DSH acceptance 与最终 `git diff --check` 均通过。
 
 ### 执行顺序与记录协议
 
-Phase 12 与 Phase 13 已完成。继续执行 Phase 14。当前 bundle 选择显式 single-process hardening 作为 Phase 15；只有多进程部署真正需要时才引入 durable lease。每当 source 有新提交时执行 Phase 16。每个阶段都必须同步更新两份 progress 文件，记录 source/target lock、变更文件与 owner、实测测试、capability 限制、拒绝方案、风险和退出证据。
+Phase 12-16 已在固定的非 Obsidian 宿主 contract 范围内完成。当前 bundle 选择显式 single-process hardening 作为 Phase 15；只有多进程部署真正需要时才引入 durable lease。Phase 16 为 audit-only，仅在 source 固定新 commit 时重新执行。每个后续阶段都必须同步更新两份 progress 文件，记录 source/target lock、变更文件与 owner、实测测试、capability 限制、拒绝方案、风险和退出证据。

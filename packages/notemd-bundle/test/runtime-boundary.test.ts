@@ -25,6 +25,7 @@ test('preserves complete replacement configuration and lifecycle disposal seams'
   const patch = readFileSync(join(packageDirectory, 'cordis.patch.yml'), 'utf8')
   const artifacts = readFileSync(join(packageDirectory, 'src', 'artifacts.ts'), 'utf8')
   const workspaceChanges = readFileSync(join(packageDirectory, 'src', 'workspace-changes.ts'), 'utf8')
+  const vaultLocal = readFileSync(join(packageDirectory, 'src', 'vault-local.ts'), 'utf8')
   const llm = readFileSync(join(packageDirectory, 'src', 'llm.ts'), 'utf8')
 
   expect(patch).toContain('workspaceRoot: !!js process.cwd()')
@@ -35,6 +36,8 @@ test('preserves complete replacement configuration and lifecycle disposal seams'
   expect(artifacts).toContain("'notemdArtifacts.process'")
   expect(workspaceChanges).toContain("'notemdWorkspaceChanges.scan'")
   expect(workspaceChanges).toContain('clearInterval(timer)')
+  expect(vaultLocal).toContain('WorkspaceOwnershipGuard.acquire')
+  expect(vaultLocal).toContain("'notemdVault.workspaceOwnership'")
   expect(llm).toContain("'notemdTextTransformer.dshConsumer'")
   expect(repositoryRoot).toContain('notemd-deepseek-harness')
 })

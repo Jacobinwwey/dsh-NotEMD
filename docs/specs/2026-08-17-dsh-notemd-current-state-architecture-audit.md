@@ -3,8 +3,9 @@
 > Chinese version: [2026-08-17-dsh-notemd-current-state-architecture-audit.zh-CN.md](2026-08-17-dsh-notemd-current-state-architecture-audit.zh-CN.md)
 
 **Audit date:** 2026-08-17
-**Target release:** `488378fb6a1429683bf1789f418abca8992bd3a2` (`main`, `origin/main`)
+**Target release:** `488378fb6a1429683bf1789f418abca8992bd3a2` (`main`, `origin/main`); the Phase 15/16 release gate has passed and its publication commit is recorded separately.
 **Pinned source oracle:** `E:\convert\undo\obsidian-NoteMD_new` at `4168a51cd19ad8c3d1e05f604b50936255461a31`
+**Source-intake candidate:** `cdf580c6c876190ecc1040caea08e5ba5bee004f` with a dirty checkout; see `fixtures/migration/source-intake-lock.json`.
 **DSH reference:** `ref/deepseek-harness` at `47f943859bef60e4160492346772ded9b24f765a`
 **Runtime:** Node `v22.19.0`, pnpm `10.7.1`
 
@@ -14,7 +15,7 @@ The pinned eleven-phase migration is complete as a behavior-contract migration f
 
 That conclusion is narrower than “every local runtime is installed and every source revision is mirrored.” The current acceptance suite proves deterministic contracts and truthful capability reporting. It does not claim that Playwright, the pinned Slidev fork, FFmpeg, Draw.io, Tectonic, or the optional Drawnix adapter are installed on every deployment. Those remain explicit environment capabilities.
 
-The current source repository is not a valid new parity oracle: it is at commit `5efd4285f2d1861e725f520cfa8a02d1bf898eb7`, one commit beyond the pinned baseline, with additional tracked edits and untracked diagram-gallery assets. Migrating that delta without a new source lock would make the result non-reproducible. The current bundle therefore remains correctly pinned to `4168a51` and quarantines the Drawnix WIP.
+The current source repository is not a valid new parity oracle: candidate commit `cdf580c6c876190ecc1040caea08e5ba5bee004f` is reproducible, but the checkout has five uncommitted Drawnix/planner paths. The intake lock compares the candidate with `4168a51`, records unchanged operation IDs and fixture hashes, and keeps all dirty/Drawnix paths quarantined. No candidate implementation is accepted by this release.
 
 ## 1. Implemented Architecture
 
@@ -68,7 +69,7 @@ source artifact -> staging process -> bounded bytes -> digest-verified asset -> 
 | Full plan Tasks 5-7 | DSH LLM/Web consumers, document semantics, section retrieval, folder policies | Delivered through named services and evidence-id-only durable research input. |
 | Full plan Tasks 8-10 | DiagramSpec v2, artifact lineage, specialist providers, Slidev fork exporters | Delivered as capability-gated providers; real binaries are not assumed by the core bundle. |
 | Full plan Task 11 | Conformance manifest, lifecycle tests, clean DSH profile, ordinary pushes to `origin/main` | Delivered. The conformance test is a fixture/proof gate, not a monolithic invocation of every source operation. |
-| Source operation matrix | 29 source IDs, 18 included, 11 excluded-by-design, 14 fixtures, 4 exact Drawnix-WIP exclusions | Complete for pinned commit `4168a51`; current source drift requires a new lock before intake. |
+| Source operation matrix | 29 source IDs, 18 included, 11 excluded-by-design, 14 fixtures, 4 baseline Drawnix-WIP exclusions; intake lock adds candidate `cdf580c6...` and five dirty paths | Registry IDs and migration fixture hashes are unchanged; candidate behavior remains audit-only and Drawnix remains quarantined. |
 | Slidev requirement | `github:Jacobinwwey/slidev` at `bbcb2efae709c2ebaa96bda522cd6c192476817c`, `@slidev/cli@52.16.0` | Hard compatibility lock. Upstream Slidev is not interchangeable. |
 
 ## 3. Critical Gaps and Risks
@@ -87,9 +88,9 @@ The tests use deterministic subprocess fakes and exercise unavailable branches. 
 
 ### P1: Source drift is deliberately not migrated
 
-The current source has a committed delta and a dirty worktree containing diagram catalogs, gallery assets, response caching, render-target additions, and Drawnix-related changes after `4168a51`. Treating those edits as implicit requirements would violate the pinned oracle and reintroduce WIP ambiguity.
+The candidate source has committed diagram catalogs, gallery assets, response caching, render-target additions, and Mermaid normalization after `4168a51`, plus five dirty Drawnix/planner paths. Treating those edits as implicit requirements would violate the pinned oracle and reintroduce WIP ambiguity.
 
-**Decision:** create a source-intake phase that first pins a new source commit, classifies registry changes, refreshes fixture hashes, and explicitly accepts or excludes Drawnix changes. No implementation changes should be made from the dirty source tree alone.
+**Decision:** complete source intake as an audit-only lock: pin `cdf580c6...`, classify registry/fixture/category drift, and explicitly quarantine Drawnix. Mermaid normalization is a named follow-up candidate; no implementation changes are made from the dirty source tree alone.
 
 ### P1: Artifact contract versions are intentionally split but undocumented enough
 
@@ -140,24 +141,24 @@ The default patch does not load the OpenAI-compatible provider, and tests prove 
 ### Phase 15: Workspace operations hardening
 
 **Owner:** `notemd-jobs`, `notemd-workspace-events`, `notemd-vault-local`.
-**Work:** choose between an explicit single-process guard and a durable workspace lease; add structured job lifecycle diagnostics, recovery counters, and cleanup health facts.
-**Exit:** concurrent-process behavior is either prevented with a clear diagnostic or serialized by a tested lease backend; no silent duplicate model planning remains.
+**Work:** use an explicit file-backed single-process guard for the current bundle; add structured owner lifecycle diagnostics, recovery counters, heartbeat, and cleanup health facts without introducing a scheduler/database.
+**Exit:** a live second owner is rejected with a clear diagnostic, only a dead PID plus expired heartbeat is recoverable, and multi-process planning serialization is explicitly not claimed.
 
 ### Phase 16: Source-intake and Drawnix review
 
 **Owner:** source matrix and paired architecture/progress records.
 **Work:** pin the next source commit, diff registry IDs and semantic fixtures against `4168a51`, classify diagram-gallery/cache/render-target changes, and review each Drawnix WIP path separately.
-**Exit:** a new source lock and matrix commit exists before any new source behavior is implemented; rejected WIP remains named and quarantined.
+**Exit:** `fixtures/migration/source-intake-lock.json` and the matrix intake link land before any new source behavior is implemented; the candidate has 29 unchanged operation IDs, no migration fixture hash drift, and named committed/dirty Drawnix quarantine paths.
 
 ## 6. Recommended Order
 
-1. Phase 12, because indirect conformance proof is the largest verification-quality gap.
-2. Phase 13, because users care about actual native exports and current evidence is intentionally fake/unavailable.
-3. Phase 14, because mixed artifact versions need an explicit compatibility contract before external consumers appear.
-4. Phase 15, only when multi-process deployment is required; do not add a database pre-emptively.
-5. Phase 16 whenever the source project publishes a new pinned commit; never consume the dirty source worktree as a baseline.
+1. Phase 12 is complete: typed executable adapters close the conformance proof gap.
+2. Phase 13 is complete: optional native capability evidence remains separate from the portable gate.
+3. Phase 14 is complete: mixed artifact versions have an explicit registry contract.
+4. Phase 15 is complete for the current single-process deployment; add a durable lease only for a tested multi-process requirement.
+5. Phase 16 is complete as audit-only intake; repeat it only for a new pinned source commit and never consume a dirty worktree as baseline.
 
-The current release should not be reopened for Obsidian host UI, direct provider configuration, generic renderer selectors, or uncommitted Drawnix experiments. Those choices would weaken the ownership boundaries that the eleven-phase migration established.
+The current release should not be reopened for Obsidian host UI, direct provider configuration, generic renderer selectors, or uncommitted Drawnix experiments. Those choices would weaken the ownership boundaries established by the sixteen-phase migration.
 
 ## 7. Progress-Record Protocol
 

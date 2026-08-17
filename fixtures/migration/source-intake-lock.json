@@ -1,0 +1,187 @@
+{
+  "version": 1,
+  "repository": "E:\\convert\\undo\\obsidian-NoteMD_new",
+  "baseline": {
+    "commit": "4168a51cd19ad8c3d1e05f604b50936255461a31",
+    "registryPath": "src/operations/registry.ts",
+    "operationCount": 29
+  },
+  "candidate": {
+    "commit": "cdf580c6c876190ecc1040caea08e5ba5bee004f",
+    "parent": "426d0e8dff997b63122afcee49bbeb2bf924765d",
+    "branch": "main",
+    "committedAt": "2026-08-17T20:44:09+08:00",
+    "workingTree": "dirty",
+    "dirtyPaths": [
+      "src/diagram/adapters/drawnix/drawnixSourceCoverage.ts",
+      "src/diagram/diagramGenerationService.ts",
+      "src/diagram/planner.ts",
+      "src/tests/diagramPlannerFlow.test.ts",
+      "src/tests/drawnixSourceCoverage.test.ts"
+    ]
+  },
+  "registryComparison": {
+    "candidateOperationCount": 29,
+    "addedOperationIds": [],
+    "removedOperationIds": [],
+    "changedSchemas": [
+      {
+        "operationId": "diagram.generate",
+        "path": "input.properties.drawnixKnowledgeMapDelivery",
+        "disposition": "excluded-drawnix-only-field"
+      }
+    ],
+    "disposition": "compatible-with-pinned-matrix"
+  },
+  "fixtureComparison": {
+    "migrationFixtureIds": 14,
+    "migrationFixtureHashChanges": [],
+    "sourceFixtureTree": {
+      "baselineFiles": [],
+      "candidateFiles": [
+        "src/tests/fixtures/drawnixArchitectureDocumentTreeFixture.ts"
+      ],
+      "candidateOnly": [
+        "src/tests/fixtures/drawnixArchitectureDocumentTreeFixture.ts"
+      ],
+      "disposition": "drawnix-quarantine"
+    }
+  },
+  "categories": [
+    {
+      "id": "diagram-gallery",
+      "paths": [
+        "docs/assets/diagrams/manifest.json",
+        "scripts/diagram-gallery-browser-entry.ts",
+        "scripts/generate-diagram-gallery.js",
+        "scripts/lib/diagram-gallery-runtime.js",
+        "src/diagram/diagramCapabilityManifest.ts",
+        "src/diagram/diagramTypeCatalog.ts",
+        "src/tests/diagramGalleryGenerator.test.ts",
+        "src/tests/diagramCapabilityManifest.test.ts",
+        "src/ui/diagramExampleGallery.ts"
+      ],
+      "disposition": "defer-source-gallery",
+      "reason": "Gallery generation and Obsidian UI wiring are source-side presentation surfaces; the bundle already owns target-specific artifact lineage and must not import host UI state."
+    },
+    {
+      "id": "response-cache",
+      "paths": [
+        "src/llmResponseCache.ts",
+        "src/llmUtils.ts",
+        "src/tests/llmResponseCache.test.ts"
+      ],
+      "disposition": "reject-by-dsh-boundary",
+      "reason": "The cache key includes provider endpoint and model configuration. DSH owns provider selection, credentials, transport, and any future cache policy."
+    },
+    {
+      "id": "render-target",
+      "paths": [
+        "src/rendering/renderTargetCatalog.ts",
+        "src/rendering/preview/previewExport.ts",
+        "src/rendering/types.ts",
+        "src/tests/renderTargetCatalog.test.ts"
+      ],
+      "disposition": "defer-target-adapter",
+      "reason": "Target descriptors are useful input for named bundle providers, but previewKind, vaultExtension, and host save paths are Obsidian semantics and cannot replace the existing source/preview/export lineage."
+    },
+    {
+      "id": "mermaid-normalization",
+      "paths": [
+        "src/diagram/adapters/mermaid/normalize.ts",
+        "src/diagram/adapters/mermaid/runtime.ts",
+        "src/diagram/adapters/mermaid/validator.ts",
+        "src/mermaidProcessor.ts",
+        "src/tests/mermaidNormalizationConvergence.test.ts",
+        "src/tests/mermaidLegacyStageRegistry.test.ts"
+      ],
+      "disposition": "accept-for-follow-up",
+      "reason": "Family detection, fence normalization, and ER repair are non-host behavior candidates, but the bundle needs a separate deterministic normalizer contract before replacing its DSH LLM repair path."
+    }
+  ],
+  "acceptedChanges": [
+    {
+      "id": "registry-id-set",
+      "paths": ["src/operations/registry.ts"],
+      "decision": "accepted-no-op",
+      "evidence": "All 29 operation IDs are unchanged; the only schema delta removes a Drawnix-only input field already outside the pinned non-host contract."
+    },
+    {
+      "id": "mermaid-candidate",
+      "paths": [
+        "src/diagram/adapters/mermaid/normalize.ts",
+        "src/diagram/adapters/mermaid/validator.ts"
+      ],
+      "decision": "accepted-for-follow-up",
+      "evidence": "The behavior is portable, but no target implementation or refreshed fixture is claimed in this intake phase."
+    }
+  ],
+  "rejectedChanges": [
+    {
+      "id": "provider-cache",
+      "paths": ["src/llmResponseCache.ts", "src/llmUtils.ts"],
+      "reason": "Provider endpoint/model cache policy belongs to DSH, not the standalone bundle."
+    },
+    {
+      "id": "host-gallery-and-preview",
+      "paths": ["src/ui/diagramExampleGallery.ts", "src/rendering/runtime/renderHostEntry.ts"],
+      "reason": "Obsidian UI and host preview/save behavior are explicitly out of scope."
+    }
+  ],
+  "drawnixQuarantine": [
+    {
+      "kind": "baseline-exclusion",
+      "paths": [
+        "src/diagram/adapters/drawnix/drawnixCrossRootRouter.ts",
+        "src/diagram/adapters/drawnix/drawnixMindMapProjection.ts",
+        "src/diagram/adapters/drawnix/drawnixRelationLaneLayout.ts",
+        "src/tests/fixtures/"
+      ],
+      "reason": "The original migration baseline explicitly excluded uncommitted Drawnix experiments and fixtures."
+    },
+    {
+      "kind": "candidate-committed",
+      "paths": [
+        "src/diagram/adapters/drawnix/drawnixCrossRootRouter.ts",
+        "src/diagram/adapters/drawnix/drawnixExporter.ts",
+        "src/diagram/adapters/drawnix/drawnixKnowledgeMapPresentation.ts",
+        "src/diagram/adapters/drawnix/drawnixKnowledgeMapPresentationTypes.ts",
+        "src/diagram/adapters/drawnix/drawnixSourceCoverage.ts",
+        "src/diagram/examples/drawnixKnowledgeMapExamples.ts",
+        "src/diagram/prompts/drawnixKnowledgeMapPrompt.ts",
+        "src/rendering/renderers/drawnixKnowledgeMapBoardArtifactRenderer.ts",
+        "src/rendering/renderers/drawnixKnowledgeMapPresentationRenderer.ts",
+        "src/rendering/renderers/drawnixKnowledgeMapPresentationSvgRenderer.ts",
+        "src/rendering/renderers/drawnixRenderer.ts",
+        "src/tests/drawnixExporter.test.ts",
+        "src/tests/drawnixKnowledgeMapBenchmark.test.ts",
+        "src/tests/drawnixKnowledgeMapPresentation.test.ts",
+        "src/tests/drawnixKnowledgeMapPresentationVisual.test.ts",
+        "src/tests/drawnixKnowledgeMapSettingsMigration.test.ts",
+        "src/tests/drawnixMindMapRenderer.test.ts",
+        "src/tests/drawnixMindMapRouting.test.ts",
+        "src/tests/drawnixRelationLaneLayout.test.ts",
+        "src/tests/drawnixSourceCoverage.test.ts",
+        "src/tests/fixtures/drawnixArchitectureDocumentTreeFixture.ts"
+      ],
+      "reason": "Committed does not mean accepted: Drawnix behavior is still under active design and remains outside this bundle release."
+    },
+    {
+      "kind": "candidate-working-tree",
+      "paths": [
+        "src/diagram/adapters/drawnix/drawnixSourceCoverage.ts",
+        "src/diagram/diagramGenerationService.ts",
+        "src/diagram/planner.ts",
+        "src/tests/diagramPlannerFlow.test.ts",
+        "src/tests/drawnixSourceCoverage.test.ts"
+      ],
+      "reason": "The source checkout is dirty; these paths cannot be a reproducible parity oracle."
+    }
+  ],
+  "exit": {
+    "matrixPath": "fixtures/migration/source-operation-matrix.json",
+    "matrixContractCommit": "4168a51cd19ad8c3d1e05f604b50936255461a31",
+    "candidateImplementation": "not-accepted",
+    "nextAction": "Create a dedicated Mermaid normalizer conformance phase; only reconsider Drawnix after a clean committed source contract and fixture set exist."
+  }
+}
