@@ -204,17 +204,17 @@
       "expected": {
         "outputSchema": "diagram-spec-and-artifact-plan/v1",
         "targetPaths": [
-          ".notemd/artifacts/notemd-artifact-9a9e469f716c93be0bbe/diagram.mmd",
-          ".notemd/artifacts/notemd-artifact-9a9e469f716c93be0bbe/export.svg",
-          ".notemd/artifacts/notemd-artifact-9a9e469f716c93be0bbe/manifest.json",
-          ".notemd/artifacts/notemd-artifact-9a9e469f716c93be0bbe/preview.svg"
+          ".notemd/artifacts/notemd-artifact-ff9a6d55ec0208286fed/diagram.mmd",
+          ".notemd/artifacts/notemd-artifact-ff9a6d55ec0208286fed/export.svg",
+          ".notemd/artifacts/notemd-artifact-ff9a6d55ec0208286fed/manifest.json",
+          ".notemd/artifacts/notemd-artifact-ff9a6d55ec0208286fed/preview.svg"
         ],
         "citationIds": [],
         "mutationPreconditions": {
-          ".notemd/artifacts/notemd-artifact-9a9e469f716c93be0bbe/diagram.mmd": "absent",
-          ".notemd/artifacts/notemd-artifact-9a9e469f716c93be0bbe/export.svg": "absent",
-          ".notemd/artifacts/notemd-artifact-9a9e469f716c93be0bbe/manifest.json": "absent",
-          ".notemd/artifacts/notemd-artifact-9a9e469f716c93be0bbe/preview.svg": "absent",
+          ".notemd/artifacts/notemd-artifact-ff9a6d55ec0208286fed/diagram.mmd": "absent",
+          ".notemd/artifacts/notemd-artifact-ff9a6d55ec0208286fed/export.svg": "absent",
+          ".notemd/artifacts/notemd-artifact-ff9a6d55ec0208286fed/manifest.json": "absent",
+          ".notemd/artifacts/notemd-artifact-ff9a6d55ec0208286fed/preview.svg": "absent",
           "notes/diagram.md": "source-revision"
         },
         "artifactSha256": "ae1f4196d536d876abd148e051eb85d089b14c9ba4133ba1d1e768b190eca8b9"

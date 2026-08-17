@@ -50,6 +50,7 @@ test('reports missing Tectonic without creating a fake PDF', async () => {
 
 function circuitSpec() {
   return {
+    schemaFamily: 'diagram-spec' as const,
     version: 2 as const,
     title: 'Circuit',
     source: { path: 'notes/circuit.md', revision: 'revision-1' as never },

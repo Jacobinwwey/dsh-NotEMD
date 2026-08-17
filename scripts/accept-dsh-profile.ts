@@ -305,6 +305,7 @@ assert(slidevSourcePlan.plan.mutations.some(mutation => mutation.destination.end
 
 const artifact = await invoke('notemd_plan_mermaid_artifact', {
   spec: {
+    schemaFamily: 'diagram-spec',
     version: 2,
     title: 'Approval Lifecycle',
     source: { path: read.document.path, revision: read.document.revision },
@@ -329,6 +330,7 @@ assert(artifact.plan.mutations.some(mutation => mutation.destination.endsWith('/
 
 const drawioArtifact = await invoke('notemd_plan_drawio_artifact', {
   spec: {
+    schemaFamily: 'diagram-spec',
     version: 2,
     title: 'Approval Lifecycle',
     source: { path: read.document.path, revision: read.document.revision },

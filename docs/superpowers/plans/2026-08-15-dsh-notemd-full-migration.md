@@ -360,12 +360,22 @@ Tasks 1-12 are closed by the published release and are not reopened. This sectio
 - Add an opt-in lane for the pinned `github:Jacobinwwey/slidev` fork, Playwright, FFmpeg, Draw.io, Tectonic, and the stable Drawnix adapter; do not make these binaries core install dependencies.
 - Record executable fingerprints, native output digests, staging cleanup, cancellation, and intentional-unavailable results for each capability.
 - Exit evidence: each installed capability emits its native artifact from a deterministic fixture; removing the executable reports `unavailable` without weakening the portable-core gate.
+- [x] Added `@notemd-harness/process` capability profiles for PDF-to-SVG and PDF-to-PNG and an opt-in `capability:lane` script covering the fork, specialist exporters, and cancellation.
+- [x] Fingerprints hash executable bytes when available and fall back to the resolved path only for deterministic fake runtimes; native output digests are recorded per observation.
+- [x] The Windows lane produced ready PDF-to-SVG (`2f74b912...`) and PDF-to-PNG (`f2279ebd...`) artifacts from `pdftocairo`; missing Draw.io, Tectonic, Drawnix, Slidev/Playwright, and FFmpeg paths remain `unavailable`.
+- [x] The fork manifest is verified before any Slidev result can become ready; this run reported `slidev-fork-unverified`. Cancellation returned `process-cancelled`, and staging cleanup completed successfully.
+- [x] Focused gate passed: `typecheck`, `lint`, 2 files/15 tests, capability lane, and `git diff --check`. Strict native availability remains opt-in and does not weaken portable-core acceptance.
 
 ### Phase 14: Artifact schema registry and migration policy
 
 - Add family discriminators and a registry owned by `packages/notemd-artifacts` for DiagramSpec/diagram lineage `v2` and document export manifest `v3`.
 - Define unknown-family/version rejection, forward-compatible metadata rules, and migration tooling before external consumers depend on the manifests.
 - Exit evidence: packed-bundle verification accepts valid v2/v3 artifacts and rejects unknown combinations with a structured diagnostic.
+- [x] Added `schemaFamily` discriminators for `diagram-spec@2`, `diagram-lineage@2`, and `document-export@3`; generated manifests and source validators now assert their closed family/version pair.
+- [x] Added `artifactSchemaRegistry`, `inspectArtifactSchema`, and `assertArtifactSchema`. Unknown families, unknown versions, invalid known combinations, missing family/version, and invalid metadata return structured diagnostics with stable codes.
+- [x] Forward-compatible fields are confined to a JSON-safe `metadata` object; payload validators still reject unsupported top-level fields. `ArtifactSchemaError`, `DiagramSpecError`, and `ArtifactManifestError` retain diagnostics for callers.
+- [x] Updated the diagram fixture's content-addressed paths after schemaFamily became part of the canonical spec identity (`9a9e...` -> `ff9a...`), and conformance passed 1 file/2 tests.
+- [x] Focused registry/artifact gate passed 17 files/38 tests plus typecheck and lint. The packed-bundle verifier now loads the packaged registry and accepts all three valid fixtures while rejecting `diagram-spec@3` with `invalid-combination`.
 
 ### Phase 15: Workspace operations hardening (conditional)
 
@@ -381,4 +391,4 @@ Tasks 1-12 are closed by the published release and are not reopened. This sectio
 
 ### Execution order and record protocol
 
-Phase 12 is complete. Continue with Phase 13, then 14. Run Phase 15 only when the deployment contract requires multiple workspace processes. Run Phase 16 whenever a new source commit is available. Each phase must update both progress files with source/target locks, changed files and owners, measured tests, capability limits, rejected alternatives, risks, and its exit evidence.
+Phase 12 and Phase 13 are complete. Continue with Phase 14. Run Phase 15 as the explicit single-process hardening choice for the current bundle; a durable lease remains deferred until multi-process deployment is required. Run Phase 16 whenever a new source commit is available. Each phase must update both progress files with source/target locks, changed files and owners, measured tests, capability limits, rejected alternatives, risks, and its exit evidence.

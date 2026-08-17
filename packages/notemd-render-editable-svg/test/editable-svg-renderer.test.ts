@@ -4,6 +4,7 @@ import { EditableSvgRenderer } from '../src/index.js'
 
 test('uses editable SVG as the canonical source and emits separate preview/export derivatives', () => {
   const output = new EditableSvgRenderer().render({
+    schemaFamily: 'diagram-spec' as const,
     version: 2,
     title: 'Control Flow',
     source: { path: 'notes/control.md', revision: 'revision' },

@@ -94,6 +94,7 @@ function requiredTool(registered: readonly ToolRegistrationSpec[], name: string)
 
 function mermaidSpec() {
   return {
+    schemaFamily: 'diagram-spec' as const,
     version: 2,
     title: 'Write Lifecycle',
     source: { path: 'notes/a.md', revision: 'rev-a' },

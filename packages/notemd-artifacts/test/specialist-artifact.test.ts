@@ -40,7 +40,7 @@ test('compiles specialist source, preview, and staged export into one truthful l
     }[]
   }
 
-  expect(manifest).toMatchObject({ version: 2, canonicalTarget: 'drawio' })
+  expect(manifest).toMatchObject({ schemaFamily: 'diagram-lineage', version: 2, canonicalTarget: 'drawio' })
   expect(manifest.entries).toEqual(expect.arrayContaining([
     expect.objectContaining({ role: 'source', status: 'ready', mediaType: 'application/vnd.jgraph.mxfile', parentArtifactId: null }),
     expect.objectContaining({ role: 'preview', status: 'ready', mediaType: 'image/svg+xml', parentArtifactId: expect.any(String) }),
@@ -139,6 +139,7 @@ function rendererSet(): SpecialistArtifactRenderers {
 
 function drawioSpec(path: string, revision: string) {
   return {
+    schemaFamily: 'diagram-spec' as const,
     version: 2 as const,
     title: 'Architecture',
     source: { path, revision },
@@ -152,6 +153,7 @@ function drawioSpec(path: string, revision: string) {
 
 function circuitikzSpec(path: string, revision: string) {
   return {
+    schemaFamily: 'diagram-spec' as const,
     version: 2 as const,
     title: 'Circuit',
     source: { path, revision },

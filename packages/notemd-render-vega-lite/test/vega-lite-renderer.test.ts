@@ -4,6 +4,7 @@ import { VegaLiteSvgRenderer } from '../src/index.js'
 
 test('emits a canonical Vega-Lite source and labelled SVG chart projection', () => {
   const output = new VegaLiteSvgRenderer().render({
+    schemaFamily: 'diagram-spec' as const,
     version: 2,
     title: 'Latency Trend',
     source: { path: 'notes/metrics.md', revision: 'revision' },

@@ -77,6 +77,10 @@ The table records code state, not planned completion. A passing baseline release
 | 10. Slidev and media exporters | Complete. Three packages provide canonical source preparation plus named HTML/PDF/PNG/PPTX/MP4 providers over one staging/process boundary. | Task 10 focused and full gates pass; optional real executables report unavailable rather than being emulated. |
 | 11. Conformance, HMR, and publication | Complete. The matrix conformance and lifecycle contracts, full release gate, clean DSH profile, and non-force mainline synchronization all pass. | Keep the fork lock, optional capability boundaries, and publication evidence aligned when future changes update the bundle. |
 | 12. Executable conformance adapters | Complete. Fourteen typed adapters execute nineteen observations (eighteen included source operations plus auxiliary local retrieval), with operation-specific duplicate contracts and deterministic artifact lineage paths. | Any missing adapter, unmapped included operation, fixture digest drift, or contract mismatch must fail the focused conformance gate before publication. |
+| 13. Optional-runtime capability lane | Complete. The opt-in lane records executable fingerprints, native output digests, cancellation, and staging cleanup. This Windows run reports `pdftocairo` SVG/PNG ready and missing Slidev fork, Draw.io, Tectonic, Drawnix, and FFmpeg as truthful unavailable. | Native strictness stays opt-in; portable-core gates must remain green when optional binaries are absent. |
+| 14. Artifact schema registry | In progress. DiagramSpec, diagram lineage, and document-export manifests still need explicit family/version enforcement and structured diagnostics. | Registry tests and packed-bundle verification must accept only the closed v2/v3 family combinations. |
+| 15. Workspace operation hardening | Pending implementation. The current file-backed job model is single-process safe but has no workspace ownership guard. | The bundle must reject a second owner with a recoverable diagnostic before claiming multi-process safety. |
+| 16. Source intake and Drawnix review | Pending source audit. The source checkout is newer and dirty; no post-baseline behavior is accepted yet. | A committed source lock, matrix/fixture diff, and named Drawnix quarantine must land before any intake implementation. |
 
 ## 6. Recorded Direction
 
@@ -113,6 +117,24 @@ The first verification segment ran against the documentation change on Node `v22
 
 - Relative-link validation across both READMEs and all six new documents found no missing target.
 - `git diff --check` completed without whitespace errors.
+
+## 12. Phase 13 Verification
+
+- Scope and owner: `packages/notemd-process/src/allowlisted-process.ts` owns the fixed executable profiles and byte fingerprints; `packages/notemd-process/src/capability-lane.ts` and `scripts/optional-runtime-capability-lane.ts` own the opt-in observation/report protocol. No optional binary was added to core dependencies.
+- Target locks: the source oracle remains `obsidian-NoteMD_new@4168a51cd19ad8c3d1e05f604b50936255461a31`; the Slidev lock remains `github:Jacobinwwey/slidev@bbcb2efae709c2ebaa96bda522cd6c192476817c` and must be proven by `NOTEMD_SLIDEV_FORK_MANIFEST` before Slidev status can be ready.
+- Focused evidence on Node `v22.19.0` / pnpm `10.7.1`: `pnpm typecheck`, `pnpm lint`, `vitest` for `allowlisted-process.test.ts` and `capability-lane.test.ts` passed 2 files/15 tests; `git diff --check` passed.
+- Real lane report: fixture SHA-256 `0ddba517ff3630d3c1e84b54bb952a6d91a82d7550489e3805994e57a52d53d4`; staging cleanup `true`; `pdf-to-svg` ready with native digest `2f74b912f9ad7bc30512d1de59457e665400ca590acfa03a886aee50ac3c87cb`; `pdf-to-png` ready with native digest `f2279ebd674c8dadc5f57e35ebeb0c7573ff953359b5703a42a33b292c9e4c70`.
+- Capability limits: Draw.io, Drawnix adapter, Tectonic, Slidev fork, and Playwright/FFmpeg paths were absent or unverified and returned `unavailable`; cancellation returned `process-cancelled`. No unavailable result was coerced into a preview or export success.
+- Rejected alternatives and risks: installing global runtimes, hashing only executable paths, using upstream Slidev, and making strict native availability mandatory were rejected. Executable bytes are hashed when present; fake runtimes are path-fingerprinted only for deterministic tests; strict native gating remains an explicit environment opt-in.
+
+## 13. Phase 14 Verification
+
+- Scope and owner: `packages/notemd-artifacts/src/schema-registry.ts` is the only family/version registry. `diagram-spec.ts`, `artifact-manifest.ts`, and `document-export.ts` own payload validation and generated discriminator fields; bundle verification checks the packaged registry rather than a source-only copy.
+- Closed combinations: `diagram-spec@2`, `diagram-lineage@2`, and `document-export@3`. `inspectArtifactSchema` returns stable `invalid-record`, `missing-family`, `unknown-family`, `missing-version`, `unknown-version`, `invalid-combination`, and `invalid-metadata` diagnostics; `assertArtifactSchema` adds expected family/version mismatch diagnostics.
+- Forward compatibility: nested JSON-safe `metadata` is accepted and frozen; unknown payload fields remain the responsibility of the family validator and are rejected by existing `assertKnownKeys` checks. No unbounded top-level extension point was introduced.
+- Focused evidence: `schema-registry.test.ts` passed 8 tests; the artifact/renderer/tool focused gate passed 17 files/38 tests; `pnpm typecheck` and `pnpm lint` passed. Full conformance passed 1 file/2 tests after the canonical diagram artifact id changed from `notemd-artifact-9a9e469f716c93be0bbe` to `notemd-artifact-ff9a6d55ec0208286fed`.
+- Packed verification contract: `scripts/verify-bundle.ts` dynamically loads `@notemd-harness/artifacts/lib/index.js` from the extracted tarball, accepts all three valid fixtures, and requires a structured `invalid-combination` diagnostic for `diagram-spec@3`.
+- Rejected alternatives and risks: one global version number, silent legacy-family inference, arbitrary metadata at the top level, and string-only migration errors were rejected. Existing version-1 cleanup data now fails closed with an attached diagnostic instead of being treated as a current diagram lineage manifest.
 - `pnpm typecheck` and `pnpm lint` completed successfully.
 - `pnpm test` completed successfully: 16 test files and 50 tests passed.
 

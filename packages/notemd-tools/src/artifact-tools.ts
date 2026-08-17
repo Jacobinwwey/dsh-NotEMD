@@ -562,6 +562,7 @@ function circuitDiagramSpecParameter(target: 'circuitikz') {
 function diagramSpecBaseProperties(target: DiagramCanonicalTarget) {
   return {
     version: { type: 'integer', required: true, const: 2 },
+    schemaFamily: { type: 'string', required: true, const: 'diagram-spec' },
     title: { type: 'string', required: true },
     source: {
       type: 'object',

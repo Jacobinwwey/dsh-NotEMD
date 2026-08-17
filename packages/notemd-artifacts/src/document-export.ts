@@ -15,6 +15,7 @@ import {
   type ReadyArtifactPayload,
 } from './artifact-renderer.js'
 import { ArtifactManifestError, type ArtifactCapability } from './artifact-manifest.js'
+import { assertArtifactSchema, type ArtifactSchemaMetadata } from './schema-registry.js'
 
 export type DocumentExportFormat = 'source' | 'html' | 'pdf' | 'png' | 'pptx' | 'mp4'
 
@@ -43,6 +44,19 @@ export interface PreparedDocumentArtifactRenderOutput {
   readonly source: ReadyArtifactPayload
   readonly report: ReadyArtifactPayload
   readonly export: ArtifactDerivativePayload
+}
+
+export interface DocumentExportManifest {
+  readonly schemaFamily: 'document-export'
+  readonly version: 3
+  readonly artifactId: string
+  readonly canonicalTarget: 'slidev'
+  readonly exportFormat: DocumentExportFormat
+  readonly sourcePath: string
+  readonly sourceRevision: string
+  readonly entries: readonly Record<string, unknown>[]
+  readonly ownedPaths: readonly string[]
+  readonly metadata?: ArtifactSchemaMetadata
 }
 
 export interface DocumentExportRenderer<Spec extends SlidevSourceSpec> {
@@ -145,7 +159,8 @@ export function compileDocumentExportPlan(
     documentReadyEntry('report', rendered.report, artifactId, directory, artifactId, fingerprints),
     documentDerivativeEntry('export', rendered.export, artifactId, directory, fingerprints),
   ])
-  const manifest = Object.freeze({
+  const manifest: DocumentExportManifest = Object.freeze({
+    schemaFamily: 'document-export',
     version: 3 as const,
     artifactId,
     canonicalTarget: 'slidev' as const,
@@ -155,6 +170,7 @@ export function compileDocumentExportPlan(
     entries,
     ownedPaths: Object.freeze(entries.flatMap((entry) => entry.status === 'ready' ? [entry.path] : []).sort()),
   })
+  assertArtifactSchema(manifest, { family: 'document-export', version: 3 })
   const provenance = {
     operationId: `artifact.plan.slidev.${format}`,
     sourceRefs: [source.path],

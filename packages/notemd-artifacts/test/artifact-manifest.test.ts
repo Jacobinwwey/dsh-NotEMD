@@ -53,6 +53,7 @@ test('plans source, preview, and export content with a versioned manifest', asyn
   expect(manifestMutation?.expectedRevision).toBe('absent')
   const manifestContent = manifestMutation?.kind === 'write-text' ? manifestMutation.content : '{}'
   expect(JSON.parse(manifestContent)).toMatchObject({
+    schemaFamily: 'diagram-lineage',
     version: 2,
     canonicalTarget: 'mermaid',
     sourcePath: 'notes/architecture.md',
@@ -114,6 +115,7 @@ function renderer(target: DiagramArtifactRenderer['target']): DiagramArtifactRen
 
 function createMermaidSpec(path: string, revision: string) {
   return {
+    schemaFamily: 'diagram-spec' as const,
     version: 2 as const,
     title: 'Write Lifecycle',
     source: { path, revision },

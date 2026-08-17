@@ -238,3 +238,21 @@
 
 本审计不重新打开已完成的 Task 1-12；下一阶段从当前发布提交和固定 source lock 开始。
 - 最终 fetch 确认 `origin/main...main = 0 0`；工作区只报告 `## main`，没有任何路径。Slidev lock 仍为 `github:Jacobinwwey/slidev@bbcb2efae709c2ebaa96bda522cd6c192476817c`。
+
+## 12. Phase 13 验证
+
+- 范围与 owner：`packages/notemd-process/src/allowlisted-process.ts` 拥有固定 executable profile 与 byte fingerprint；`packages/notemd-process/src/capability-lane.ts` 和 `scripts/optional-runtime-capability-lane.ts` 拥有 opt-in observation/report 协议。没有把 optional binary 加入 core dependency。
+- Target lock：source oracle 仍为 `obsidian-NoteMD_new@4168a51cd19ad8c3d1e05f604b50936255461a31`；Slidev lock 仍为 `github:Jacobinwwey/slidev@bbcb2efae709c2ebaa96bda522cd6c192476817c`，必须由 `NOTEMD_SLIDEV_FORK_MANIFEST` 证明后才能报告 Slidev ready。
+- Node `v22.19.0` / pnpm `10.7.1` 实测：`pnpm typecheck`、`pnpm lint`、`allowlisted-process.test.ts` 与 `capability-lane.test.ts` 的 Vitest 聚焦运行通过，共 2 files/15 tests；`git diff --check` 通过。
+- Real lane report：fixture SHA-256 为 `0ddba517ff3630d3c1e84b54bb952a6d91a82d7550489e3805994e57a52d53d4`；staging cleanup 为 `true`；`pdf-to-svg` ready，native digest `2f74b912f9ad7bc30512d1de59457e665400ca590acfa03a886aee50ac3c87cb`；`pdf-to-png` ready，native digest `f2279ebd674c8dadc5f57e35ebeb0c7573ff953359b5703a42a33b292c9e4c70`。
+- Capability 限制：Draw.io、Drawnix adapter、Tectonic、Slidev fork 与 Playwright/FFmpeg 路径缺失或未验证，结果为 `unavailable`；取消返回 `process-cancelled`。没有把 unavailable 转换为 preview/export success。
+- 拒绝方案与风险：安装 global runtime、只 hash executable path、使用 upstream Slidev、把 strict native availability 设为必过均被拒绝。有文件时 hash executable bytes；deterministic fake 才回退 path fingerprint；strict native gate 仍由环境显式 opt-in。
+
+## 13. Phase 14 验证
+
+- 范围与 owner：`packages/notemd-artifacts/src/schema-registry.ts` 是唯一 family/version registry。`diagram-spec.ts`、`artifact-manifest.ts` 与 `document-export.ts` 各自拥有 payload validator 和生成 discriminator；bundle verification 校验打包后的 registry，而不是只校验 source 副本。
+- 封闭组合：`diagram-spec@2`、`diagram-lineage@2`、`document-export@3`。`inspectArtifactSchema` 返回稳定的 `invalid-record`、`missing-family`、`unknown-family`、`missing-version`、`unknown-version`、`invalid-combination`、`invalid-metadata` diagnostic；`assertArtifactSchema` 另加 expected family/version mismatch diagnostic。
+- 前向兼容：允许并冻结嵌套 JSON-safe `metadata`；未知 payload field 仍由 family validator 负责，并被现有 `assertKnownKeys` 拒绝。没有引入无界 top-level extension point。
+- focused 证据：`schema-registry.test.ts` 通过 8 tests；artifact/renderer/tool focused gate 通过 17 files/38 tests；`pnpm typecheck` 与 `pnpm lint` 通过。canonical diagram artifact id 从 `notemd-artifact-9a9e469f716c93be0bbe` 变为 `notemd-artifact-ff9a6d55ec0208286fed` 后，完整 conformance 通过 1 file/2 tests。
+- Packed verification contract：`scripts/verify-bundle.ts` 从解压 tarball 动态加载 `@notemd-harness/artifacts/lib/index.js`，接受三个合法 fixture，并要求 `diagram-spec@3` 返回结构化 `invalid-combination` diagnostic。
+- 拒绝方案与风险：单一全局 version、静默 legacy-family 推断、top-level 任意 metadata 和纯字符串迁移错误均被拒绝。现有 version-1 cleanup 数据现在 fail closed 并附带 diagnostic，不会被当作当前 diagram lineage manifest。

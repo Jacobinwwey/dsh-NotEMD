@@ -37,6 +37,7 @@ test('keeps the adapter optional and reports unavailable native Drawnix renderin
 
 function drawnixSpec() {
   return {
+    schemaFamily: 'diagram-spec' as const,
     version: 2 as const,
     title: 'Knowledge map',
     source: { path: 'notes/diagram.md', revision: 'revision-1' as never },

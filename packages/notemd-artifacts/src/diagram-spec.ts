@@ -1,5 +1,12 @@
 import type { Revision } from '@notemd-harness/vault'
 
+import {
+  assertArtifactSchema,
+  ArtifactSchemaError,
+  type ArtifactSchemaDiagnostic,
+  type ArtifactSchemaMetadata,
+} from './schema-registry.js'
+
 export const svgCanonicalTargets = [
   'mermaid',
   'vega-lite',
@@ -99,12 +106,14 @@ export interface CircuitDiagramInput {
 }
 
 interface DiagramSpecBase {
+  readonly schemaFamily: 'diagram-spec'
   readonly version: 2
   readonly title: string
   readonly source: DiagramSourceRef
   readonly evidenceRefs: readonly string[]
   readonly generation: DiagramGenerationProvenance
   readonly rendererIntent: DiagramRendererIntent
+  readonly metadata?: ArtifactSchemaMetadata
 }
 
 export interface MermaidDiagramSpec extends DiagramSpecBase {
@@ -159,17 +168,27 @@ export type DiagramSpec =
 
 export class DiagramSpecError extends Error {
   readonly code = 'ARTIFACT_SPEC_INVALID'
+  readonly diagnostic?: ArtifactSchemaDiagnostic | undefined
 
-  constructor(message: string) {
+  constructor(message: string, diagnostic?: ArtifactSchemaDiagnostic) {
     super(message)
     this.name = 'DiagramSpecError'
+    this.diagnostic = diagnostic
   }
 }
 
 export function validateDiagramSpec(value: unknown): DiagramSpec {
   const record = requiredRecord(value, 'Diagram specifications must be objects.')
-  if (record.version !== 2) {
-    throw new DiagramSpecError('Diagram specifications require version 2.')
+  try {
+    assertArtifactSchema(record, { family: 'diagram-spec', version: 2 })
+  } catch (error) {
+    if (error instanceof ArtifactSchemaError) {
+      throw new DiagramSpecError(error.message, error.diagnostic)
+    }
+    if (error instanceof Error) {
+      throw new DiagramSpecError(error.message)
+    }
+    throw error
   }
   const base = parseBase(record)
   const target = requiredTarget(record.canonicalTarget)
@@ -195,16 +214,19 @@ export function isSvgCanonicalTarget(value: DiagramCanonicalTarget): value is Sv
   return (svgCanonicalTargets as readonly string[]).includes(value)
 }
 
-const baseKeys = ['version', 'title', 'source', 'evidenceRefs', 'generation', 'rendererIntent'] as const
+const baseKeys = ['schemaFamily', 'version', 'title', 'source', 'evidenceRefs', 'generation', 'rendererIntent', 'metadata'] as const
 
 function parseBase(record: Record<string, unknown>): DiagramSpecBase {
+  const schema = assertArtifactSchema(record, { family: 'diagram-spec', version: 2 })
   return Object.freeze({
+    schemaFamily: 'diagram-spec',
     version: 2,
     title: requiredText(record.title, 'DiagramSpec title'),
     source: parseSource(record.source),
     evidenceRefs: parseTextList(record.evidenceRefs, 'DiagramSpec evidenceRefs'),
     generation: parseGeneration(record.generation),
     rendererIntent: parseRendererIntent(record.rendererIntent),
+    ...(schema.metadata === undefined ? {} : { metadata: schema.metadata }),
   })
 }
 

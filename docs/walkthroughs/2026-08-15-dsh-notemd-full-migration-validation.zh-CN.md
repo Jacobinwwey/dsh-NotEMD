@@ -2,7 +2,7 @@
 
 > English version: [2026-08-15-dsh-notemd-full-migration-validation.md](2026-08-15-dsh-notemd-full-migration-validation.md)
 
-本文档记录十二阶段迁移的发布证据。判断标准不是“代码存在”，而是具名 contract、失败行为、packed distribution 和 DSH profile 边界都经过验证后，才可称为完成。
+本文档记录十二阶段基线与发布后 capability lane 的证据。判断标准不是“代码存在”，而是具名 contract、失败行为、packed distribution 和 DSH profile 边界都经过验证后，才可称为完成。
 
 ## 范围与所有权
 
@@ -70,3 +70,19 @@ bundle patch 替换的是完整 config row，因此每次替换都必须按需�
 - canonical remote：`git@github.com:Jacobinwwey/dsh-NotEMD.git`。
 - 发布提交 `73480df`（`test: prove full NoteMD migration conformance`）在新鲜 release gate 通过后，以非强制方式推送到 `origin/main`。推送前分歧为 `0 11`；远端没有领先提交，因此无需 rebase。
 - 最终 fetch 确认 `origin/main...main = 0 0`。`rtk git status --short --branch` 只输出 `## main`，其后没有任何路径。
+
+## Phase 13 Optional-runtime 证据
+
+该 lane 与 portable bundle gate 分离。`scripts/optional-runtime-capability-lane.ts` 创建确定性的 PDF fixture，通过 Windows `Path` 解析 allowlisted executable，只运行绑定 staging 的 profile，记录 executable/content fingerprint，并最终确认 staging cleanup。`NOTEMD_CAPABILITY_LANE_REQUIRE_NATIVE=1` 是显式 strict-native opt-in；默认运行必须保留 truthful unavailable 结果。
+
+Node `v22.19.0` / pnpm `10.7.1` 的实测 run 使用 fixture digest `0ddba517ff3630d3c1e84b54bb952a6d91a82d7550489e3805994e57a52d53d4`，cleanup 为 `true`。`pdftocairo` 产生 ready native SVG（`2f74b912f9ad7bc30512d1de59457e665400ca590acfa03a886aee50ac3c87cb`）与 PNG（`f2279ebd674c8dadc5f57e35ebeb0c7573ff953359b5703a42a33b292c9e4c70`）。Draw.io、Tectonic、稳定 Drawnix adapter 与 Slidev/Playwright/FFmpeg lane 缺失或未验证，保持 `unavailable`；取消探针返回 `process-cancelled`。
+
+Slidev observation 只有在 manifest 匹配固定 fork `github:Jacobinwwey/slidev@bbcb2efae709c2ebaa96bda522cd6c192476817c` 时才能 ready；本次有意报告 `slidev-fork-unverified`。存在实际文件时 hash executable bytes；path fallback 仅限 deterministic fake runtime。不接受 upstream Slidev、global installation，也不接受用 SVG 冒充 native PPTX/MP4 结果。
+
+## Phase 14 Schema 证据
+
+Artifact envelope 现在携带一个显式 family discriminator：`diagram-spec@2`、`diagram-lineage@2` 或 `document-export@3`。`packages/notemd-artifacts/src/schema-registry.ts` 是共享 registry；family module 仍负责 payload field，并拒绝不支持的 top-level key。`metadata` 是唯一前向兼容扩展点，且必须是 finite、JSON-safe object。
+
+Registry suite 通过 8 tests。inspection API 对缺失/未知 family、缺失/未知 version、非法 family/version 组合和坏 metadata 返回结构化 diagnostic。生成的 diagram/document manifest 在 mutation planning 前强制断言预期 registry entry。`schemaFamily` 进入 canonical DiagramSpec identity 后，conformance fixture directory 从 `notemd-artifact-9a9e469f716c93be0bbe` 变为 `notemd-artifact-ff9a6d55ec0208286fed`；matrix 已同步，conformance adapter 通过 1 file/2 tests。
+
+`verify-bundle` 解压 tarball，动态加载打包后的 artifacts registry，接受合法 v2/v3 fixture，并要求 `diagram-spec@3` 返回 `invalid-combination`。这样可以阻止 source registry 通过而分发包发生 drift。

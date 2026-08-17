@@ -15,7 +15,8 @@
     "build": "pnpm typecheck && pnpm --recursive --if-present run build",
     "pack:bundle": "pnpm --dir packages/notemd-bundle pack --pack-destination ../../artifacts",
     "verify:bundle": "tsx scripts/verify-bundle.ts",
-    "accept:dsh": "tsx scripts/accept-dsh-profile.ts"
+    "accept:dsh": "tsx scripts/accept-dsh-profile.ts",
+    "capability:lane": "tsx scripts/optional-runtime-capability-lane.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",

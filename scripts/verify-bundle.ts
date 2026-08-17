@@ -2,7 +2,7 @@ import { execFile as executeFile } from 'node:child_process'
 import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 
 const execFile = promisify(executeFile)
@@ -56,11 +56,40 @@ export async function verifyBundle(rootDirectory = workspaceRoot): Promise<void>
       const packageDirectory = join(packageRoot, 'node_modules', ...packageName.split('/'))
       await readManifest(join(packageDirectory, 'package.json'))
     }
+    await verifyPackagedArtifactSchemaRegistry(packageRoot)
   } finally {
     await rm(extractionRoot, { recursive: true, force: true })
   }
 
   process.stdout.write(`Verified standalone bundle: ${tarball}\n`)
+}
+
+interface PackagedArtifactSchemaRegistry {
+  readonly inspectArtifactSchema: (candidate: unknown) => {
+    readonly ok: boolean
+    readonly diagnostic?: { readonly code?: string }
+  }
+}
+
+async function verifyPackagedArtifactSchemaRegistry(packageRoot: string): Promise<void> {
+  const registryPath = join(packageRoot, 'node_modules', '@notemd-harness', 'artifacts', 'lib', 'index.js')
+  const registry = await import(pathToFileURL(registryPath).href) as PackagedArtifactSchemaRegistry
+  const validFixtures = [
+    { schemaFamily: 'diagram-spec', version: 2 },
+    { schemaFamily: 'diagram-lineage', version: 2 },
+    { schemaFamily: 'document-export', version: 3 },
+  ]
+  for (const fixture of validFixtures) {
+    const inspection = registry.inspectArtifactSchema(fixture)
+    if (!inspection.ok) {
+      throw new Error(`Packed artifact schema registry rejected valid fixture ${JSON.stringify(fixture)}.`)
+    }
+  }
+
+  const invalidInspection = registry.inspectArtifactSchema({ schemaFamily: 'diagram-spec', version: 3 })
+  if (invalidInspection.ok || invalidInspection.diagnostic?.code !== 'invalid-combination') {
+    throw new Error('Packed artifact schema registry did not reject the invalid diagram-spec@3 combination with a structured diagnostic.')
+  }
 }
 
 async function locateTarball(rootDirectory: string): Promise<string> {

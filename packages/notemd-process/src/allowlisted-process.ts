@@ -204,7 +204,8 @@ const processProfiles = Object.freeze({
     mediaType: 'image/png',
     outputLimit: 'pngOutputBytes',
     inputLimitBytes: 64 * 1024 * 1024,
-    argv: (executable: string) => [executable, '-png', '-singlefile', 'source.pdf', 'output.png'],
+    // pdftocairo appends .png to the output prefix when --singlefile is used.
+    argv: (executable: string) => [executable, '-png', '-singlefile', 'source.pdf', 'output'],
     validateInput: isPdf,
     validateOutput: isPng,
   }),
@@ -361,6 +362,14 @@ export class AllowlistedProcessBoundary {
     return this.start(processProfiles.pdfToPng, Uint8Array.from(pdf), signal)
   }
 
+  pdfToSvgCapability(signal?: AbortSignal): Promise<ProcessExecutableCapability> {
+    return this.capability(processProfiles.pdfToSvg, signal)
+  }
+
+  pdfToPngCapability(signal?: AbortSignal): Promise<ProcessExecutableCapability> {
+    return this.capability(processProfiles.pdfToPng, signal)
+  }
+
   renderSlidevHtml(source: string, signal?: AbortSignal): Promise<ProcessArtifactExecution> {
     return this.start(processProfiles.slidevHtml, Buffer.from(source, 'utf8'), signal)
   }
@@ -471,7 +480,7 @@ export class AllowlistedProcessBoundary {
         const executables = await this.resolveProfileExecutables(profile, lifetime.signal)
         return {
           status: 'available',
-          executableFingerprint: fingerprintExecutable(profile, executables),
+          executableFingerprint: await fingerprintExecutable(profile, executables),
         }
       } catch {
         return lifetime.signal.aborted
@@ -562,7 +571,7 @@ export class AllowlistedProcessBoundary {
         mediaType: profile.mediaType,
         bytes: Uint8Array.from(bytes),
         contentSha256: sha256(bytes),
-        executableFingerprint: fingerprintExecutable(profile, executables),
+        executableFingerprint: await fingerprintExecutable(profile, executables),
       })
     } catch (error) {
       if (lifetime.signal.aborted) {
@@ -712,7 +721,7 @@ export class AllowlistedProcessBoundary {
         mediaType: 'video/mp4',
         bytes: Uint8Array.from(bytes),
         contentSha256: sha256(bytes),
-        executableFingerprint: fingerprintExecutable({ id: `slidev-mp4:${NOTEMD_SLIDEV_FORK.origin}`, version: NOTEMD_SLIDEV_FORK.revision }, executables),
+        executableFingerprint: await fingerprintExecutable({ id: `slidev-mp4:${NOTEMD_SLIDEV_FORK.origin}`, version: NOTEMD_SLIDEV_FORK.revision }, executables),
       })
     } catch (error) {
       if (lifetime.signal.aborted) {
@@ -1087,8 +1096,19 @@ function isResolvedExecutable(requested: string, resolved: string): boolean {
     || resolvedName === `${requestedName}.bat`
 }
 
-function fingerprintExecutable(profile: Pick<CommandProfile, 'id' | 'version'>, executables: readonly string[]): string {
-  return sha256(Buffer.from(`${profile.id}@${profile.version}\0${executables.join('\0')}`, 'utf8'))
+async function fingerprintExecutable(
+  profile: Pick<CommandProfile, 'id' | 'version'>,
+  executables: readonly string[],
+): Promise<string> {
+  const executableDigests = await Promise.all(executables.map(async (executable) => {
+    try {
+      return sha256(await readFile(executable))
+    } catch {
+      // Fake runtimes used by the deterministic core suite do not materialize binaries.
+      return executable
+    }
+  }))
+  return sha256(Buffer.from(`${profile.id}@${profile.version}\0${executableDigests.join('\0')}`, 'utf8'))
 }
 
 function sha256(bytes: Uint8Array): string {

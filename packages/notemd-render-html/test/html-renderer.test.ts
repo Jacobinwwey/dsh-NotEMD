@@ -4,6 +4,7 @@ import { HtmlSvgRenderer } from '../src/index.js'
 
 test('emits an inspectable HTML source with a separate SVG projection', () => {
   const output = new HtmlSvgRenderer().render({
+    schemaFamily: 'diagram-spec' as const,
     version: 2,
     title: 'Service Graph',
     source: { path: 'notes/services.md', revision: 'revision' },

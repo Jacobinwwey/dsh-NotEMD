@@ -279,12 +279,22 @@ Task 1-12 已由已发布版本关闭，不重新打开。本节从目标提交 
 - 增加固定 `github:Jacobinwwey/slidev` fork、Playwright、FFmpeg、Draw.io、Tectonic 与稳定 Drawnix adapter 的 opt-in 通道；这些 binary 不能成为 core install 依赖。
 - 为每个 capability 记录 executable fingerprint、原生输出 digest、staging 清理、取消行为和有意缺失时的 unavailable 结果。
 - 退出证据：每个已安装 capability 都能从确定性 fixture 产生原生工件；移除 executable 时只返回 `unavailable`，不削弱 portable-core gate。
+- [x] 已增加 `@notemd-harness/process` 的 PDF-to-SVG/PDF-to-PNG capability profile，以及覆盖 fork、specialist exporter 和 cancellation 的 opt-in `capability:lane` script。
+- [x] 可用时 fingerprint 对 executable bytes 做 hash；仅 deterministic fake runtime 无实际文件时才回退到 resolved path；每个 observation 都记录 native output digest。
+- [x] Windows lane 实测 `pdftocairo` 产生 ready PDF-to-SVG（`2f74b912...`）与 PDF-to-PNG（`f2279ebd...`）；Draw.io、Tectonic、Drawnix、Slidev/Playwright 和 FFmpeg 缺失路径保持 `unavailable`。
+- [x] Slidev manifest 在结果 ready 前强制校验 fork；本次为 `slidev-fork-unverified`。取消探针返回 `process-cancelled`，staging cleanup 成功完成。
+- [x] focused gate 通过：`typecheck`、`lint`、2 files/15 tests、capability lane 与 `git diff --check`。strict native availability 仍为 opt-in，不削弱 portable-core acceptance。
 
 ### Phase 14：工件 Schema Registry 与迁移策略
 
 - 在 `packages/notemd-artifacts` 建立 family discriminator 与 registry，明确 DiagramSpec/diagram lineage `v2` 和 document export manifest `v3` 的归属。
 - 在外部 consumer 依赖 manifest 前，定义未知 family/version 拒绝、前向兼容 metadata 规则和迁移工具。
 - 退出证据：packed-bundle verification 接受合法 v2/v3 工件，并以结构化诊断拒绝未知组合。
+- [x] 为 `diagram-spec@2`、`diagram-lineage@2` 与 `document-export@3` 增加 `schemaFamily` discriminator；生成的 manifest 和 source validator 现在强制闭合的 family/version 组合。
+- [x] 增加 `artifactSchemaRegistry`、`inspectArtifactSchema` 与 `assertArtifactSchema`。未知 family、未知 version、已知但非法组合、缺失 family/version 和坏 metadata 均返回带稳定 code 的结构化 diagnostic。
+- [x] 前向兼容字段只能放在 JSON-safe `metadata` 对象内；payload validator 仍拒绝不支持的 top-level field。`ArtifactSchemaError`、`DiagramSpecError` 与 `ArtifactManifestError` 会保留 diagnostic。
+- [x] schemaFamily 进入 canonical spec identity 后，已更新 diagram fixture 的 content-addressed 路径（`9a9e...` -> `ff9a...`）；conformance 通过 1 文件/2 测试。
+- [x] focused registry/artifact gate 通过 17 files/38 tests，typecheck 与 lint 通过。packed-bundle verifier 现在加载打包后的 registry，接受三个合法 fixture，并以 `invalid-combination` 拒绝 `diagram-spec@3`。
 
 ### Phase 15：Workspace Operation 加固（条件阶段）
 
@@ -300,4 +310,4 @@ Task 1-12 已由已发布版本关闭，不重新打开。本节从目标提交 
 
 ### 执行顺序与记录协议
 
-Phase 12 已完成。继续执行 Phase 13、Phase 14；只有部署契约要求多个 workspace process 时执行 Phase 15；每当 source 有新提交时执行 Phase 16。每个阶段都必须同步更新两份 progress 文件，记录 source/target lock、变更文件与 owner、实测测试、capability 限制、拒绝方案、风险和退出证据。
+Phase 12 与 Phase 13 已完成。继续执行 Phase 14。当前 bundle 选择显式 single-process hardening 作为 Phase 15；只有多进程部署真正需要时才引入 durable lease。每当 source 有新提交时执行 Phase 16。每个阶段都必须同步更新两份 progress 文件，记录 source/target lock、变更文件与 owner、实测测试、capability 限制、拒绝方案、风险和退出证据。

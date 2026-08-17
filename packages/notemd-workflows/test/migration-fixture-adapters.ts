@@ -506,6 +506,7 @@ async function writeWorkspaceFileAtRoot(root: string, path: string, content: str
 
 function mermaidSpec(source: VaultDocument) {
   return {
+    schemaFamily: 'diagram-spec' as const,
     version: 2 as const,
     title: 'Mutation Flow',
     source: { path: source.path, revision: source.revision },

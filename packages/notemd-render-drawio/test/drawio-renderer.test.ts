@@ -60,6 +60,7 @@ test('surfaces process cancellation instead of turning it into a successful arti
 
 function drawioSpec() {
   return {
+    schemaFamily: 'diagram-spec' as const,
     version: 2 as const,
     title: 'Flow & <safe>',
     source: { path: 'notes/diagram.md', revision: 'revision-1' as never },

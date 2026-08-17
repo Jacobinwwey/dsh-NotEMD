@@ -14,6 +14,7 @@ test('emits Mermaid source and a labelled SVG source projection', () => {
 
 function graphSpec(canonicalTarget: 'mermaid') {
   return {
+    schemaFamily: 'diagram-spec' as const,
     version: 2 as const,
     title: 'Write Lifecycle',
     source: { path: 'notes/architecture.md', revision: 'revision' },

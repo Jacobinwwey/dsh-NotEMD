@@ -3,6 +3,7 @@ import { expect, test } from 'vitest'
 import { validateDiagramSpec } from '../src/index.js'
 
 const mermaidSpec = {
+  schemaFamily: 'diagram-spec' as const,
   version: 2,
   title: 'Write Lifecycle',
   source: { path: 'notes/architecture.md', revision: 'revision-1' },
@@ -30,6 +31,7 @@ test('accepts a source-bound v2 Mermaid graph with rendering provenance', () => 
 
 test('accepts a v2 Vega-Lite chart with structured series data', () => {
   const spec = {
+    schemaFamily: 'diagram-spec' as const,
     version: 2,
     title: 'Latency Trend',
     source: { path: 'notes/metrics.md', revision: 'revision-2' },

@@ -4,6 +4,7 @@ import { JsonCanvasSvgRenderer } from '../src/index.js'
 
 test('retains JSON Canvas as source and labels SVG as a non-canonical projection', () => {
   const output = new JsonCanvasSvgRenderer().render({
+    schemaFamily: 'diagram-spec' as const,
     version: 2,
     title: 'Architecture Map',
     source: { path: 'notes/architecture.md', revision: 'revision' },

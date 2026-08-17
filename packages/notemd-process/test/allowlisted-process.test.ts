@@ -79,7 +79,7 @@ describe('AllowlistedProcessBoundary', () => {
       [runtime.resolvedPath('notemd-drawnix-render'), '--input', 'source.drawnix.json', '--output', 'output.svg'],
       [runtime.resolvedPath('tectonic'), '-X', 'compile', '--outdir', '.', 'source.tex'],
       [runtime.resolvedPath('pdftocairo'), '-svg', 'source.pdf', 'output.svg'],
-      [runtime.resolvedPath('pdftocairo'), '-png', '-singlefile', 'source.pdf', 'output.png'],
+      [runtime.resolvedPath('pdftocairo'), '-png', '-singlefile', 'source.pdf', 'output'],
     ])
   })
 
@@ -245,6 +245,24 @@ describe('AllowlistedProcessBoundary', () => {
 
     expect(runtime.resolutions).toEqual(['slidev', 'slidev', 'playwright', 'slidev', 'playwright', 'ffmpeg'])
     expect(runtime.spawns).toEqual([])
+  })
+
+  test('fingerprints resolved executable bytes when the runtime materializes them', async () => {
+    const runtime = new FakeSubprocessRuntime(async () => ({ exitCode: 0, signal: null }))
+    const executable = runtime.resolvedPath('drawio')
+    await mkdir(join(workspaceRoot, 'executables'), { recursive: true })
+    await writeFile(executable, 'drawio-v1', 'utf8')
+    const boundary = new AllowlistedProcessBoundary(runtime, workspaceRoot)
+
+    const first = await boundary.drawioSvgCapability()
+    await writeFile(executable, 'drawio-v2', 'utf8')
+    const second = await boundary.drawioSvgCapability()
+
+    expect(first.status).toBe('available')
+    expect(second.status).toBe('available')
+    if (first.status === 'available' && second.status === 'available') {
+      expect(second.executableFingerprint).not.toBe(first.executableFingerprint)
+    }
   })
 
   test('disposes active process trees before releasing each staging run', async () => {

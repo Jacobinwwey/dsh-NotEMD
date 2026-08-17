@@ -53,7 +53,7 @@ test('compiles a Slidev PDF proposal with source, layout report, and staged expo
     readonly entries: readonly { readonly role: string; readonly status: string; readonly mediaType: string }[]
   }
 
-  expect(manifest).toMatchObject({ version: 3, canonicalTarget: 'slidev', exportFormat: 'pdf' })
+  expect(manifest).toMatchObject({ schemaFamily: 'document-export', version: 3, canonicalTarget: 'slidev', exportFormat: 'pdf' })
   expect(manifest.entries).toEqual(expect.arrayContaining([
     expect.objectContaining({ role: 'source', status: 'ready', mediaType: 'text/markdown' }),
     expect.objectContaining({ role: 'report', status: 'ready', mediaType: 'application/json' }),

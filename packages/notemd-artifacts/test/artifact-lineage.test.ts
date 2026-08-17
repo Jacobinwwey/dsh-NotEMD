@@ -32,6 +32,7 @@ test('records source, sanitized SVG preview, and SVG export as distinct lineage 
   })
 
   const plan = planner.planMermaidArtifact({
+    schemaFamily: 'diagram-spec',
     version: 2,
     title: 'Write Lifecycle',
     source: { path: source.path, revision: source.revision },
@@ -68,7 +69,7 @@ test('records source, sanitized SVG preview, and SVG export as distinct lineage 
     }[]
   }
 
-  expect(manifest).toMatchObject({ version: 2, canonicalTarget: 'mermaid' })
+  expect(manifest).toMatchObject({ schemaFamily: 'diagram-lineage', version: 2, canonicalTarget: 'mermaid' })
   expect(manifest.entries).toEqual(expect.arrayContaining([
     expect.objectContaining({ role: 'source', status: 'ready', parentArtifactId: null, mediaType: 'text/vnd.mermaid' }),
     expect.objectContaining({ role: 'preview', status: 'ready', parentArtifactId: manifest.artifactId, mediaType: 'image/svg+xml' }),

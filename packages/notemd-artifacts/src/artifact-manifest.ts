@@ -32,6 +32,12 @@ import type {
   SlidevPptxExportSpec,
   SlidevSourceSpec,
 } from './document-export.js'
+import {
+  assertArtifactSchema,
+  ArtifactSchemaError,
+  type ArtifactSchemaDiagnostic,
+  type ArtifactSchemaMetadata,
+} from './schema-registry.js'
 
 export type ArtifactEntryRole = 'source' | 'preview' | 'report' | 'export'
 export type ArtifactCanonicalTarget = DiagramCanonicalTarget | 'slidev'
@@ -67,6 +73,7 @@ export interface FailedArtifactManifestEntry extends ArtifactManifestEntryBase {
 export type ArtifactManifestEntry = ReadyArtifactManifestEntry | UnavailableArtifactManifestEntry | FailedArtifactManifestEntry
 
 export interface ArtifactManifest {
+  readonly schemaFamily: 'diagram-lineage'
   readonly version: 2
   readonly artifactId: string
   readonly canonicalTarget: ArtifactCanonicalTarget
@@ -74,6 +81,7 @@ export interface ArtifactManifest {
   readonly sourceRevision: Revision
   readonly entries: readonly ArtifactManifestEntry[]
   readonly ownedPaths: readonly string[]
+  readonly metadata?: ArtifactSchemaMetadata
 }
 
 export interface ArtifactCapability {
@@ -84,10 +92,12 @@ export interface ArtifactCapability {
 
 export class ArtifactManifestError extends Error {
   readonly code = 'ARTIFACT_MANIFEST_INVALID'
+  readonly diagnostic?: ArtifactSchemaDiagnostic | undefined
 
-  constructor(message: string) {
+  constructor(message: string, diagnostic?: ArtifactSchemaDiagnostic) {
     super(message)
     this.name = 'ArtifactManifestError'
+    this.diagnostic = diagnostic
   }
 }
 
@@ -224,6 +234,7 @@ export function compileRenderedArtifactPlan(
     .flatMap((entry) => entry.status === 'ready' ? [entry.path] : [])
     .sort())
   const manifest: ArtifactManifest = Object.freeze({
+    schemaFamily: 'diagram-lineage',
     version: 2,
     artifactId,
     canonicalTarget: spec.canonicalTarget,
@@ -232,6 +243,7 @@ export function compileRenderedArtifactPlan(
     entries,
     ownedPaths,
   })
+  assertArtifactSchema(manifest, { family: 'diagram-lineage', version: 2 })
   const provenance = {
     operationId: `artifact.plan.${spec.canonicalTarget}`,
     sourceRefs: [source.path],
@@ -464,11 +476,19 @@ function parseManifestOwnedPaths(content: string, expectedArtifactId: string): r
   } catch {
     throw new ArtifactManifestError('Artifact manifest is not valid JSON.')
   }
-  if (!isRecord(value) || value.artifactId !== expectedArtifactId || !Array.isArray(value.ownedPaths)) {
+  if (!isRecord(value)) {
     throw new ArtifactManifestError('Artifact manifest has an invalid shape.')
   }
-  if (value.version !== 1 && value.version !== 2 && value.version !== 3) {
-    throw new ArtifactManifestError('Artifact manifest has an unsupported version.')
+  try {
+    assertArtifactSchema(value, { family: 'diagram-lineage', version: 2 })
+  } catch (error) {
+    if (error instanceof ArtifactSchemaError) {
+      throw new ArtifactManifestError(error.message, error.diagnostic)
+    }
+    throw error
+  }
+  if (value.artifactId !== expectedArtifactId || !Array.isArray(value.ownedPaths)) {
+    throw new ArtifactManifestError('Artifact manifest has an invalid shape.')
   }
   if (value.ownedPaths.some((path) => typeof path !== 'string' || !isArtifactOwnedPath(path, expectedArtifactId))) {
     throw new ArtifactManifestError('Artifact manifest attempts to own a path outside its directory.')
