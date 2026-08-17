@@ -7,7 +7,7 @@
 ## 1. Scope Baseline
 
 - Source baseline: `E:\convert\undo\obsidian-NoteMD_new` at `4168a51cd19ad8c3d1e05f604b50936255461a31`.
-- Target baseline: `E:\convert\undo\notemd-deepseek-harness` on `main` at release commit `73480df` (`test: prove full NoteMD migration conformance`); the publication-record commit follows it.
+- Target release: `E:\convert\undo\notemd-deepseek-harness` on `main` at publication-record commit `488378f` (`docs: record final migration publication`); conformance was established by predecessor `73480df`.
 - In scope: every non-Obsidian-host NoteMD workflow, including documents, knowledge, research, diagrams, artifact export, batch execution, and stable Drawnix behavior.
 - Deliberately out of scope: Obsidian UI and host APIs, direct provider configuration, and the source working tree's uncommitted Drawnix WIP.
 
@@ -192,10 +192,37 @@ This publication records architecture, planning, audit, and baseline verificatio
 
 - `packages/notemd-workflows/test/migration-conformance.test.ts` consumes the pinned source matrix and the conformance manifest. It requires all included operation fixture ids plus the independent local-retrieval/diagram/slide fixtures to have an existing test proof with a runnable `test(...)` contract. The added `extract-and-generate` test exercises both LLM planning steps and asserts the two absent-precondition outputs.
 - `packages/notemd-bundle/test/runtime-boundary.test.ts` proves the five DSH runtimes remain optional removable peers, the patch restates complete replacement-row configuration, and Cordis effects own LLM, process, and scanner disposal. The process suite now proves disposal aborts active trees, waits for completion, removes run directories, and rejects new work after disposal; existing DSH LLM route rejection and Web ambiguity tests remain green.
-- Fresh final-gate evidence on Node `v22.19.0` / pnpm `10.7.1`: `pnpm typecheck`, `pnpm lint`, `pnpm test` (48 files, 184 tests), `pnpm test:coverage` (77.03% statements, 71.86% branches, 84.54% functions), `pnpm build`, `pnpm pack:bundle`, `pnpm verify:bundle`, and `pnpm accept:dsh` all passed. `git diff --check` also passed; the packed tarball installed into an isolated DSH profile and clean acceptance completed successfully.
+- Fresh final-gate evidence on Node `v22.19.0` / pnpm `10.7.1`: `pnpm typecheck`, `pnpm lint`, `pnpm test` (48 files, 184 tests), `pnpm test:coverage` (77.03% statements, 71.87% branches, 84.54% functions), `pnpm build`, `pnpm pack:bundle`, `pnpm verify:bundle`, and `pnpm accept:dsh` all passed. `git diff --check` also passed; the packed tarball installed into an isolated DSH profile and clean acceptance completed successfully.
 
 ### Final Task 11 Publication
 
 - Release commit `73480df` (`test: prove full NoteMD migration conformance`) contains the conformance tests, runtime-boundary checks, bilingual architecture/plan/progress updates, and validation walkthroughs.
 - The commit was pushed non-force to `git@github.com:Jacobinwwey/dsh-NotEMD.git` after the fresh release gate. The fetch-before-push divergence was `0 11` (no remote-ahead commits); post-push `origin/main` resolved to `73480df`.
+
+## 10. Current-State Audit (2026-08-17)
+
+The publication-record commit is now `488378fb6a1429683bf1789f418abca8992bd3a2` on `main`; the paired [current-state architecture audit](../specs/2026-08-17-dsh-notemd-current-state-architecture-audit.md) is the authoritative post-release record.
+
+### Evidence lock
+
+- The parity oracle remains `obsidian-NoteMD_new` at `4168a51cd19ad8c3d1e05f604b50936255461a31`. The source checkout has since advanced to `5efd4285f2d1861e725f520cfa8a02d1bf898eb7` and is dirty, with diagram-gallery, cache, render-target, and Drawnix-related changes; those changes are not part of this release.
+- The target has 26 workspace packages, with `notemd-bundle` as the Cordis composition root and `notemd-vault-local` as the only workspace mutation authority. DSH LLM/Web/tool services remain optional peer-owned seams.
+- Fresh release-gate evidence is Node `v22.19.0`, pnpm `10.7.1`, 48 Vitest files and 184 tests; statement coverage is `77.03%`, branch coverage `71.87%`, and function coverage `84.54%`. Typecheck, lint, build, packed-bundle verification, clean-profile acceptance, and `git diff --check` passed before this documentation-only update.
+
+### Reconciliation and limits
+
+- The eleven-phase migration is complete for the pinned non-Obsidian-host behavior contract. It does not claim that Playwright, the pinned `github:Jacobinwwey/slidev` fork, FFmpeg, Draw.io, Tectonic, or the optional Drawnix adapter are installed and interoperable on every deployment.
+- Conformance is a fixture/proof gate: shared semantic fixtures and the local-retrieval fixture mean it is not one monolithic invocation of every source registry operation. This is a verification-quality limitation, not an omitted source operation.
+- Artifact versions are intentionally split: DiagramSpec/diagram lineage `v2`; document export manifest `v3`. The next phase must make that family boundary explicit rather than flattening versions.
+- File-backed jobs are safe for one workspace process. Per-target locks do not provide distributed scheduling or prevent duplicate planning across two DSH processes.
+
+### Post-release continuation
+
+1. Phase 12: replace free-form conformance proof terms with typed executable fixture adapters and explicit operation-to-fixture mappings.
+2. Phase 13: add a separate optional-runtime lane with pinned executable fingerprints, native artifacts, digest checks, cancellation, and staging cleanup for the fork and specialist exporters.
+3. Phase 14: publish and enforce an artifact schema registry for DiagramSpec/lineage `v2` and export manifest `v3`.
+4. Phase 15: add either a clear single-process guard or a tested durable workspace lease only if multi-process deployment is required.
+5. Phase 16: pin a new source commit, refresh the matrix and fixtures, classify gallery/cache/render-target drift, and review Drawnix WIP separately.
+
+No completed Task 1-11 is reopened by this audit; the next phase starts from the current release commit and the pinned source lock.
 - A final fetch confirmed `origin/main...main = 0 0`; the worktree reported only `## main` with no paths. The Slidev lock remains `github:Jacobinwwey/slidev@bbcb2efae709c2ebaa96bda522cd6c192476817c`.

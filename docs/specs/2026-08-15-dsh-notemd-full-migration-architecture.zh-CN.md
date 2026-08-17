@@ -10,7 +10,7 @@
 
 “全量迁移”定义为源提交 `4168a51cd19ad8c3d1e05f604b50936255461a31` 中全部非 Obsidian 宿主能力的行为契约对齐。它不包含 Obsidian UI、活动编辑器状态、Provider 设置和密钥，也不包含源工作树尚未提交的 Drawnix 改动。
 
-目标基线为 `6672f54def2b05e1628786ace97ab73649edab74`。GitHub 仓库可更名为 `dsh-NotEMD`；npm 包名在明确批准兼容性迁移前保持不变。
+原始实施目标基线为 `6672f54def2b05e1628786ace97ab73649edab74`；本文保留这一历史设计基线。随后发布线经过 conformance 提交 `73480df`，当前发布记录为 `488378fb6a1429683bf1789f418abca8992bd3a2`。GitHub 仓库可更名为 `dsh-NotEMD`；npm 包名在明确批准兼容性迁移前保持不变。
 
 ## 2. 已核验的现状
 
@@ -132,3 +132,13 @@ Markdown 敏感变换必须使用 AST 和稳定段落锚点，不用纯正则做
 ## 8. 完成条件
 
 仅当范围内矩阵在特征化 fixture 上全部通过、所有 Tool 输出满足封闭 schema、工作区恢复覆盖崩溃点、DSH profile/bundle/HMR 测试通过、外部 provider 缺失时如实返回，以及 clean profile 能安装 packed bundle 时，迁移才可宣称完成。每个 phase 后都必须以证据更新进度记录，而不能以预测替代结果。
+
+## 9. 当前状态对账（2026-08-17）
+
+本文是 Task 1-11 的设计基线，不是最新发布账本。已实现状态以发布后的审计为准：
+
+- 目标发布：`488378fb6a1429683bf1789f418abca8992bd3a2`，同时位于 `main` 与 `origin/main`。
+- 源 oracle：`obsidian-NoteMD_new` 仍固定为 `4168a51cd19ad8c3d1e05f604b50936255461a31`；源仓库后续提交和 dirty 变更不会被静默迁移。
+- 十一阶段非 Obsidian 宿主迁移已完成。真实 Playwright、Slidev fork、FFmpeg、Draw.io、Tectonic 与 Drawnix adapter 的互操作性仍属于独立的可选 runtime 证据通道。
+- 当前 conformance 以 fixture 间接证明为主；下一步是类型化、可执行的 fixture adapter。
+- 后续工作以 [当前架构审计](2026-08-17-dsh-notemd-current-state-architecture-audit.zh-CN.md) 的 Phase 12-16 记录，不得重新打开已完成的 Task 1-11。

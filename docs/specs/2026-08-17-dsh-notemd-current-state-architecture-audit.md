@@ -1,0 +1,172 @@
+# DSH NoteMD Current-State Architecture Audit and Continuation Plan
+
+> Chinese version: [2026-08-17-dsh-notemd-current-state-architecture-audit.zh-CN.md](2026-08-17-dsh-notemd-current-state-architecture-audit.zh-CN.md)
+
+**Audit date:** 2026-08-17
+**Target release:** `488378fb6a1429683bf1789f418abca8992bd3a2` (`main`, `origin/main`)
+**Pinned source oracle:** `E:\convert\undo\obsidian-NoteMD_new` at `4168a51cd19ad8c3d1e05f604b50936255461a31`
+**DSH reference:** `ref/deepseek-harness` at `47f943859bef60e4160492346772ded9b24f765a`
+**Runtime:** Node `v22.19.0`, pnpm `10.7.1`
+
+## Executive Assessment
+
+The pinned eleven-phase migration is complete as a behavior-contract migration for the non-Obsidian-host scope. The published bundle has a single mutation authority, DSH-owned LLM/Web/tool lifecycle, named artifact providers, staged external processes, closed Tool schemas, bilingual evidence records, and a clean-profile acceptance path.
+
+That conclusion is narrower than “every local runtime is installed and every source revision is mirrored.” The current acceptance suite proves deterministic contracts and truthful capability reporting. It does not claim that Playwright, the pinned Slidev fork, FFmpeg, Draw.io, Tectonic, or the optional Drawnix adapter are installed on every deployment. Those remain explicit environment capabilities.
+
+The current source repository is not a valid new parity oracle: it is at commit `5efd4285f2d1861e725f520cfa8a02d1bf898eb7`, one commit beyond the pinned baseline, with additional tracked edits and untracked diagram-gallery assets. Migrating that delta without a new source lock would make the result non-reproducible. The current bundle therefore remains correctly pinned to `4168a51` and quarantines the Drawnix WIP.
+
+## 1. Implemented Architecture
+
+```mermaid
+flowchart TD
+  DSH["DSH profile and Cordis Fiber"] --> B["notemd-bundle composition root"]
+  B --> T["named DSH Tools"]
+  T --> J["plan-only jobs"]
+  T --> W["workflow planners"]
+  W --> D["documents and knowledge"]
+  W --> R["ctx.web evidence"]
+  W --> M["immutable mutation proposals"]
+  M --> A["approval ledger and gate"]
+  A --> E["journaled local executor"]
+  E --> C["committed receipt and workspace event"]
+  C --> K["fresh-read knowledge synchronization"]
+  W --> X["artifact lineage"]
+  X --> P["staging-only process boundary"]
+  P --> Y["named SVG/export providers"]
+  DSH --> L["ctx.llm consumer bridge"]
+  DSH --> S["ctx.web / subprocess / tools services"]
+```
+
+| Boundary | Current owner | Evidence | Invariant |
+| --- | --- | --- | --- |
+| Composition and lifecycle | `packages/notemd-bundle` | Cordis `Service`, static `inject`, `ctx.effect()` | No module singleton owns timers, processes, subscriptions, or workspace state. |
+| Workspace facts | `@notemd-harness/vault` | immutable revisions and path contracts | Read facts do not grant mutation authority. |
+| Workspace mutation | `@notemd-harness/mutation` + `vault-local` | content-addressed plans, journal transitions, canonical locks, recovery | Only the local executor mutates workspace content. |
+| Domain transformation | `documents`, `workflows`, `knowledge`, `research` | named operations and deterministic folder snapshots | Planning is pure with respect to workspace writes. |
+| Permission and application | `tools`, `approval`, `runtime-adapter` | digest-bound one-time approval receipts | Jobs cannot approve or apply their own plans. |
+| Artifact production | `artifacts`, renderer/export packages | source/preview/export lineage and v2/v3 manifests | Derivatives never replace canonical source. |
+| External process | `notemd-process` | allowlisted executable, argv, staging root, byte and time bounds | No shell interpolation or direct final-path write. |
+| DSH integration | `llm-dsh`, `research`, bundle patch | `ctx.llm`, `ctx.web`, optional DSH peers | Credentials, provider selection, and lifecycle remain DSH-owned. |
+
+The two operational flows are intentionally separate:
+
+```text
+read -> immutable plan -> DSH approval -> journaled apply -> receipt -> event -> fresh-read index
+source artifact -> staging process -> bounded bytes -> digest-verified asset -> approval-bound materialization
+```
+
+## 2. Reconciliation With Earlier Plans
+
+| Earlier requirement | Current implementation | Assessment and remaining boundary |
+| --- | --- | --- |
+| 2026-08-14 standalone bundle design | Host-free bundle, explicit workspace root, package graph, profile patch, packed tarball | Delivered. Obsidian UI/editor/commands/modals/settings remain excluded by design. |
+| Earlier generic OpenAI-compatible default | `notemd-llm-dsh` consumes `ctx.llm`; OpenAI-compatible code is an explicit legacy entry | Correctly superseded. The legacy package is still physically bundled for opt-in compatibility and should not be confused with the default route. |
+| Next-level `WritePlan` and approval flow | `WorkspaceMutationPlan` plus journaled executor, receipts, recovery, and approval binding | Delivered with stronger multi-target semantics. It guarantees recoverability/idempotence, not filesystem-wide ACID. |
+| Next-level durable jobs and scan events | `FileJobStore`, plan-only checkpoints, explicit resume, polling scanner, fresh-read index updates | Delivered for one workspace process. Cross-process job leases remain unsupported and documented. |
+| Full plan Tasks 1-4 | Source matrix, mutation vocabulary, local executor, approval/events/jobs/tools | Contract and failure coverage are in place; no second write authority is retained. |
+| Full plan Tasks 5-7 | DSH LLM/Web consumers, document semantics, section retrieval, folder policies | Delivered through named services and evidence-id-only durable research input. |
+| Full plan Tasks 8-10 | DiagramSpec v2, artifact lineage, specialist providers, Slidev fork exporters | Delivered as capability-gated providers; real binaries are not assumed by the core bundle. |
+| Full plan Task 11 | Conformance manifest, lifecycle tests, clean DSH profile, ordinary pushes to `origin/main` | Delivered. The conformance test is a fixture/proof gate, not a monolithic invocation of every source operation. |
+| Source operation matrix | 29 source IDs, 18 included, 11 excluded-by-design, 14 fixtures, 4 exact Drawnix-WIP exclusions | Complete for pinned commit `4168a51`; current source drift requires a new lock before intake. |
+| Slidev requirement | `github:Jacobinwwey/slidev` at `bbcb2efae709c2ebaa96bda522cd6c192476817c`, `@slidev/cli@52.16.0` | Hard compatibility lock. Upstream Slidev is not interchangeable. |
+
+## 3. Critical Gaps and Risks
+
+### P0: Real-runtime evidence is separate from contract evidence
+
+The tests use deterministic subprocess fakes and exercise unavailable branches. `accept:dsh` permits optional native capabilities to be either available or unavailable. This is the correct portable-core behavior, but it leaves a deployment-specific gap: there is no current evidence that the released fork archive, Playwright, FFmpeg, Draw.io, Tectonic, and Drawnix adapter work together on a real machine.
+
+**Decision:** keep the core gate binary-independent; add a separate opt-in capability lane with pinned executable fingerprints, fixture exports, byte digests, and cleanup assertions. Never make optional binaries an implicit install dependency.
+
+### P1: Conformance proof is strong but indirect
+
+`migration-conformance.test.ts` verifies that every fixture has a test path and proof terms, then the ordinary Vitest suite executes those tests. It intentionally does not require one test per source operation because multiple operation IDs share semantic fixtures and `local-retrieval` is a required non-registry fixture.
+
+**Decision:** preserve this gate, but evolve the manifest from free-form proof terms to typed executable fixture adapters with an explicit operation-to-fixture mapping. This removes source-text matching as the final proof mechanism.
+
+### P1: Source drift is deliberately not migrated
+
+The current source has a committed delta and a dirty worktree containing diagram catalogs, gallery assets, response caching, render-target additions, and Drawnix-related changes after `4168a51`. Treating those edits as implicit requirements would violate the pinned oracle and reintroduce WIP ambiguity.
+
+**Decision:** create a source-intake phase that first pins a new source commit, classifies registry changes, refreshes fixture hashes, and explicitly accepts or excludes Drawnix changes. No implementation changes should be made from the dirty source tree alone.
+
+### P1: Artifact contract versions are intentionally split but undocumented enough
+
+`DiagramSpec` and diagram lineage use version `2`; document export manifests use version `3` because staged Slidev derivatives add different fields. The split is technically defensible, but a future consumer could mistake them for one global artifact schema.
+
+**Decision:** add a schema registry document and runtime discriminators that state which version belongs to which artifact family. Do not collapse the versions merely for cosmetic uniformity.
+
+### P2: One-workspace-process job safety
+
+The file-backed job store and in-memory change bus are safe for one process, not a distributed scheduler. Two DSH instances sharing a workspace can race job execution even though mutation target locks protect individual writes.
+
+**Decision:** retain the explicit single-process deployment contract for now; add a workspace execution lease or SQLite-backed job store only when multi-process operation becomes a requirement. Do not imply that per-file locks solve job-level duplication.
+
+### P2: Legacy transport remains in the distribution boundary
+
+The default patch does not load the OpenAI-compatible provider, and tests prove legacy Tools are absent from the DSH-only path. The package is nevertheless bundled as an explicit legacy export, which increases install surface and future maintenance cost.
+
+**Decision:** keep it for compatibility in the current release; move it to a separately published compatibility package when the migration window closes. Removing it immediately would be a breaking package-surface change without user telemetry.
+
+## 4. Trade-offs Kept Intentionally
+
+- Named renderer/export providers are more verbose than a target selector, but they preserve target-specific fidelity, process allowlists, byte limits, and failure semantics.
+- Staged assets survive service disposal when approval still references them; this consumes workspace state but prevents HMR from invalidating a pending approval digest.
+- `FileJobStore` uses JSON replacement rather than a database; it keeps the bundle portable and inspectable, while the single-process limitation remains explicit.
+- Source fixtures snapshot hashes and schemas, not generated prose; this avoids brittle LLM snapshots while still protecting mutation paths and artifact identity.
+- SVG previews are useful for supported targets, but are never advertised as PPTX, MP4, Draw.io, or Circuitikz parity.
+
+## 5. Concrete Continuation Plan
+
+### Phase 12: Executable conformance adapters
+
+**Owner:** `fixtures/migration`, `packages/notemd-workflows/test`, `packages/notemd-artifacts/test`.
+**Work:** replace proof-term matching with typed fixture adapters; map every included operation ID to an executable fixture assertion; keep shared fixtures explicit.
+**Exit:** the test fails when an operation mapping is deleted, a fixture adapter does not run, or an excluded operation re-enters without a reason.
+
+### Phase 13: Real optional-runtime capability lane
+
+**Owner:** `scripts`, `packages/notemd-process/test`, export/provider test fixtures, CI/profile configuration.
+**Work:** run the pinned Slidev fork archive, Playwright, FFmpeg, Draw.io, Tectonic, and Drawnix adapter against deterministic decks/diagrams when binaries are installed; record executable fingerprints and output digests.
+**Exit:** each installed capability produces its native artifact, passes staging cleanup and cancellation checks, and remains `unavailable` when the executable is intentionally removed.
+
+### Phase 14: Artifact schema registry and migration policy
+
+**Owner:** `packages/notemd-artifacts`, docs, verifier.
+**Work:** publish a registry for `DiagramSpec v2`, diagram lineage v2, and document export manifest v3; add explicit family discriminators and forward-compatibility rules.
+**Exit:** packed-bundle verification rejects unknown family/version combinations without rejecting valid v2/v3 artifacts.
+
+### Phase 15: Workspace operations hardening
+
+**Owner:** `notemd-jobs`, `notemd-workspace-events`, `notemd-vault-local`.
+**Work:** choose between an explicit single-process guard and a durable workspace lease; add structured job lifecycle diagnostics, recovery counters, and cleanup health facts.
+**Exit:** concurrent-process behavior is either prevented with a clear diagnostic or serialized by a tested lease backend; no silent duplicate model planning remains.
+
+### Phase 16: Source-intake and Drawnix review
+
+**Owner:** source matrix and paired architecture/progress records.
+**Work:** pin the next source commit, diff registry IDs and semantic fixtures against `4168a51`, classify diagram-gallery/cache/render-target changes, and review each Drawnix WIP path separately.
+**Exit:** a new source lock and matrix commit exists before any new source behavior is implemented; rejected WIP remains named and quarantined.
+
+## 6. Recommended Order
+
+1. Phase 12, because indirect conformance proof is the largest verification-quality gap.
+2. Phase 13, because users care about actual native exports and current evidence is intentionally fake/unavailable.
+3. Phase 14, because mixed artifact versions need an explicit compatibility contract before external consumers appear.
+4. Phase 15, only when multi-process deployment is required; do not add a database pre-emptively.
+5. Phase 16 whenever the source project publishes a new pinned commit; never consume the dirty source worktree as a baseline.
+
+The current release should not be reopened for Obsidian host UI, direct provider configuration, generic renderer selectors, or uncommitted Drawnix experiments. Those choices would weaken the ownership boundaries that the eleven-phase migration established.
+
+## 7. Progress-Record Protocol
+
+Every continuation phase must update the paired English/Chinese progress files with:
+
+- the source and target commit locks;
+- exact files and service boundaries changed;
+- measured test counts and capability limitations;
+- rejected alternatives and new risks;
+- the phase exit condition and next phase.
+
+The architecture record is a decision log; the plan is executable work; the progress walkthrough is evidence. They must not be collapsed into one document or updated with forecasts presented as facts.

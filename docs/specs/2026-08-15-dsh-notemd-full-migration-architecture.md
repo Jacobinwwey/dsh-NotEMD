@@ -10,7 +10,7 @@ Treat NoteMD as an auditable document-transformation system, not as an Obsidian 
 
 Full migration means behavior-contract parity for every non-Obsidian-host capability in source commit `4168a51cd19ad8c3d1e05f604b50936255461a31`. It does not mean copying Obsidian UI, active-editor state, provider settings, provider secrets, or the source worktree's uncommitted Drawnix changes.
 
-The target baseline is `6672f54def2b05e1628786ace97ab73649edab74`. The repository slug may change to `dsh-NotEMD`; the published npm identity stays unchanged until an explicit compatibility migration is approved.
+The original implementation target baseline was `6672f54def2b05e1628786ace97ab73649edab74`; this record retains that historical design baseline. The release then advanced through the conformance commit `73480df` and the publication record `488378fb6a1429683bf1789f418abca8992bd3a2`. The repository slug may change to `dsh-NotEMD`; the published npm identity stays unchanged until an explicit compatibility migration is approved.
 
 ## 2. Verified Current State
 
@@ -132,3 +132,13 @@ External programs run from a staging directory through an allowlisted, argument-
 ## 8. Completion Criteria
 
 Migration is complete only when the in-scope matrix is green under characterized fixtures, all tool results validate against closed schemas, workspace recovery tests cover crash points, DSH profile/bundle/HMR tests pass, external-provider absence produces truthful results, and a clean profile installs the packed bundle. The progress record is updated after every phase with evidence rather than forecasts.
+
+## 9. Current-State Reconciliation (2026-08-17)
+
+This record is the design baseline for Tasks 1-11, not the latest release ledger. The post-release audit is authoritative for the implemented state:
+
+- Target release: `488378fb6a1429683bf1789f418abca8992bd3a2` on `main` and `origin/main`.
+- Source oracle: `obsidian-NoteMD_new` remains pinned to `4168a51cd19ad8c3d1e05f604b50936255461a31`; its newer committed and dirty changes are not silently migrated.
+- The eleven-phase non-Obsidian-host migration is complete. Real Playwright, Slidev-fork, FFmpeg, Draw.io, Tectonic, and Drawnix-adapter interoperability remains a separate optional-runtime evidence lane.
+- Conformance is currently fixture-backed and indirect; typed executable adapters are the next verification upgrade.
+- Follow-on work is tracked as Phases 12-16 in [the current-state audit](2026-08-17-dsh-notemd-current-state-architecture-audit.md) and must not reopen completed Tasks 1-11.

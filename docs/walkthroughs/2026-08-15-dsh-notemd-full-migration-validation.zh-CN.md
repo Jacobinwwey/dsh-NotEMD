@@ -45,7 +45,7 @@ rtk proxy pnpm.cmd accept:dsh
 rtk git diff --check
 ```
 
-最终运行的所有命令均已通过。Vitest 报告 48 个文件、184 个测试；coverage 报告 statement 77.03%、branch 71.86%、function 84.54%。`accept:dsh` 将 packed tarball 安装到隔离 DSH profile，验证 bundle patch 与依赖图，加载 clean runtime，执行 source/diagram/export/research Tool contract，然后删除临时 profile 状态。
+最终运行的所有命令均已通过。Vitest 报告 48 个文件、184 个测试；coverage 报告 statement 77.03%、branch 71.87%、function 84.54%。`accept:dsh` 将 packed tarball 安装到隔离 DSH profile，验证 bundle patch 与依赖图，加载 clean runtime，执行 source/diagram/export/research Tool contract，然后删除临时 profile 状态。
 
 ## Provider 限制
 

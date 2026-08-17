@@ -259,3 +259,41 @@ rtk proxy git diff --check
 - 覆盖：Task 1-4 建立唯一安全 mutation path；Task 5-7 恢复 DSH-native 语义工作流；Task 8-10 完成 renderer/export 对齐；Task 11 证明并发布结果。
 - 失败模型：fixture mismatch、DSH provider 缺失、renderer 缺失、陈旧修订和恢复转换均为显式测试，禁止隐藏 fallback。
 - 范围控制：源 host UI、DSH Provider 配置、当前 Drawnix WIP 始终不进入 conformance matrix。
+
+## 发布后延续计划（2026-08-17）
+
+Task 1-11 已由已发布版本关闭，不重新打开。本节从目标提交 `488378fb6a1429683bf1789f418abca8992bd3a2` 继续执行，source oracle 仍固定为 `4168a51cd19ad8c3d1e05f604b50936255461a31`。
+
+### Phase 12：可执行 Conformance Adapter
+
+- 在 `fixtures/migration`、`packages/notemd-workflows/test` 与 `packages/notemd-artifacts/test` 中，用类型化 fixture adapter 和显式 operation-to-fixture 映射替换自由文本 proof-term 匹配。
+- 保留共享语义 fixture 的显式关系；每个 included source operation 至少执行一个映射 adapter；excluded operation 未附 reason 重新进入时必须 fail closed。
+- 退出证据：删除映射、跳过 adapter 或改变 fixture digest 时，conformance suite 必须给出 operation ID 和 fixture ID 并失败。
+
+### Phase 13：真实 Optional Runtime Capability Lane
+
+- 增加固定 `github:Jacobinwwey/slidev` fork、Playwright、FFmpeg、Draw.io、Tectonic 与稳定 Drawnix adapter 的 opt-in 通道；这些 binary 不能成为 core install 依赖。
+- 为每个 capability 记录 executable fingerprint、原生输出 digest、staging 清理、取消行为和有意缺失时的 unavailable 结果。
+- 退出证据：每个已安装 capability 都能从确定性 fixture 产生原生工件；移除 executable 时只返回 `unavailable`，不削弱 portable-core gate。
+
+### Phase 14：工件 Schema Registry 与迁移策略
+
+- 在 `packages/notemd-artifacts` 建立 family discriminator 与 registry，明确 DiagramSpec/diagram lineage `v2` 和 document export manifest `v3` 的归属。
+- 在外部 consumer 依赖 manifest 前，定义未知 family/version 拒绝、前向兼容 metadata 规则和迁移工具。
+- 退出证据：packed-bundle verification 接受合法 v2/v3 工件，并以结构化诊断拒绝未知组合。
+
+### Phase 15：Workspace Operation 加固（条件阶段）
+
+- 只有多进程部署成为要求时，才在明确的 single-process guard 与 durable workspace lease/job backend 之间做选择；逐目标文件锁不是调度语义。
+- 增加生命周期诊断、恢复计数和 cleanup-health fact，不预先引入数据库。
+- 退出证据：并发进程要么被明确诊断拒绝，要么由经过测试的 lease 串行化；不得静默重复 model planning。
+
+### Phase 16：Source Intake 与 Drawnix Review
+
+- 在消费 `4168a51` 之后的任何变化前，先固定新的 source commit，并相对现有 matrix 比较 registry ID、语义 fixture 和 output policy。
+- 分别分类 diagram-gallery、response-cache、render-target 与 Drawnix 变更。每条当前 Drawnix WIP 路径都绑定到已提交 source contract 前保持排除。
+- 退出证据：新的 source lock 与 matrix/fixture 更新必须同批落盘后才能实现；被拒绝的 WIP 继续被命名并隔离。
+
+### 执行顺序与记录协议
+
+按 Phase 12、13、14 顺序执行；只有部署契约要求多个 workspace process 时执行 Phase 15；每当 source 有新提交时执行 Phase 16。每个阶段都必须同步更新两份 progress 文件，记录 source/target lock、变更文件与 owner、实测测试、capability 限制、拒绝方案、风险和退出证据。

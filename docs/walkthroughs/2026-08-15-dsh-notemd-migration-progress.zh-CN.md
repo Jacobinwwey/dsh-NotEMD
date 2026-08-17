@@ -7,7 +7,7 @@
 ## 1. 范围基线
 
 - 源基线：`E:\convert\undo\obsidian-NoteMD_new`，提交 `4168a51cd19ad8c3d1e05f604b50936255461a31`。
-- 目标基线：`E:\convert\undo\notemd-deepseek-harness`，`main` 上的发布提交 `73480df`（`test: prove full NoteMD migration conformance`）；其后还有发布记录提交。
+- 目标发布：`E:\convert\undo\notemd-deepseek-harness`，`main` 上的发布记录提交 `488378f`（`docs: record final migration publication`）；conformance 由前置提交 `73480df` 建立。
 - 范围内：全部非 Obsidian 宿主的 NoteMD 工作流，包括文档、知识库、研究、图表、工件导出、批处理和稳定 Drawnix 能力。
 - 明确排除：Obsidian UI 与宿主 API、直连 Provider 配置，以及源工作树中尚未提交的 Drawnix WIP。
 
@@ -192,10 +192,37 @@
 
 - `packages/notemd-workflows/test/migration-conformance.test.ts` 消费固定的 source matrix 与 conformance manifest，要求所有 included operation fixture，以及独立的 local-retrieval/diagram/slide fixture，都有现存测试 proof 和可运行的 `test(...)` contract。新增的 `extract-and-generate` 测试实际执行两步 LLM planning，并断言两个 absent-precondition 输出。
 - `packages/notemd-bundle/test/runtime-boundary.test.ts` 证明五个 DSH runtime 是可移除的 optional peer，patch 会重述完整 replacement-row 配置，Cordis effect 负责 LLM、process 和 scanner dispose。process suite 现在证明 dispose 会 abort active tree、等待完成、删除 run directory，并在 dispose 后拒绝新任务；既有 DSH LLM route rejection 与 Web ambiguity 测试保持通过。
-- Node `v22.19.0` / pnpm `10.7.1` 的最终 gate 证据：`pnpm typecheck`、`pnpm lint`、`pnpm test`（48 个文件、184 个测试）、`pnpm test:coverage`（statement 77.03%、branch 71.86%、function 84.54%）、`pnpm build`、`pnpm pack:bundle`、`pnpm verify:bundle` 与 `pnpm accept:dsh` 全部通过。`git diff --check` 也通过；packed tarball 已安装到隔离 DSH profile，clean acceptance 成功完成。
+- Node `v22.19.0` / pnpm `10.7.1` 的最终 gate 证据：`pnpm typecheck`、`pnpm lint`、`pnpm test`（48 个文件、184 个测试）、`pnpm test:coverage`（statement 77.03%、branch 71.87%、function 84.54%）、`pnpm build`、`pnpm pack:bundle`、`pnpm verify:bundle` 与 `pnpm accept:dsh` 全部通过。`git diff --check` 也通过；packed tarball 已安装到隔离 DSH profile，clean acceptance 成功完成。
 
 ### Task 11 最终发布
 
 - 发布提交 `73480df`（`test: prove full NoteMD migration conformance`）包含 conformance 测试、runtime-boundary 检查、双语架构/计划/进度更新与 validation walkthrough。
 - 该提交在新鲜 release gate 通过后，以非强制方式推送到 `git@github.com:Jacobinwwey/dsh-NotEMD.git`。推送前 fetch 的分歧为 `0 11`（远端没有领先提交）；推送后 `origin/main` 已解析为 `73480df`。
+
+## 10. 当前状态审计（2026-08-17）
+
+发布记录提交现在是 `488378fb6a1429683bf1789f418abca8992bd3a2`，位于 `main`；配套的[当前架构审计](../specs/2026-08-17-dsh-notemd-current-state-architecture-audit.zh-CN.md)是发布后的权威记录。
+
+### 证据锁
+
+- parity oracle 仍是 `obsidian-NoteMD_new` 的 `4168a51cd19ad8c3d1e05f604b50936255461a31`。源工作区随后已到 `5efd4285f2d1861e725f520cfa8a02d1bf898eb7`，并且处于 dirty 状态，包含 diagram-gallery、cache、render-target 与 Drawnix 相关变更；这些变更不属于本发布。
+- 目标仓库有 26 个 workspace package，`notemd-bundle` 是 Cordis composition root，`notemd-vault-local` 是唯一 workspace mutation authority。DSH 的 LLM/Web/Tool 服务仍是由宿主拥有的 optional peer seam。
+- 新鲜 release gate 证据为 Node `v22.19.0`、pnpm `10.7.1`、48 个 Vitest 文件和 184 个测试；statement coverage `77.03%`、branch coverage `71.87%`、function coverage `84.54%`。在本次文档-only 更新前，typecheck、lint、build、packed-bundle verification、clean-profile acceptance 和 `git diff --check` 均通过。
+
+### 对账与边界
+
+- 十一阶段迁移已在固定的非 Obsidian 宿主行为契约范围内完成。这不宣称每个部署都安装并互操作 Playwright、固定的 `github:Jacobinwwey/slidev` fork、FFmpeg、Draw.io、Tectonic 或可选 Drawnix adapter。
+- Conformance 是 fixture/proof gate：共享语义 fixture 和 local-retrieval fixture 使其不是逐个执行所有 source registry operation 的单体测试。这是验证质量限制，不是遗漏源操作。
+- 工件版本有意分离：DiagramSpec/diagram lineage 为 `v2`，document export manifest 为 `v3`。下一阶段必须明确这个 family 边界，不应为统一版本号而合并。
+- File-backed job 仅保证单 workspace process 安全。逐目标锁不能提供分布式调度，也不能阻止两个 DSH 进程重复 planning。
+
+### 发布后延续
+
+1. Phase 12：用类型化、可执行的 fixture adapter 和显式 operation-to-fixture 映射替换自由文本 conformance proof。
+2. Phase 13：为 fork 和 specialist exporter 增加独立 optional-runtime 通道，记录 executable fingerprint、原生工件、digest、取消和 staging 清理证据。
+3. Phase 14：发布并强制执行 DiagramSpec/lineage `v2` 与 export manifest `v3` 的工件 schema registry。
+4. Phase 15：只有在需要多进程部署时，才选择明确的 single-process guard 或经过测试的 durable workspace lease。
+5. Phase 16：固定新的 source commit，刷新 matrix 与 fixture，分类 gallery/cache/render-target 漂移，并单独评审 Drawnix WIP。
+
+本审计不重新打开已完成的 Task 1-11；下一阶段从当前发布提交和固定 source lock 开始。
 - 最终 fetch 确认 `origin/main...main = 0 0`；工作区只报告 `## main`，没有任何路径。Slidev lock 仍为 `github:Jacobinwwey/slidev@bbcb2efae709c2ebaa96bda522cd6c192476817c`。

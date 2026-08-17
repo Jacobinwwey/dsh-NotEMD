@@ -340,3 +340,41 @@ rtk proxy git diff --check
 - Coverage: Tasks 1-4 establish the only safe mutation path; Tasks 5-7 recover DSH-native semantic workflows; Tasks 8-10 add renderer and export parity; Task 11 proves and publishes the result.
 - Failure model: deterministic fixture mismatches, DSH provider absence, renderer absence, stale revisions, and recovery transitions are all explicit test cases, never hidden fallbacks.
 - Scope control: source host UI, DSH provider configuration, and current Drawnix WIP remain outside the conformance matrix.
+
+## Post-release continuation plan (2026-08-17)
+
+Tasks 1-11 are closed by the published release and are not reopened. This section is the executable continuation plan from target commit `488378fb6a1429683bf1789f418abca8992bd3a2`, with the source oracle still pinned to `4168a51cd19ad8c3d1e05f604b50936255461a31`.
+
+### Phase 12: Executable conformance adapters
+
+- Replace free-form proof-term matching with typed fixture adapters under `fixtures/migration` and explicit operation-to-fixture mappings in `packages/notemd-workflows/test` and `packages/notemd-artifacts/test`.
+- Keep shared semantic fixtures explicit; require every included source operation to execute at least one mapped adapter, and fail closed when an excluded operation is reintroduced without a reason.
+- Exit evidence: deleting a mapping, skipping an adapter, or changing a fixture digest fails the conformance suite with the operation ID and fixture ID.
+
+### Phase 13: Real optional-runtime capability lane
+
+- Add an opt-in lane for the pinned `github:Jacobinwwey/slidev` fork, Playwright, FFmpeg, Draw.io, Tectonic, and the stable Drawnix adapter; do not make these binaries core install dependencies.
+- Record executable fingerprints, native output digests, staging cleanup, cancellation, and intentional-unavailable results for each capability.
+- Exit evidence: each installed capability emits its native artifact from a deterministic fixture; removing the executable reports `unavailable` without weakening the portable-core gate.
+
+### Phase 14: Artifact schema registry and migration policy
+
+- Add family discriminators and a registry owned by `packages/notemd-artifacts` for DiagramSpec/diagram lineage `v2` and document export manifest `v3`.
+- Define unknown-family/version rejection, forward-compatible metadata rules, and migration tooling before external consumers depend on the manifests.
+- Exit evidence: packed-bundle verification accepts valid v2/v3 artifacts and rejects unknown combinations with a structured diagnostic.
+
+### Phase 15: Workspace operations hardening (conditional)
+
+- Only if multi-process deployment becomes a requirement, choose between an explicit single-process guard and a durable workspace lease/job backend; per-target file locks are not sufficient scheduling semantics.
+- Add lifecycle diagnostics, recovery counters, and cleanup-health facts without adding a database pre-emptively.
+- Exit evidence: concurrent processes are either rejected with a clear diagnostic or serialized by a tested lease; duplicate model planning is never silent.
+
+### Phase 16: Source intake and Drawnix review
+
+- Pin a new source commit before consuming any change after `4168a51`; diff registry IDs, semantic fixtures, and output policies against the existing matrix.
+- Classify diagram-gallery, response-cache, render-target, and Drawnix changes separately. Keep the current Drawnix WIP excluded until each path is tied to a committed source contract.
+- Exit evidence: a new source lock and matrix/fixture update land together before implementation; rejected WIP remains named and quarantined.
+
+### Execution order and record protocol
+
+Run Phase 12, then 13, then 14. Run Phase 15 only when the deployment contract requires multiple workspace processes. Run Phase 16 whenever a new source commit is available. Each phase must update both progress files with source/target locks, changed files and owners, measured tests, capability limits, rejected alternatives, risks, and its exit evidence.

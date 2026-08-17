@@ -45,7 +45,7 @@ rtk proxy pnpm.cmd accept:dsh
 rtk git diff --check
 ```
 
-The final run passed every command above. Vitest reported 48 files and 184 tests; coverage reported 77.03% statements, 71.86% branches, and 84.54% functions. `accept:dsh` installed the packed tarball into an isolated DSH profile, verified the bundle patch and dependency graph, loaded the clean runtime, exercised source/diagram/export/research Tool contracts, and removed temporary profile state.
+The final run passed every command above. Vitest reported 48 files and 184 tests; coverage reported 77.03% statements, 71.87% branches, and 84.54% functions. `accept:dsh` installed the packed tarball into an isolated DSH profile, verified the bundle patch and dependency graph, loaded the clean runtime, exercised source/diagram/export/research Tool contracts, and removed temporary profile state.
 
 ## Provider limits
 
