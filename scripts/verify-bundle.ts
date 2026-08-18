@@ -9,6 +9,7 @@ const execFile = promisify(executeFile)
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const bundledInternalPackages = [
   '@notemd-harness/artifacts',
+  '@notemd-harness/documents',
   '@notemd-harness/export-media',
   '@notemd-harness/export-pptx',
   '@notemd-harness/export-slidev',
@@ -114,6 +115,8 @@ function assertTarballLayout(entries: readonly string[]): void {
   const requiredEntries = [
     'package/package.json',
     'package/cordis.patch.yml',
+    'package/README.md',
+    'package/README.zh-CN.md',
     'package/lib/index.js',
     'package/lib/index.d.ts',
     'package/lib/vault-local.js',

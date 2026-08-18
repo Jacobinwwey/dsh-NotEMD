@@ -1,58 +1,79 @@
 # NoteMD DeepSeek Harness Bundle
 
-An installable DeepSeek Harness bundle that moves NoteMD note-workflow semantics out of Obsidian. It operates on an explicit workspace root and has no runtime dependency on Obsidian APIs, editor state, or the command registry.
+[![DSH bundle](https://img.shields.io/badge/DeepSeek%20Harness-bundle-0f766e)](https://github.com/deepseek-ai/deepseek-harness)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D22.19-3c873a)](https://nodejs.org/)
+[![Repository](https://img.shields.io/badge/repository-dsh--NotEMD-181717?logo=github)](https://github.com/Jacobinwwey/dsh-NotEMD)
 
-The current runtime baseline is in [the original architecture record](docs/specs/2026-08-14-notemd-deepseek-harness-design.md). The approved [full-migration architecture](docs/specs/2026-08-15-dsh-notemd-full-migration-architecture.md), [implementation plan](docs/superpowers/plans/2026-08-15-dsh-notemd-full-migration.md), and [progress record](docs/walkthroughs/2026-08-15-dsh-notemd-migration-progress.md) define the next direction. The Chinese edition is [README.zh-CN.md](README.zh-CN.md).
+Portable, approval-gated NoteMD workflows for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). The bundle runs against an explicit workspace root, keeps canonical source and derived artifacts together, and has no dependency on Obsidian APIs, editor state, commands, or UI hosts.
 
-## Runtime Contract
+[English](README.md) | [简体中文](README.zh-CN.md)
 
-| Concern | Runtime owner | Invariant |
-| --- | --- | --- |
-| Workspace content | `notemdVault` | Canonical paths stay inside the configured root; each write carries an exact revision or `absent` precondition. |
-| Plans | `notemdWorkflows` and `notemdArtifacts` | Plans are immutable, content-addressed values. Planning does not write. |
-| Approval | `notemdApprovalGate` and `notemdApprovalLedger` | A user grant is bound to one plan digest and consumed once. Missing approval fails closed. |
-| Mutation | `notemd_apply_approved_plan` | Application yields a closed, revision-bound `WorkspaceMutationReceipt`; it is the only local workspace write authority. |
-| Workspace changes | `notemdWorkspaceChanges` | Only a matching `committed` receipt emits metadata-only changes; periodic reconciliation observes external edits. |
-| Derived state | `notemdKnowledge` | The index consumes workspace changes and always rereads the vault instead of trusting event payload content. |
-| Durable planning jobs | `notemdJobs` | Named workflows checkpoint plans under `<workspace>/.notemd/jobs/`; a job never applies a plan. |
-| LLM routing | DSH `llm` | NoteMD supplies only a provider/model route policy; DSH owns credentials, adapters, and transport. |
+## Install in 30 seconds
 
-The package is deliberately not an Obsidian compatibility layer. UI, editor selection, commands, modals, and preview hosting remain outside the bundle. Portable document and diagram semantics are in the bundle; named render/export providers produce canonical source plus truthful derivatives. Optional executables report `unavailable` instead of silently substituting a different format.
-
-## Export Targets
-
-Slidev source preparation is deterministic and offline-font safe. HTML, PDF, PNG, PPTX, and MP4 are separate named providers behind the same approval-gated artifact planner. All external work runs in a per-request staging directory and returns a digest-verified staged asset; no provider writes the workspace directly.
-
-The only accepted Slidev runtime is the NoteMD fork:
-
-```text
-origin: github:Jacobinwwey/slidev
-revision: bbcb2efae709c2ebaa96bda522cd6c192476817c
-package: @slidev/cli@52.16.0
-```
-
-The fork's standalone HTML build emits `index-standalone.html`. PPTX remains native OOXML and MP4 remains a Slidev PNG plus FFmpeg pipeline; SVG is never advertised as an equivalent fallback for either target. Playwright and FFmpeg are optional capabilities and are classified explicitly when absent.
-
-## Install
+The current delivery unit is a DSH bundle tarball. The package is not advertised as an npm-installable plugin until it is published to the registry.
 
 Requirements:
 
-- Node.js `>=22.19.0`
-- pnpm `10.7.1`
-- DeepSeek Harness `0.1.0-rc.5` with `@deepseek-ai/cordis` `4.0.1`
+| Requirement | Version or policy |
+| --- | --- |
+| Node.js | `>=22.19.0` |
+| pnpm | `10.7.1` (the workspace `packageManager`) |
+| DeepSeek Harness | `0.1.0-rc.5` acceptance baseline |
+| Cordis | `@deepseek-ai/cordis` `4.0.1` acceptance baseline |
 
-Build a distributable tarball, then add it to a DSH profile:
+Build and install the packed bundle:
 
 ```powershell
+git clone git@github.com:Jacobinwwey/dsh-NotEMD.git
+cd dsh-NotEMD
 pnpm install --frozen-lockfile
 pnpm build
 pnpm pack:bundle
 dsh plugin --profile notes add .\artifacts\jacobinwwey-notemd-deepseek-harness-0.1.0.tgz
 ```
 
-## Profile Configuration
+`pnpm pack:bundle` embeds every unpublished `@notemd-harness/*` workspace package. `minisearch` remains a normal runtime dependency and is resolved by the profile package manager. `verify:bundle` expects exactly one `.tgz` under `artifacts/`; remove stale tarballs before repacking during local iteration.
 
-The bundle defaults its workspace root to `process.cwd()`. A production profile must restate the complete configuration for every replaced row because a DSH patch replaces a row's `config`; it does not deep-merge it.
+The source profile used by this repository is at [`profiles/notemd`](profiles/notemd). It is a fixture profile, not a replacement for a deployment-owned profile. Run `dsh --profile <name> --dump-config` after installation to inspect the effective Cordis tree and verify that the bundle rows are present.
+
+## What is included
+
+| Capability | Model-facing entry points | Contract |
+| --- | --- | --- |
+| Workspace | `notemd_workspace_list`, `notemd_workspace_read` | Relative Markdown paths, root containment, immutable revisions. |
+| Knowledge | `notemd_knowledge_search`, `notemd_knowledge_retrieve` | Derived index only; retrieval rereads the vault and returns citations. |
+| Note workflows | `notemd_plan_*` | Wiki-links, title generation, translation, concepts, Mermaid/formula repair, chapter split, original-text extraction, folder batches, duplicate checks and reviewed dedupe. Planning never writes. |
+| Research | `notemd_research_discover`, `notemd_research_capture_evidence`, `notemd_plan_research_synthesis` | Uses DSH `web`; durable evidence stores identity, citations and a digest, not tool output as trusted content. |
+| Mutation | `notemd_request_plan_approval`, `notemd_apply_approved_plan` | One plan digest, one approval receipt, one consume; exact revision preconditions; stale plans fail closed. |
+| Durable jobs | `notemd_job_start_*`, `notemd_job_resume`, `notemd_job_status`, `notemd_job_cancel` | Asynchronous plan-only checkpoints under `<workspace>/.notemd/jobs/`. Jobs never apply a plan. |
+| Diagrams and charts | `notemd_plan_mermaid_artifact`, `notemd_plan_vega_lite_artifact`, `notemd_plan_json_canvas_artifact`, `notemd_plan_html_artifact`, `notemd_plan_editable_svg_artifact` | Canonical source plus an explicitly labelled SVG preview. |
+| Specialist diagrams | `notemd_plan_drawio_artifact`, `notemd_plan_drawnix_artifact`, `notemd_plan_circuitikz_artifact` | Canonical source plus SVG projection; native export is capability-gated and never silently substituted. |
+| Slidev | `notemd_plan_slidev_source`, `notemd_plan_slidev_*_export` | Source, standalone HTML, PDF, PNG, native PPTX and MP4 are separate named providers. |
+| Capability status | `*_render_status`, `*_export_status` | Missing Playwright, FFmpeg, Draw.io, Tectonic or adapters return `unavailable` with a structured diagnostic. |
+
+There is intentionally no generic renderer or export selector. Target fidelity, process allowlists, staging, and failure semantics differ enough that one polymorphic switch would hide important contracts.
+
+## Use it safely
+
+DSH exposes these operations through its normal tool and approval surfaces. A useful first request is:
+
+```text
+Read notes/architecture.md. Propose wiki-links and a Mermaid repair as immutable plans.
+Show the affected paths and revisions. Ask for approval, then apply only the plan whose
+revisions still match.
+```
+
+The write protocol is fixed:
+
+```text
+read -> immutable WorkspaceMutationPlan -> approval -> apply -> committed receipt -> workspace event -> index update
+```
+
+Only a matching `committed` receipt produces a workspace change event. `conflict`, `rejected`, `cancelled`, `failed`, `recovered`, and inconsistent receipts are never treated as indexable content changes.
+
+## Profile configuration
+
+The bundle patch defaults stateful providers to `process.cwd()`. A deployment profile must replace the whole `config` object for every row it overrides; DSH patches do not deep-merge rows. Keep the complete field set:
 
 ```yaml
 - id: notemd-vault
@@ -73,6 +94,14 @@ The bundle defaults its workspace root to `process.cwd()`. A production profile 
     workspaceRoot: !!js process.env.NOTEMD_WORKSPACE_ROOT
     approvalTtlMs: 300000
 
+- id: notemd-research
+  config:
+    workspaceRoot: !!js process.env.NOTEMD_WORKSPACE_ROOT
+
+- id: notemd-artifacts
+  config:
+    workspaceRoot: !!js process.env.NOTEMD_WORKSPACE_ROOT
+
 - id: notemd-llm
   config:
     provider: deepseek
@@ -81,23 +110,56 @@ The bundle defaults its workspace root to `process.cwd()`. A production profile 
     promptPolicyId: notemd.default.v1
 ```
 
-The default `notemd-llm` entry injects DSH's `llm` service. Its closed route policy permits only `provider`, `model`, `maxTokens`, and `promptPolicyId`; an endpoint, key, header, transport retry, or model-discovery field is rejected rather than ignored. Configure credentials, provider adapters, and provider selection in DSH itself. NoteMD never reads or persists them.
+The default `notemd-llm` provider injects DSH `llm`. Its closed route policy accepts only `provider`, `model`, `maxTokens`, and `promptPolicyId`. Endpoints, keys, headers, transport retries, and model discovery are rejected rather than ignored. Configure credentials, adapters, and provider selection in DSH; NoteMD never reads or persists them.
 
-`@jacobinwwey/notemd-deepseek-harness/llm-openai-compatible-legacy` is an explicit migration-only entry for deployments that cannot yet use DSH LLM routing. It owns the former OpenAI-compatible diagnostics and discovery behavior. A legacy profile must replace the default `notemd-llm` entry with that module; do not load both, because both provide `notemdTextTransformer`. The default bundle patch never loads the legacy entry.
+The explicit `@jacobinwwey/notemd-deepseek-harness/llm-openai-compatible-legacy` entry is migration-only. It provides the former OpenAI-compatible diagnostic and model-discovery tools for deployments that cannot yet use DSH routing. Replace the default `notemd-llm` row when using it; never load both because both provide `notemdTextTransformer`.
 
-## Operational Semantics
+## Diagrams and export policy
 
-The mutation boundary is fixed: `read -> immutable WorkspaceMutationPlan -> approval -> mutation executor -> matching committed receipt -> workspace event -> index synchronization`. Conflicted, rejected, cancelled, failed, recovered, or inconsistent receipts never masquerade as indexable content changes.
+SVG is the default preview derivative for diagrams and charts because DSH has no Obsidian preview host. It is not a claim that every target has an equivalent SVG export:
 
-Named `notemd_job_start_*` tools persist a plan-only job and schedule new work asynchronously. A checkpoint records the generated plan for each target; it does not authorize or apply it. On process restart, interrupted `running` jobs become `queued` and remain inert until `notemd_job_resume` is called. Terminal jobs do not restart. Operate one bundle process per workspace: the file-backed store has no cross-process lease protocol.
+- Mermaid, Vega-Lite, JSON Canvas, HTML and editable SVG keep their canonical source and produce a labelled SVG preview.
+- Draw.io, Drawnix and Circuitikz keep their canonical source; native SVG or PDF is exposed only when the controlled executable or adapter is available.
+- Slidev source preparation is deterministic and offline-font safe. HTML, PDF, PNG, PPTX and MP4 are separate providers behind the same approval-gated planner.
+- External processes run in a request-scoped staging directory and return digest-verified staged assets. They never write the workspace directly.
 
-`notemdWorkspaceChanges` captures an initial snapshot and then reconciles with an ordered poll. The default is `5000` ms; valid values are `250` through `60000` ms. Each scan is proportional to the Markdown workspace size because it lists paths and reads revisions. It is deliberately not a filesystem watcher or a distributed change feed. Events carry paths, revisions, origin, causation id, and timestamps only, never note content or credentials.
+The accepted Slidev runtime is the NoteMD fork, not upstream Slidev:
 
-The default DSH route does not register `notemd_provider_diagnostic` or `notemd_provider_models`, because DSH owns provider configuration and observability. Those migration-only tools are available only when the explicit legacy transport entry replaces the default LLM entry.
+```text
+origin: github:Jacobinwwey/slidev
+revision: bbcb2efae709c2ebaa96bda522cd6c192476817c
+package: @slidev/cli@52.16.0
+```
 
-Artifact Tools are target-specific: `notemd_plan_mermaid_artifact`, the Draw.io/Drawnix/Circuitikz planning/status pairs, and the six `notemd_plan_slidev_*` plus status pairs. There is no generic renderer/export selector because target fidelity, process allowlists, and failure semantics differ materially.
+The fork emits `index-standalone.html` for standalone HTML. PPTX remains native OOXML. MP4 is Slidev PNG frames plus FFmpeg. SVG is not advertised as a PPTX or MP4 fallback.
 
-## Development Gates
+## Operational boundaries
+
+- The bundle is not an Obsidian compatibility layer. UI, editor selection, commands, modals, and preview hosting remain host responsibilities.
+- `notemdWorkspaceChanges` snapshots once and reconciles by ordered polling. The default interval is `5000` ms; valid values are `250` through `60000`. Scan cost is proportional to Markdown workspace size.
+- Events contain paths, revisions, origin, causation id and timestamps only. They never carry note content or credentials.
+- Interrupted `running` jobs recover to inert `queued` records. `notemd_job_resume` is the explicit continuation operation, not write authorization or arbitrary replay.
+- The file-backed store has no cross-process lease. Run one bundle process per workspace.
+- The default DSH route does not register `notemd_provider_diagnostic` or `notemd_provider_models`; those exist only in the explicit legacy transport entry.
+- `@deepseek-ai/*` APIs are validated against the pinned DSH source used by acceptance. Future DSH releases may require a compatibility update.
+- Third-party DSH plugins execute code in the host process. Install only packages you trust and inspect the effective profile patch before starting a production profile.
+
+## Development
+
+The code follows the DSH/Cordis composition model: each provider owns one service or capability, registrations are reversible effects, and model-facing tools consume stable seams (`llm`, `web`, `subprocess`, `tools`). Do not import Obsidian or build a second host loop into this bundle.
+
+Useful entry points:
+
+| Area | Source |
+| --- | --- |
+| Bundle manifest and patch | [`packages/notemd-bundle/package.json`](packages/notemd-bundle/package.json), [`packages/notemd-bundle/cordis.patch.yml`](packages/notemd-bundle/cordis.patch.yml) |
+| Tool registration | [`packages/notemd-tools/src`](packages/notemd-tools/src) |
+| Workflow planners | [`packages/notemd-workflows/src`](packages/notemd-workflows/src) |
+| Artifact providers | [`packages/notemd-artifacts/src`](packages/notemd-artifacts/src), [`packages/notemd-export-slidev/src`](packages/notemd-export-slidev/src) |
+| Installed-profile acceptance | [`scripts/accept-dsh-profile.ts`](scripts/accept-dsh-profile.ts) |
+| Packed-bundle verification | [`scripts/verify-bundle.ts`](scripts/verify-bundle.ts) |
+
+Run the focused gates first, then the distribution gates:
 
 ```powershell
 pnpm typecheck
@@ -108,7 +170,42 @@ pnpm build
 pnpm pack:bundle
 pnpm verify:bundle
 pnpm accept:dsh
+pnpm capability:lane
 git diff --check
 ```
 
-`accept:dsh` creates an isolated `DSH_HOME`, installs the packed tarball through the pinned source DSH CLI, and exercises the installed ToolRuntime. It removes its temporary profile and fixture workspace after recording evidence.
+`accept:dsh` creates an isolated `DSH_HOME`, installs the packed tarball through the pinned source DSH CLI, boots the installed ToolRuntime, checks approval and stale-revision behavior, checks plan-only jobs and research fail-closed behavior, and verifies the diagram/Slidev capability surface. It removes its temporary profile and fixture workspace after recording evidence.
+
+When adding a capability, define the service contract, provider and consumer together. Register model-facing behavior through `ctx.tools`, use DSH's `llm`/`web`/`subprocess` seams instead of private transports, and add a real installed-artifact acceptance assertion. Keep optional executables explicit: absence is a capability result, never a format substitution.
+
+## Release checklist
+
+1. Update the bundle version in `packages/notemd-bundle/package.json` and keep the lockfile consistent.
+2. Update both root README files and both package README files when public behavior or installation changes.
+3. Pin or review the Slidev fork lock and optional runtime allowlists.
+4. Run all commands in the development gate block on a clean worktree.
+5. Confirm the packed tarball contains `dsh.bundle.patch`, compiled entries, all bundled internal packages, and both language README files; `pnpm verify:bundle` checks the distribution contract.
+6. Install that exact tarball into a clean DSH profile and inspect `dsh --profile <name> --dump-config` before publishing or sharing it.
+
+The current supported release path is a tarball added to a DSH profile. Do not document `npm install` or a registry version until the package has actually been published and the clean-profile acceptance has passed against that published artifact.
+
+## Documentation map
+
+| Topic | English | Chinese |
+| --- | --- | --- |
+| Architecture | [`docs/specs/2026-08-15-dsh-notemd-full-migration-architecture.md`](docs/specs/2026-08-15-dsh-notemd-full-migration-architecture.md) | [`docs/specs/2026-08-15-dsh-notemd-full-migration-architecture.zh-CN.md`](docs/specs/2026-08-15-dsh-notemd-full-migration-architecture.zh-CN.md) |
+| Implementation plan | [`docs/superpowers/plans/2026-08-15-dsh-notemd-full-migration.md`](docs/superpowers/plans/2026-08-15-dsh-notemd-full-migration.md) | [`docs/superpowers/plans/2026-08-15-dsh-notemd-full-migration.zh-CN.md`](docs/superpowers/plans/2026-08-15-dsh-notemd-full-migration.zh-CN.md) |
+| Migration progress | [`docs/walkthroughs/2026-08-15-dsh-notemd-migration-progress.md`](docs/walkthroughs/2026-08-15-dsh-notemd-migration-progress.md) | [`docs/walkthroughs/2026-08-15-dsh-notemd-migration-progress.zh-CN.md`](docs/walkthroughs/2026-08-15-dsh-notemd-migration-progress.zh-CN.md) |
+| Validation evidence | [`docs/walkthroughs/2026-08-15-dsh-notemd-full-migration-validation.md`](docs/walkthroughs/2026-08-15-dsh-notemd-full-migration-validation.md) | [`docs/walkthroughs/2026-08-15-dsh-notemd-full-migration-validation.zh-CN.md`](docs/walkthroughs/2026-08-15-dsh-notemd-full-migration-validation.zh-CN.md) |
+
+External contracts:
+
+- [DeepSeek Harness architecture](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/architecture.md)
+- [DeepSeek Harness development guide](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/development.md)
+- [DeepSeek Harness capability seams](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/capability-seams.md)
+- [DeepSeek Harness testing policy](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/testing.md)
+- [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin)
+
+## Status
+
+This repository is a developer-preview bundle. The public contract is the packed tarball plus the effective DSH profile patch, not an Obsidian plugin API. Breaking changes are possible while the DSH baseline remains pre-1.0.

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Portable NoteMD workflow bundle for DeepSeek Harness",
   "type": "module",
-  "files": ["lib/**/*.js", "lib/**/*.d.ts", "cordis.patch.yml", "README.md"],
+  "files": ["lib/**/*.js", "lib/**/*.d.ts", "cordis.patch.yml", "README.md", "README.zh-CN.md"],
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",
