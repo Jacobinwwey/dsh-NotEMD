@@ -319,6 +319,54 @@ Task 1-12 已由已发布版本关闭，不重新打开。本节从目标提交 
 - [x] intake 聚焦关口通过：typed source-intake lock test、migration conformance test、typecheck、lint 与 `git diff --check`。
 - [x] Phase 15/16 完整 release gate 通过：Vitest 52 files/203 tests，coverage statement 77.68%/branch 73.00%/function 85.21%，build、packed-bundle verification、clean DSH acceptance 与最终 `git diff --check` 均通过。
 
+### Phase 17：远端 main parity review（2026-08-18）
+
+本阶段是审计与 source-intake 重置，不会把 source-main 行为静默提升为 bundle 能力。
+
+#### 比对锁定
+
+- 目标：`notemd-deepseek-harness` 的 `92479bc`（`main` 与 `origin/main`），工作区 clean。
+- 源 oracle：`obsidian-NoteMD_new` 的 `6097ff1`（`origin/main`），相对旧行为契约基线 `4168a51cd19ad8c3d1e05f604b50936255461a31` 比较。
+- 排除的 source checkout 状态：`docs/`、`package.json`、Drawnix adapter/test 与 `scripts/run-drawnix-consumer-gate.mjs` 下共 17 个未提交路径。它们只作为 dirty checkout 证据，不作为 parity 输入。
+- 已提交 source delta 为 194 个文件、9,434 行新增、6,770 行删除。因此本次覆盖的是远端 main 的已提交漂移，不是本地 Drawnix 工作树。
+
+#### 能力矩阵与质量判断
+
+| 能力 | source remote-main | DSH bundle | 迁移判断 |
+| --- | --- | --- | --- |
+| Registry/workflow contract | 29 个 operation ID；移除一个 Drawnix-only input field | 18/18 个 baseline included operation 经 typed adapter 执行；11 个 host/design exclusion 仍显式存在；14 个 fixture、19 个 observation | 基线契约迁移完整且证据充分，但不能证明新增图表契约的当前语义 parity。 |
+| Obsidian host surface | command、editor state、modal/settings、provider profile 与 vault UI | 按边界有意不包含；runtime composition 与 `ctx.llm`/`ctx.web` 由 DSH 拥有 | 边界正确。重新引入 host API 会破坏 standalone bundle ownership。 |
+| Mutation 与恢复 | host-local write flow | typed proposal、approval receipt、journaled executor、recovery、ownership guard、receipt-derived event | DSH 在失败隔离和审计性上更强；未发现 portable workflow contract 的实质回归。 |
+| 文档与知识 | 基线语义加 source-host presentation | AST section、稳定 anchor、chapter manifest、两种 original-text mode、scoped retrieval 与 citation | 基线 parity 高；当前 source-main delta 不否定该模型。 |
+| LLM/Web 与 cache | provider/model/transport policy 加 5 分钟 response cache | DSH-owned `ctx.llm` 与 `ctx.web`；不迁移 provider cache | 有意不迁移。cache key 包含 provider endpoint/model policy，属于 DSH ownership；复制会产生第二套 routing authority。 |
+| 图表 taxonomy | 三轴（semantic type、render target、export format）、13 个 semantic type，以及 `timeline`、`swimlane`、`quadrant` payload | 有 versioned `DiagramSpec`、lineage、具名 renderer，但没有等价的三轴 catalog 和三类 specialized payload contract | 部分迁移。当前 target-oriented contract 安全，但表达能力落后于 source-main。 |
+| Mermaid normalization | 确定性 family detection、fence 提取/规范化、ER repair、family-aware legacy stage | LLM-backed Mermaid repair 与通用 fence transform | 部分迁移。确定性 normalization 应位于 LLM repair 之前，保证可复现和稳定的失败分类。 |
+| Drawnix/Circuitikz | remote-main 已提交 cross-root routing、reserved lane、geometry/text layout、target-aware routing 与 native Circuitikz compile boundary 收敛 | 具名 provider、canonical source、标注 SVG projection、staging/process 控制和如实 unavailable | 部分迁移。provider 安全性已迁移，但新 source 行为与 consumer evidence 尚未迁移。SVG preview 不是 native Drawnix/Circuitikz parity。 |
+| Gallery 与 consumer evidence | 生成 SVG/PNG gallery、capability manifest、fixture-driven docs、Draw.io/Drawnix/Circuitikz 外部 gate | artifact manifest、capability lane、确定性 subprocess fake；没有等价 gallery 或真实 external-consumer gate | 部分迁移。portable manifest/fixture 概念存在，但视觉 gallery 与 consumer acceptance 尚未迁移。 |
+| Export | source-main export dimension 已进入 diagram target dispatch；host preview/gallery flow 仍属本地 | 具名 Slidev fork HTML/PDF/PNG/PPTX/MP4 provider 与 SVG-capable diagram derivative | portable export 覆盖良好，但 source-main target-dispatch parity 不完整。SVG 仍只能是 preview derivative。 |
+
+#### 评估结论
+
+- **架构安全性：高。** ownership boundary、closed Tool schema、staging process、mutation receipt、DSH service injection 与 fail-closed capability reporting 均强于 source host composition。
+- **固定基线契约覆盖：高。** 18 个 included operation 全部映射到可执行 adapter；11 个 exclusion 显式记录而非隐藏。
+- **当前 `origin/main` 语义 parity：部分。** source 在旧 intake candidate 之后已提交 diagram/catalog、Mermaid、Drawnix/Circuitikz 与 gallery 变化；DSH 当前 source lock 和 conformance fixture 尚未表达这些变化。
+- **用户可见 host parity：按范围有意排除。** Obsidian UI、editor lifecycle、settings 与 provider profile 不应成为迁移质量失败指标。
+- **总体结论：不能宣称与 source `origin/main` 全量 parity。** 准确发布标签是“固定非 host 契约的高质量 standalone migration，并带有已记录的 remote-main delta backlog”。
+
+#### 重新宣称 parity 前的必要工作
+
+1. 在新的 source-intake lock 中固定 `6097ff1`，把 17 个 dirty path 记录为 checkout evidence；更新 operation/fixture diff，不覆盖旧 oracle。
+2. 增加 versioned 三轴 diagram catalog 与类型化 `timeline`/`swimlane`/`quadrant` payload。semantic type、render target、export format 必须是独立字段；禁止 generic renderer selector 或 mode flag。
+3. 增加确定性 Mermaid normalization package 与 family detection、fence、ER repair fixture。它必须先于 LLM repair 执行，并保留 unsupported family diagnostic。
+4. 通过 clean source contract 对齐已提交 Drawnix/Circuitikz 行为：cross-root relation routing、reserved lane、geometry/text layout、target-aware routing、native compile boundary。仅在 runtime 安装时增加 consumer gate，否则如实返回 `unavailable`。
+5. 决定是否需要 portable gallery/manifest。需要时实现为 DSH artifact/fixture service，不复制 Obsidian webview/UI ownership；SVG-by-default preview 只能作为显式标注的 derivative。
+6. response-cache policy 继续由 DSH 拥有。若新增 cache，必须在 DSH provider layer 定义 credential-free key、bounded TTL/entries、cancellation 与 invalidation test。
+
+#### 退出证据与拒绝捷径
+
+- 退出必须包含新的 source lock、更新后的 fixture hash、每个 accepted delta 的 typed adapter coverage 与 focused test、完整 bundle/type/lint gate 以及 clean DSH worktree。dirty source checkout 永远不能作为 acceptance oracle。
+- 拒绝整体复制 source gallery、把 SVG 当 native Drawnix/Circuitikz 输出、把 provider cache policy 导入 NoteMD，或用单一 selector 隐藏 semantic/render/export 差异。这些捷径会抹平 Phase 1-16 已建立的 ownership 与 fidelity boundary。
+
 ### 执行顺序与记录协议
 
-Phase 12-16 已在固定的非 Obsidian 宿主 contract 范围内完成。当前 bundle 选择显式 single-process hardening 作为 Phase 15；只有多进程部署真正需要时才引入 durable lease。Phase 16 为 audit-only，仅在 source 固定新 commit 时重新执行。每个后续阶段都必须同步更新两份 progress 文件，记录 source/target lock、变更文件与 owner、实测测试、capability 限制、拒绝方案、风险和退出证据。
+Phase 12-16 已在固定的非 Obsidian 宿主 contract 范围内完成。Phase 17 记录当前 source remote-main 已超出该 oracle；它是审计结果，不是实现声明。Phase 15 仍是当前 bundle 的显式 single-process hardening 选择，Phase 16 的旧 candidate 仅作历史记录。任何新的 parity 声明都必须针对新固定 source commit 执行 Phase 17 后续工作，并同步更新两份 progress 文档，记录 source/target lock、变更文件与 owner、实测测试、capability 限制、拒绝方案、风险与退出证据。

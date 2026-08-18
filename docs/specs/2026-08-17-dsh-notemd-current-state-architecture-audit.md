@@ -150,6 +150,12 @@ The default patch does not load the OpenAI-compatible provider, and tests prove 
 **Work:** pin the next source commit, diff registry IDs and semantic fixtures against `4168a51`, classify diagram-gallery/cache/render-target changes, and review each Drawnix WIP path separately.
 **Exit:** `fixtures/migration/source-intake-lock.json` and the matrix intake link land before any new source behavior is implemented; the candidate has 29 unchanged operation IDs, no migration fixture hash drift, and named committed/dirty Drawnix quarantine paths.
 
+### Phase 17: Remote-main parity review (2026-08-18)
+
+The previous Phase 16 candidate (`cdf580c`) is now historical. The source remote `origin/main` is `6097ff1`, while the DSH release under audit is `92479bc`. Relative to the original `4168a51` contract baseline, the committed source drift is 194 files (+9,434/-6,770) across 17 commits; the source checkout has 17 uncommitted paths that remain excluded. The DSH release is therefore complete for its pinned non-host contract but only partially semantically aligned with current source-main diagrams, Mermaid normalization, Drawnix/Circuitikz convergence, and gallery/consumer evidence. No dirty source implementation is accepted by this audit.
+
+Required next step: create a new source-intake lock for `6097ff1`, update typed fixtures/adapters, and keep DSH-owned provider cache policy and Obsidian host behavior outside the bundle boundary.
+
 ## 6. Recommended Order
 
 1. Phase 12 is complete: typed executable adapters close the conformance proof gap.

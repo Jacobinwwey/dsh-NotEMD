@@ -150,6 +150,12 @@ candidate source 在 `4168a51` 之后包含 committed diagram catalog、gallery 
 **工作：** 固定下一个 source commit，对比 `4168a51` 的 registry ID 与 semantic fixture，分类 diagram-gallery/cache/render-target 变化，并逐项审查 Drawnix WIP。
 **出口：** `fixtures/migration/source-intake-lock.json` 与 matrix intake link 已在实现任何新 source behavior 前落盘；candidate 有 29 个未变化的 operation ID、无 migration fixture hash 漂移，并列出 committed/dirty Drawnix quarantine 路径。
 
+### Phase 17：远端 main parity review（2026-08-18）
+
+此前 Phase 16 candidate（`cdf580c`）现为历史记录。source remote `origin/main` 为 `6097ff1`，本次审计的 DSH release 为 `92479bc`。相对原始 `4168a51` contract baseline，已提交 source drift 为 17 个 commit、194 个文件（+9,434/-6,770）；source checkout 另有 17 个未提交路径，继续排除。因而 DSH release 在固定非 host contract 范围内完成，但相对当前 source-main 的图表、Mermaid normalization、Drawnix/Circuitikz 收敛与 gallery/consumer evidence 只有部分语义对齐。本审计不接受任何 dirty source implementation。
+
+下一步必须为 `6097ff1` 建立新的 source-intake lock，更新 typed fixture/adapter；DSH-owned provider cache policy 与 Obsidian host 行为继续留在 bundle 边界之外。
+
 ## 6. 推荐顺序
 
 1. Phase 12 已完成：类型化可执行 adapter 已关闭 conformance proof 缺口。

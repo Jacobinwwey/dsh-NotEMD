@@ -284,3 +284,11 @@
 - 分类决策：diagram-gallery 延后为 source-side presentation/fixture governance；response-cache 因 DSH 拥有 provider endpoint/model policy 被拒绝；render-target descriptor 延后到具名 bundle adapter；Mermaid family/fence/ER normalization 只作为后续候选，不宣称当前已实现。
 - Drawnix quarantine 同时列出 baseline exclusion、committed candidate path 与五个 dirty path；没有任何 Drawnix implementation 或 fixture 被复制进 bundle。
 - 聚焦证据：`migration-source-intake.test.ts` 与 `migration-conformance.test.ts` 通过；typecheck、lint、52 文件/203 测试全量 suite、coverage、build、packed-bundle verification、clean DSH acceptance 与 `git diff --check` 均已在上方 release gate 通过。
+
+## 16. Phase 17 远端 main parity review（2026-08-18）
+
+- 比对锁定：DSH `main/origin/main` 为 `92479bc`；source oracle 为 `obsidian-NoteMD_new@6097ff1` 的 `origin/main`，相对行为契约基线 `4168a51cd19ad8c3d1e05f604b50936255461a31` 比较。
+- source remote-main delta 为 17 个已提交 commit、194 个文件、9,434 行新增、6,770 行删除。source checkout 当前有 17 个未提交路径；全部排除 parity 且保持不动。
+- 结果：固定非 host contract 仍为高质量（18/18 included operation、14 个 fixture、typed adapter、journaled mutation、DSH-owned LLM/Web），但当前 remote-main parity 仅部分完成。未表达的已提交 delta 包括三轴 diagram catalog 与新 semantic payload、确定性 Mermaid normalization、Drawnix/Circuitikz 收敛以及 gallery/consumer gate。
+- 有意排除仍然有效：Obsidian host UI/lifecycle/provider profile 与 provider response-cache policy 不是迁移缺陷。SVG derivative 不是 native Drawnix/Circuitikz 或 PPTX/MP4 parity。
+- 处置：本次审计没有接受任何 source 实现。Phase 17 后续必须在新 intake lock 中固定 `6097ff1`，更新 fixture/adapter contract，并通过 focused 与完整 bundle gate 后才能重新宣称 full parity。

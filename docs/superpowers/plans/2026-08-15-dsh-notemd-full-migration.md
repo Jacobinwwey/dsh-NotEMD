@@ -400,6 +400,54 @@ Tasks 1-12 are closed by the published release and are not reopened. This sectio
 - [x] Focused intake gate passed: the typed source-intake lock test, migration conformance test, typecheck, lint, and `git diff --check`.
 - [x] Full Phase 15/16 release gate passed: Vitest 52 files/203 tests, coverage 77.68% statements/73.00% branches/85.21% functions, build, packed-bundle verification, clean DSH acceptance, and final `git diff --check`.
 
+### Phase 17: Remote-main parity review (2026-08-18)
+
+This phase is an audit and source-intake reset. It does not silently promote source-main behavior into the bundle.
+
+#### Comparison locks
+
+- Target: `notemd-deepseek-harness` at `92479bc` (`main` and `origin/main`), clean.
+- Source oracle: `obsidian-NoteMD_new` at `6097ff1` (`origin/main`), compared against the previous behavior-contract baseline `4168a51cd19ad8c3d1e05f604b50936255461a31`.
+- Excluded source checkout state: seventeen uncommitted paths under `docs/`, `package.json`, Drawnix adapters/tests, and `scripts/run-drawnix-consumer-gate.mjs`. They are evidence of a dirty checkout only and are not parity input.
+- The committed source delta is 194 files, 9,434 insertions, and 6,770 deletions. The comparison therefore covers committed remote-main drift, not the local Drawnix working tree.
+
+#### Capability matrix and quality judgement
+
+| Capability | Source remote-main | DSH bundle | Migration judgement |
+| --- | --- | --- | --- |
+| Registry/workflow contract | 29 operation IDs; one Drawnix-only input field removed | 18/18 included baseline operations execute through typed adapters; 11 host/design exclusions remain explicit; 14 fixtures and 19 observations | Baseline contract migration is complete and well evidenced. It is not proof of current semantic parity for newly added diagram contracts. |
+| Obsidian host surface | Commands, editor state, modal/settings, provider profile and vault UI | Intentionally absent; DSH owns runtime composition and `ctx.llm`/`ctx.web` | Correct boundary. Reintroducing host APIs would violate standalone-bundle ownership. |
+| Mutation and recovery | Host-local write flows | Typed proposal, approval receipt, journaled executor, recovery, ownership guard and receipt-derived events | DSH is stronger on failure isolation and auditability; no material regression found in the portable workflow contract. |
+| Documents and knowledge | Baseline semantics plus source-host presentation | AST sections, stable anchors, chapter manifests, original-text modes, scoped retrieval and citations | High baseline parity. Current source-main delta does not invalidate the DSH model. |
+| LLM/Web and cache | Provider/model/transport policy plus a five-minute response cache | DSH-owned `ctx.llm` and `ctx.web`; no provider cache | Intentional non-migration. The cache key contains provider endpoint/model policy owned by DSH; copying it would create a second routing authority. |
+| Diagram taxonomy | Three axes (semantic type, render target, export format), 13 semantic types, and new `timeline`, `swimlane`, and `quadrant` payloads | Versioned `DiagramSpec` and lineage, named renderers, but no equivalent three-axis catalog or the three specialized payload contracts | Partial. The current target-oriented contract is safe but under-expresses source-main semantics. |
+| Mermaid normalization | Deterministic family detection, fence extraction/normalization, ER repair and family-aware legacy stages | LLM-backed Mermaid repair and generic fence transforms | Partial. Deterministic normalization must precede any LLM repair to make output reproducible and failure classification stable. |
+| Drawnix/Circuitikz | Committed remote-main convergence for cross-root routing, reserved lanes, geometry/text layout, target-aware routing and native Circuitikz compile boundary | Named providers, canonical source, labelled SVG projection, staging/process controls and truthful unavailable outcomes | Partial. Provider safety is migrated; the newer source behavior and consumer evidence are not. SVG preview is not native Drawnix/Circuitikz parity. |
+| Gallery and consumer evidence | Generated SVG/PNG gallery, capability manifest, fixture-driven docs, and external Draw.io/Drawnix/Circuitikz gates | Artifact manifests, capability lane and deterministic subprocess fakes; no equivalent gallery or real external-consumer gate | Partial. Portable manifest/fixture concepts exist, but visual gallery and consumer acceptance remain unmigrated. |
+| Export | Source-main export dimension is part of diagram target dispatch; host preview/gallery flows remain local | Named Slidev fork HTML/PDF/PNG/PPTX/MP4 providers and SVG-capable diagram derivatives | Good portable export coverage, incomplete source-main target-dispatch parity. SVG remains a preview derivative only. |
+
+#### Assessment
+
+- **Architecture safety: high.** Ownership boundaries, closed Tool schemas, staged process execution, mutation receipts, DSH service injection and fail-closed capability reporting are stronger than the source host composition.
+- **Pinned-baseline contract coverage: high.** All 18 included operations are mapped to executable adapters; the 11 exclusions are explicit rather than hidden.
+- **Current `origin/main` semantic parity: partial.** The source has committed diagram/catalog, Mermaid, Drawnix/Circuitikz and gallery changes after the old intake candidate. Those changes are not represented by the current DSH source lock or conformance fixtures.
+- **User-facing host parity: intentionally out of scope.** Obsidian UI, editor lifecycle, settings and provider profile behavior must not be used as a migration-quality failure metric.
+- **Overall conclusion: do not claim full parity with source `origin/main`.** The accurate release label is “high-quality standalone migration for the pinned non-host contract, with a documented remote-main delta backlog.”
+
+#### Required follow-up before a new parity claim
+
+1. Pin `6097ff1` in a new source-intake lock and record the seventeen dirty paths as excluded checkout evidence; update the operation/fixture diff without changing the old oracle in place.
+2. Add a versioned three-axis diagram catalog and typed `timeline`/`swimlane`/`quadrant` payloads. Keep semantic type, render target and export format as separate fields; do not add a generic renderer selector or a mode flag.
+3. Add a deterministic Mermaid normalization package and fixtures for family detection, fences and ER repair. Run it before LLM repair and preserve diagnostics for unsupported families.
+4. Reconcile committed Drawnix/Circuitikz behavior through clean source contracts: cross-root relation routing, reserved lanes, geometry/text layout, target-aware routing, and native compile boundaries. Add consumer gates only where the runtime is installed; otherwise return `unavailable`.
+5. Decide whether a portable gallery/manifest is required. If yes, implement it as a DSH artifact/fixture service; do not copy Obsidian webview/UI ownership. Add SVG-by-default preview only as an explicitly labelled derivative.
+6. Keep response-cache policy in DSH. If caching is added, define it in the DSH provider layer with credential-free keys, bounded TTL/entries, cancellation and invalidation tests.
+
+#### Exit evidence and rejected shortcuts
+
+- Exit requires a new source lock, updated fixture hashes, typed adapter coverage, focused tests for every accepted delta, full bundle/type/lint gates, and a clean DSH worktree. A source dirty checkout can never be an acceptance oracle.
+- Reject copying the source gallery wholesale, treating SVG as native Drawnix/Circuitikz output, importing provider cache policy into NoteMD, or hiding semantic/render/export differences behind one selector. Each shortcut would erase ownership or fidelity boundaries established by Phases 1-16.
+
 ### Execution order and record protocol
 
-Phases 12-16 are complete for the pinned non-Obsidian-host contract. Phase 15 is the explicit single-process hardening choice for the current bundle; a durable lease remains deferred until multi-process deployment is required. Phase 16 is audit-only and should run again only when a new source commit is pinned. Each future phase must update both progress files with source/target locks, changed files and owners, measured tests, capability limits, rejected alternatives, risks, and its exit evidence.
+Phases 12-16 are complete for the pinned non-Obsidian-host contract. Phase 17 records that the current source remote-main has moved beyond that oracle; it is an audit result, not an implementation claim. Phase 15 remains the explicit single-process hardening choice for the current bundle, and Phase 16's old candidate remains historical. Any new parity claim must execute Phase 17 follow-up items against a newly pinned source commit and update both progress files with source/target locks, changed files and owners, measured tests, capability limits, rejected alternatives, risks, and exit evidence.

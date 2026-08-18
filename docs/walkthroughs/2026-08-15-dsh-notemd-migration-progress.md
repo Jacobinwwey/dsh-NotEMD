@@ -285,3 +285,11 @@ No completed Task 1-12 is reopened by this audit; the next phase starts from the
 - Category decisions: diagram-gallery is deferred as source-side presentation/fixture governance; response-cache is rejected because DSH owns provider endpoint/model policy; render-target descriptors are deferred behind named bundle adapters; Mermaid family detection/fence/ER normalization is accepted only as a follow-up candidate with no current implementation claim.
 - Drawnix quarantine names the baseline exclusions, committed candidate paths, and all five dirty paths. No Drawnix implementation or fixture was copied into the bundle.
 - Focused evidence: `migration-source-intake.test.ts` and `migration-conformance.test.ts` passed; typecheck, lint, the full 52-file/203-test suite, coverage, build, packed-bundle verification, clean DSH acceptance, and `git diff --check` all passed in the release gate above.
+
+## 16. Phase 17 Remote-main parity review (2026-08-18)
+
+- Comparison locks: DSH `main/origin/main` at `92479bc`; source oracle is `obsidian-NoteMD_new@6097ff1` on `origin/main`, compared with the behavior-contract baseline `4168a51cd19ad8c3d1e05f604b50936255461a31`.
+- The source remote-main delta is 194 committed files with 9,434 insertions and 6,770 deletions across 17 commits. The source checkout currently has 17 uncommitted paths; all are excluded from parity and remain untouched.
+- Result: the pinned non-host contract remains high quality (18/18 included operations, 14 fixtures, typed adapters, journaled mutation, and DSH-owned LLM/Web), but current remote-main parity is partial. The unrepresented committed delta includes the three-axis diagram catalog and new semantic payloads, deterministic Mermaid normalization, Drawnix/Circuitikz convergence, and gallery/consumer gates.
+- Intentional exclusions remain valid: Obsidian host UI/lifecycle/provider profiles and provider response-cache policy are not migration defects. SVG derivatives are not native Drawnix/Circuitikz or PPTX/MP4 parity.
+- Disposition: no implementation was accepted from this audit. Phase 17 follow-up must pin `6097ff1` in a new intake lock, update fixture/adapter contracts, and pass focused plus full bundle gates before any new full-parity claim.
