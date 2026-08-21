@@ -4,6 +4,8 @@ Portable, approval-gated NoteMD workflow providers for DeepSeek Harness. This
 package is the installable bundle described by the repository [README](https://github.com/Jacobinwwey/dsh-NotEMD/blob/main/README.md)
 and its [Chinese edition](https://github.com/Jacobinwwey/dsh-NotEMD/blob/main/README.zh-CN.md).
 
+Short display name: [dsh-notemd](https://www.npmjs.com/package/@jacobinwwey/dsh-notemd). The canonical npm install spec remains `@jacobinwwey/dsh-notemd`.
+
 ## Install
 
 Install the published package into a Node workspace, then add the same version to a DSH profile:

@@ -295,7 +295,7 @@
 
 ## 18. Phase 18 npm 包标识与发布门禁（2026-08-21）
 
-- 规范展示/仓库名称统一为 `dsh-NotEMD`；npm 因包名必须小写，统一使用 `@jacobinwwey/dsh-notemd`。旧公开包标识已从 runtime import、Cordis patch row、profile manifest、验收脚本与文档中移除。
+- 规范展示/仓库名称统一为 `dsh-NotEMD`；npm 短显示名为 `dsh-notemd`，规范 scoped package identity/安装标识为 `@jacobinwwey/dsh-notemd`。旧公开包标识已从 runtime import、Cordis patch row、profile manifest、验收脚本与文档中移除。
 - `packages/notemd-bundle/package.json` 已声明 public registry 元数据、仓库链接、keywords 与 `publishConfig.access = public`。bundle 仍内嵌所有尚未发布的 `@notemd-harness/*` 包，tarball 继续作为可复现的离线路径。
 - 已验证发行产物为 `artifacts/jacobinwwey-dsh-notemd-0.1.0.tgz`。它通过了 `pnpm pack:bundle`、`pnpm verify:bundle`、clean DSH profile 验收、typecheck、lint、coverage、build、capability lane 以及 52 个文件/203 个测试的全量 suite。
 - npm dry-run 已通过并确认 25 个内部 bundled dependency。真实发布因维护者账号启用一次性验证码而返回 `EOTP`；仓库不会保存凭据，也不会在聊天中索取 OTP。完成 npm 2FA 后重新执行：`npm publish .\\artifacts\\jacobinwwey-dsh-notemd-0.1.0.tgz --access public --registry=https://registry.npmjs.org/`。

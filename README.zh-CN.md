@@ -8,6 +8,8 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
+已发布包的短显示名为 [dsh-notemd](https://www.npmjs.com/package/@jacobinwwey/dsh-notemd)。npm 安装标识为 `@jacobinwwey/dsh-notemd`；scope 属于规范包 identity，`dsh-notemd` 是短显示名。
+
 ## 30 秒安装
 
 当前交付单元同时支持 npm registry package 与 DSH bundle。普通安装使用 registry：
@@ -196,7 +198,7 @@ git diff --check
 6. 将同一个 tarball 安装到干净 DSH profile，发布或分享前执行 `dsh --profile <name> --dump-config` 检查最终配置。
 7. 使用 `npm publish .\\artifacts\\jacobinwwey-dsh-notemd-0.1.0.tgz --access public --registry=https://registry.npmjs.org/` 发布同一个已验证 tarball；npm 账号启用 2FA 时，此命令可能要求一次性验证码。
 
-当前支持的发布路径是 npm registry package 或把 tarball 添加到 DSH profile。npm package 为 public scoped package，发布元数据位于 `packages/notemd-bundle/package.json`；tarball 仍是可复现的离线回退方案。
+当前支持的发布路径是 npm registry package 或把 tarball 添加到 DSH profile。公共包显示为 `dsh-notemd`，规范 npm identity 与安装标识为 `@jacobinwwey/dsh-notemd`；tarball 仍是可复现的离线回退方案。
 
 ## 文档索引
 

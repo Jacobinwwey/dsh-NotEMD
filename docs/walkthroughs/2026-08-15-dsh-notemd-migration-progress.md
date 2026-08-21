@@ -296,7 +296,7 @@ No completed Task 1-12 is reopened by this audit; the next phase starts from the
 
 ## 18. Phase 18 npm package identity and publication gate (2026-08-21)
 
-- Canonical display/repository name is now `dsh-NotEMD`; npm's lowercase package identity is `@jacobinwwey/dsh-notemd`. The former public package identifier is no longer referenced by runtime imports, Cordis patch rows, profile manifests, acceptance scripts, or documentation.
+- Canonical display/repository name is now `dsh-NotEMD`; the npm short display name is `dsh-notemd`, and its scoped canonical package identity/install spec is `@jacobinwwey/dsh-notemd`. The former public package identifier is no longer referenced by runtime imports, Cordis patch rows, profile manifests, acceptance scripts, or documentation.
 - `packages/notemd-bundle/package.json` now declares public registry metadata, repository links, keywords, and `publishConfig.access = public`. The bundle still embeds all unpublished `@notemd-harness/*` packages and keeps the tarball as the reproducible offline path.
 - The verified release artifact is `artifacts/jacobinwwey-dsh-notemd-0.1.0.tgz`. It passed `pnpm pack:bundle`, `pnpm verify:bundle`, clean DSH profile acceptance, typecheck, lint, coverage, build, capability lane, and the 52-file/203-test suite.
 - npm dry-run passed and confirmed 25 bundled internal dependencies. The real publish is pending the maintainer account's one-time password (`EOTP`); no credential or OTP is stored in the repository or requested through chat. Re-run `npm publish .\\artifacts\\jacobinwwey-dsh-notemd-0.1.0.tgz --access public --registry=https://registry.npmjs.org/` after completing npm 2FA.

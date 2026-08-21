@@ -2,6 +2,8 @@
 
 面向 DeepSeek Harness 的可移植、审批门控 NoteMD workflow provider。本包是可安装 bundle，完整说明见仓库的 [English README](https://github.com/Jacobinwwey/dsh-NotEMD/blob/main/README.md) 与 [中文 README](https://github.com/Jacobinwwey/dsh-NotEMD/blob/main/README.zh-CN.md)。
 
+短显示名：[dsh-notemd](https://www.npmjs.com/package/@jacobinwwey/dsh-notemd)。规范 npm 安装标识仍为 `@jacobinwwey/dsh-notemd`。
+
 ## 安装
 
 将已发布 package 安装到 Node workspace，再把同一版本加入 DSH profile：
