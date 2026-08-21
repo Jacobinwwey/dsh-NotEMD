@@ -195,7 +195,7 @@ When adding a capability, define the service contract, provider and consumer tog
 4. Run all commands in the development gate block on a clean worktree.
 5. Confirm the packed tarball contains `dsh.bundle.patch`, compiled entries, all bundled internal packages, and both language README files; `pnpm verify:bundle` checks the distribution contract.
 6. Install that exact tarball into a clean DSH profile and inspect `dsh --profile <name> --dump-config` before publishing or sharing it.
-7. Publish the exact verified package with `pnpm --dir packages/notemd-bundle publish --no-git-checks --access public`; npm account 2FA may request a one-time password during this command.
+7. Publish the exact verified tarball with `npm publish .\\artifacts\\jacobinwwey-dsh-notemd-0.1.0.tgz --access public --registry=https://registry.npmjs.org/`; npm account 2FA may request a one-time password during this command.
 
 The supported release paths are the npm registry package and the tarball added to a DSH profile. The npm package is public-scoped and uses the registry metadata in `packages/notemd-bundle/package.json`; the tarball remains the reproducible offline fallback.
 

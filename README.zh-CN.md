@@ -194,7 +194,7 @@ git diff --check
 4. 在 clean worktree 上运行开发门禁中的全部命令。
 5. 确认 tarball 包含 `dsh.bundle.patch`、编译产物、所有 bundled internal package 与两份语言 README；`pnpm verify:bundle` 负责校验发行契约。
 6. 将同一个 tarball 安装到干净 DSH profile，发布或分享前执行 `dsh --profile <name> --dump-config` 检查最终配置。
-7. 使用 `pnpm --dir packages/notemd-bundle publish --no-git-checks --access public` 发布同一个已验证 package；npm 账号启用 2FA 时，此命令可能要求一次性验证码。
+7. 使用 `npm publish .\\artifacts\\jacobinwwey-dsh-notemd-0.1.0.tgz --access public --registry=https://registry.npmjs.org/` 发布同一个已验证 tarball；npm 账号启用 2FA 时，此命令可能要求一次性验证码。
 
 当前支持的发布路径是 npm registry package 或把 tarball 添加到 DSH profile。npm package 为 public scoped package，发布元数据位于 `packages/notemd-bundle/package.json`；tarball 仍是可复现的离线回退方案。
 
