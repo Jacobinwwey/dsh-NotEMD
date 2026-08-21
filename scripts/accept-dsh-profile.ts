@@ -45,18 +45,18 @@ export async function acceptDshProfile(): Promise<void> {
     assertContains(config.stdout, 'notemd-vault', 'DSH config dump does not contain the vault provider.')
     assertContains(config.stdout, 'notemd-workspace-changes', 'DSH config dump does not contain the workspace change provider.')
     assertContains(config.stdout, 'notemd-tools', 'DSH config dump does not contain the Tool provider.')
-    assertContains(config.stdout, '@jacobinwwey/notemd-deepseek-harness/workflows', 'DSH config dump does not resolve the workflows module.')
+    assertContains(config.stdout, '@jacobinwwey/dsh-notemd/workflows', 'DSH config dump does not resolve the workflows module.')
 
     const profileManifest = JSON.parse(await readFile(join(profileDirectory, 'package.json'), 'utf8')) as {
       readonly dependencies?: Readonly<Record<string, string>>
       readonly dsh?: { readonly profile?: { readonly bundles?: readonly string[] } }
     }
     assert(
-      profileManifest.dependencies?.['@jacobinwwey/notemd-deepseek-harness'] !== undefined,
+      profileManifest.dependencies?.['@jacobinwwey/dsh-notemd'] !== undefined,
       'The clean profile did not install the NoteMD bundle dependency.',
     )
     assert(
-      profileManifest.dsh?.profile?.bundles?.includes('@jacobinwwey/notemd-deepseek-harness') === true,
+      profileManifest.dsh?.profile?.bundles?.includes('@jacobinwwey/dsh-notemd') === true,
       'The clean profile did not activate the NoteMD bundle layer.',
     )
 
@@ -199,16 +199,16 @@ import LlmRuntime, { CallId } from '@deepseek-ai/dsh-llm'
 import WebRuntime from '@deepseek-ai/dsh-web'
 import { LocalSubprocessRuntime } from '@deepseek-ai/dsh-subprocess-local'
 
-import NotemdArtifactsService from '@jacobinwwey/notemd-deepseek-harness/artifacts'
-import NotemdJobsService from '@jacobinwwey/notemd-deepseek-harness/jobs'
-import NotemdKnowledgeService from '@jacobinwwey/notemd-deepseek-harness/knowledge'
-import NotemdTextTransformerService from '@jacobinwwey/notemd-deepseek-harness/llm'
-import NotemdResearchService from '@jacobinwwey/notemd-deepseek-harness/research'
-import NotemdVaultLocalService from '@jacobinwwey/notemd-deepseek-harness/vault-local'
-import NotemdWorkspaceChangeService from '@jacobinwwey/notemd-deepseek-harness/workspace-changes'
-import NotemdWorkflowsService from '@jacobinwwey/notemd-deepseek-harness/workflows'
-import { NotemdApprovalGateService, NotemdApprovalLedgerService } from '@jacobinwwey/notemd-deepseek-harness/approval'
-import { apply as applyTools, inject as toolsInject } from '@jacobinwwey/notemd-deepseek-harness/tools'
+import NotemdArtifactsService from '@jacobinwwey/dsh-notemd/artifacts'
+import NotemdJobsService from '@jacobinwwey/dsh-notemd/jobs'
+import NotemdKnowledgeService from '@jacobinwwey/dsh-notemd/knowledge'
+import NotemdTextTransformerService from '@jacobinwwey/dsh-notemd/llm'
+import NotemdResearchService from '@jacobinwwey/dsh-notemd/research'
+import NotemdVaultLocalService from '@jacobinwwey/dsh-notemd/vault-local'
+import NotemdWorkspaceChangeService from '@jacobinwwey/dsh-notemd/workspace-changes'
+import NotemdWorkflowsService from '@jacobinwwey/dsh-notemd/workflows'
+import { NotemdApprovalGateService, NotemdApprovalLedgerService } from '@jacobinwwey/dsh-notemd/approval'
+import { apply as applyTools, inject as toolsInject } from '@jacobinwwey/dsh-notemd/tools'
 
 class AllowOnceApprovalService extends Service {
   requests = []

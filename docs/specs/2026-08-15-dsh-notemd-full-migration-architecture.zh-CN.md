@@ -10,7 +10,7 @@
 
 “全量迁移”定义为源提交 `4168a51cd19ad8c3d1e05f604b50936255461a31` 中全部非 Obsidian 宿主能力的行为契约对齐。它不包含 Obsidian UI、活动编辑器状态、Provider 设置和密钥，也不包含源工作树尚未提交的 Drawnix 改动。
 
-原始实施目标基线为 `6672f54def2b05e1628786ace97ab73649edab74`；本文保留这一历史设计基线。随后发布线经过 conformance 提交 `73480df`，当前发布记录为 `488378fb6a1429683bf1789f418abca8992bd3a2`。GitHub 仓库可更名为 `dsh-NotEMD`；npm 包名在明确批准兼容性迁移前保持不变。
+原始实施目标基线为 `6672f54def2b05e1628786ace97ab73649edab74`；本文保留这一历史设计基线。随后发布线经过 conformance 提交 `73480df`，当前发布记录为 `488378fb6a1429683bf1789f418abca8992bd3a2`。规范仓库/展示名称为 `dsh-NotEMD`；npm 标识统一使用符合小写规范的 `@jacobinwwey/dsh-notemd`。
 
 ## 2. 已核验的现状
 

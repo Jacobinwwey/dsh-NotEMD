@@ -17,7 +17,7 @@ test('declares every baseline migration package exactly once', () => {
     '@notemd-harness/artifacts',
     '@notemd-harness/llm-openai-compatible',
     '@notemd-harness/tools',
-    '@jacobinwwey/notemd-deepseek-harness',
+    '@jacobinwwey/dsh-notemd',
   ])
 })
 

@@ -1,8 +1,33 @@
 {
-  "name": "@jacobinwwey/notemd-deepseek-harness",
+  "name": "@jacobinwwey/dsh-notemd",
   "version": "0.1.0",
   "description": "Portable NoteMD workflow bundle for DeepSeek Harness",
   "type": "module",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jacobinwwey/dsh-NotEMD.git",
+    "directory": "packages/notemd-bundle"
+  },
+  "homepage": "https://github.com/Jacobinwwey/dsh-NotEMD#readme",
+  "bugs": {
+    "url": "https://github.com/Jacobinwwey/dsh-NotEMD/issues"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh-plugin",
+    "notemd",
+    "markdown",
+    "knowledge-management",
+    "approval-workflow",
+    "mermaid",
+    "vega-lite",
+    "slidev",
+    "svg"
+  ],
   "files": ["lib/**/*.js", "lib/**/*.d.ts", "cordis.patch.yml", "README.md", "README.zh-CN.md"],
   "exports": {
     ".": {

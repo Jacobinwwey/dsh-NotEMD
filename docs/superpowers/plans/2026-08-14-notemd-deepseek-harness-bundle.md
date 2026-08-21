@@ -50,7 +50,7 @@
 - Test: packages/notemd-vault/test/revision.contract.test.ts
 
 **Interfaces:**
-- Produces a pnpm workspace with package names @notemd-harness/vault, @notemd-harness/vault-local, @notemd-harness/jobs, @notemd-harness/knowledge, @notemd-harness/workflows, @notemd-harness/artifacts, @notemd-harness/llm-openai-compatible, @notemd-harness/tools, and @jacobinwwey/notemd-deepseek-harness.
+- Produces a pnpm workspace with package names @notemd-harness/vault, @notemd-harness/vault-local, @notemd-harness/jobs, @notemd-harness/knowledge, @notemd-harness/workflows, @notemd-harness/artifacts, @notemd-harness/llm-openai-compatible, @notemd-harness/tools, and @jacobinwwey/dsh-notemd.
 - Root scripts are typecheck, test, test:coverage, lint, build, pack:bundle, and verify:bundle.
 
 - [ ] **Step 1: Write the failing workspace discovery test**
@@ -69,7 +69,7 @@ test('declares every baseline migration package exactly once', () => {
     '@notemd-harness/artifacts',
     '@notemd-harness/llm-openai-compatible',
     '@notemd-harness/tools',
-    '@jacobinwwey/notemd-deepseek-harness',
+    '@jacobinwwey/dsh-notemd',
   ])
 })
 ~~~
@@ -93,7 +93,7 @@ Use TypeScript strict mode, NodeNext module resolution, Vitest, and pnpm workspa
     "test": "vitest run",
     "lint": "eslint . --max-warnings 0",
     "build": "pnpm typecheck && pnpm --recursive --if-present run build",
-    "pack:bundle": "pnpm --filter @jacobinwwey/notemd-deepseek-harness pack",
+    "pack:bundle": "pnpm --filter @jacobinwwey/dsh-notemd pack",
     "verify:bundle": "tsx scripts/verify-bundle.ts"
   }
 }
@@ -112,7 +112,7 @@ export function workspacePackageNames(): readonly string[] {
     '@notemd-harness/artifacts',
     '@notemd-harness/llm-openai-compatible',
     '@notemd-harness/tools',
-    '@jacobinwwey/notemd-deepseek-harness',
+    '@jacobinwwey/dsh-notemd',
   ]
 }
 ~~~
@@ -555,11 +555,11 @@ Run: git commit -m "feat: expose approval gated harness tools"
 ~~~yaml
 - insert:
     - id: notemd-vault
-      name: '@jacobinwwey/notemd-deepseek-harness/vault-local'
+      name: '@jacobinwwey/dsh-notemd/vault-local'
       config:
         workspaceRoot: !!js process.cwd()
     - id: notemd-tools
-      name: '@jacobinwwey/notemd-deepseek-harness/tools'
+      name: '@jacobinwwey/dsh-notemd/tools'
       inject: [tools, notemdVault, notemdJobs, notemdKnowledge, notemdWorkflows, notemdArtifacts]
 ~~~
 
@@ -568,13 +568,13 @@ Run: git commit -m "feat: expose approval gated harness tools"
 ~~~ts
 test('declares a DSH bundle patch and ships every referenced module', async () => {
   expect(manifest.dsh?.bundle?.patch).toBe('./cordis.patch.yml')
-  await expect(import('@jacobinwwey/notemd-deepseek-harness/tools')).resolves.toHaveProperty('apply')
+  await expect(import('@jacobinwwey/dsh-notemd/tools')).resolves.toHaveProperty('apply')
 })
 ~~~
 
 - [ ] **Step 2: Run the focused bundle test**
 
-Run: pnpm --filter @jacobinwwey/notemd-deepseek-harness test -- patch.contract.test.ts
+Run: pnpm --filter @jacobinwwey/dsh-notemd test -- patch.contract.test.ts
 
 Expected: FAIL because no bundle manifest or exports exist.
 

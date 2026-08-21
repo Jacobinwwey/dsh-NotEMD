@@ -39,5 +39,8 @@ test('preserves complete replacement configuration and lifecycle disposal seams'
   expect(vaultLocal).toContain('WorkspaceOwnershipGuard.acquire')
   expect(vaultLocal).toContain("'notemdVault.workspaceOwnership'")
   expect(llm).toContain("'notemdTextTransformer.dshConsumer'")
-  expect(repositoryRoot).toContain('notemd-deepseek-harness')
+  const packageManifest = JSON.parse(readFileSync(join(repositoryRoot, 'packages', 'notemd-bundle', 'package.json'), 'utf8')) as {
+    name?: string
+  }
+  expect(packageManifest.name).toBe('@jacobinwwey/dsh-notemd')
 })

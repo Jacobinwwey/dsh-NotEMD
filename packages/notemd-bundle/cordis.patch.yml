@@ -2,34 +2,34 @@
 # profile patch replaces a row's whole config and must restate its fields.
 - insert:
     - id: notemd-vault
-      name: '@jacobinwwey/notemd-deepseek-harness/vault-local'
+      name: '@jacobinwwey/dsh-notemd/vault-local'
       config:
         workspaceRoot: !!js process.cwd()
 
     - id: notemd-approval
-      name: '@jacobinwwey/notemd-deepseek-harness/approval'
+      name: '@jacobinwwey/dsh-notemd/approval'
       config:
         workspaceRoot: !!js process.cwd()
         approvalTtlMs: 300000
 
     - id: notemd-workspace-changes
-      name: '@jacobinwwey/notemd-deepseek-harness/workspace-changes'
+      name: '@jacobinwwey/dsh-notemd/workspace-changes'
       inject: [notemdVault]
       config:
         scanIntervalMs: 5000
 
     - id: notemd-knowledge
-      name: '@jacobinwwey/notemd-deepseek-harness/knowledge'
+      name: '@jacobinwwey/dsh-notemd/knowledge'
       inject: [notemdVault, notemdWorkspaceChanges]
 
     - id: notemd-artifacts
-      name: '@jacobinwwey/notemd-deepseek-harness/artifacts'
+      name: '@jacobinwwey/dsh-notemd/artifacts'
       inject: [notemdVault, subprocess]
       config:
         workspaceRoot: !!js process.cwd()
 
     - id: notemd-llm
-      name: '@jacobinwwey/notemd-deepseek-harness/llm'
+      name: '@jacobinwwey/dsh-notemd/llm'
       inject: [llm]
       config:
         provider: deepseek
@@ -38,23 +38,23 @@
         promptPolicyId: notemd.default.v1
 
     - id: notemd-research
-      name: '@jacobinwwey/notemd-deepseek-harness/research'
+      name: '@jacobinwwey/dsh-notemd/research'
       inject: [web]
       config:
         workspaceRoot: !!js process.cwd()
 
     - id: notemd-workflows
-      name: '@jacobinwwey/notemd-deepseek-harness/workflows'
+      name: '@jacobinwwey/dsh-notemd/workflows'
       inject: [notemdVault, notemdTextTransformer]
 
     - id: notemd-jobs
-      name: '@jacobinwwey/notemd-deepseek-harness/jobs'
+      name: '@jacobinwwey/dsh-notemd/jobs'
       inject: [notemdWorkflows, notemdResearch]
       config:
         workspaceRoot: !!js process.cwd()
         concurrency: 2
 
     - id: notemd-tools
-      name: '@jacobinwwey/notemd-deepseek-harness/tools'
+      name: '@jacobinwwey/dsh-notemd/tools'
       inject:
         [tools, notemdVault, notemdJobs, notemdWorkspaceChanges, notemdKnowledge, notemdTextTransformer, notemdWorkflows, notemdResearch, notemdArtifacts, notemdApprovalLedger, notemdApprovalGate]

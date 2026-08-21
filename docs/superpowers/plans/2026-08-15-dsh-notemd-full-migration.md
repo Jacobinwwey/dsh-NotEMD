@@ -18,7 +18,7 @@
 - Separate planning, approval, and application into named operations; no `dryRun` flag and no generic `notemd_run(type, options)` Tool.
 - Every external process runs in staging with an allowlisted executable and argument vector, never a shell, and never writes the workspace directly.
 - Update the paired English/Chinese progress records after each task using measured evidence, not forecasts.
-- Preserve a clean worktree before each commit. The canonical remote is `git@github.com:Jacobinwwey/dsh-NotEMD.git`; do not rename the npm package as part of this plan.
+- Preserve a clean worktree before each commit. The canonical remote is `git@github.com:Jacobinwwey/dsh-NotEMD.git`; the public npm identity is `@jacobinwwey/dsh-notemd` (npm package names are lowercase).
 
 ## Planned Package Graph
 
