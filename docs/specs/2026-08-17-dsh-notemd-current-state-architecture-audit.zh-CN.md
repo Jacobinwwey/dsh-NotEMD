@@ -3,7 +3,7 @@
 > English version: [2026-08-17-dsh-notemd-current-state-architecture-audit.md](2026-08-17-dsh-notemd-current-state-architecture-audit.md)
 
 **审计日期：** 2026-08-17
-**目标发布：** `f8de6de`（`main`、`origin/main`）；Phase 15/16 release gate 与发布均已完成。
+**目标发布：** `3169964`（`main`、`origin/main`）；Phase 15-18 release evidence 已完成，Phase 19 记录 composite 架构计划。
 **固定源行为 oracle：** `E:\convert\undo\obsidian-NoteMD_new`，提交 `4168a51cd19ad8c3d1e05f604b50936255461a31`
 **Source-intake candidate：** `cdf580c6c876190ecc1040caea08e5ba5bee004f`，checkout 为 dirty；见 `fixtures/migration/source-intake-lock.json`。
 **DSH reference：** `ref/deepseek-harness`，提交 `47f943859bef60e4160492346772ded9b24f765a`
@@ -177,3 +177,16 @@ candidate source 在 `4168a51` 之后包含 committed diagram catalog、gallery 
 - phase 出口条件与下一阶段。
 
 Architecture 是决策日志，plan 是可执行工作，progress walkthrough 是证据。三者不能合并为一份文档，也不能把 forecast 写成 fact。
+## 8. Phase 19 Composite workflow 架构审计（2026-08-21）
+
+- 当前目标锁：dsh-NotEMD main 3169964，npm dsh-notemd@0.1.1；源观察点 ref/obsidian-NotEMD@07c629c6f99a1171a6a63eaf50ddb0dce0f5fed5；历史 oracle obsidian-NoteMD_new@4168a51cd19ad8c3d1e05f604b50936255461a31。
+- 现有 mutation、approval、journal、DSH LLM/Web、artifact 与 single-process job foundation 可复用。在该锁点没有 composite 运行时实现。
+- source workflowButtons.ts 定义三步 default chain，NotemdSidebarView.ts:927-1160 传递隐藏 folder context；DSH bundle 没有具名 composite definition 或显式 path request。
+- source batch title generation 会把生成文件移动到 complete folder，而 planTitlesInFolder 是原地替换。source Mermaid validation、report 与 error-folder 行为也不在 planMermaidRepairsInFolder 中。
+- 当前 planner 只读物理 vault。在暴露 Tool/job 前必须增加 virtual overlay、virtual revision 校验、deterministic net-transition accumulator 与 aggregate digest。
+- migration-fixture-adapters.ts 的 diagram-source 仍使用 synthetic DiagramSpec。本阶段不宣称 Markdown-to-intent inference 或当前 remote-main diagram normalization parity。
+- 决策：新增纯 @notemd-harness/composites、one-click-extract@1、固定 fail-fast、可选 mutation lineage，以及 static injection 为 notemdVault 与 notemdWorkflows 的薄 NotemdCompositeWorkflowService。继续复用现有 approval receipt、FileJobStore、DurableWorkflowRunner 与 journaled executor。
+- 拒绝：raw custom-workflow DSL、generic dispatcher、public continueOnError、逐 step 立即 apply、临时 workspace 写入和通用 SVG parity。
+- 执行计划：docs/superpowers/plans/2026-08-21-dsh-notemd-composite-workflow.md，共八个任务，覆盖 source fixture、mutation lineage、overlay、atomic planner、Cordis integration、具名 Tool/job、acceptance 与 release evidence。
+- 阶段状态仅为计划：Architecture and implementation plan recorded. Runtime implementation not started in this phase。当前锁点没有已发布的 composite Tool、job、package 或 patch row。
+- 下一道 gate：先实现 source-faithful atomic batch planner 与 overlay tests，再增加具名 plan Tool 与 durable job；Drawnix WIP 与 source diagram drift 继续留在 audit-only lane。

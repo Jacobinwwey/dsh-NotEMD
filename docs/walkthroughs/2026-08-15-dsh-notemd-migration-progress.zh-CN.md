@@ -2,12 +2,12 @@
 
 > English version: [2026-08-15-dsh-notemd-migration-progress.md](2026-08-15-dsh-notemd-migration-progress.md)
 
-**状态：** standalone migration 的 Phase 12-16 已实现，Phase 15/16 完整 release gate 已通过，发布提交 `f8de6de` 已与 `origin/main` 同步。Conformance 边界现执行类型化 fixture adapter，不再搜索测试源码文本。Slidev export 仍固定使用 `Jacobinwwey/slidev` fork，绝不静默使用上游 Slidev。
+**状态：** standalone migration 的 Phase 12-18 已实现，当前 release 已与 `origin/main` 同步。Phase 19 记录 Cordis composite workflow 架构与可执行计划；本阶段尚未开始 composite 运行时实现。Slidev export 仍固定使用 `Jacobinwwey/slidev` fork，绝不静默使用上游 Slidev。
 
 ## 1. 范围基线
 
 - 源基线：`E:\convert\undo\obsidian-NoteMD_new`，提交 `4168a51cd19ad8c3d1e05f604b50936255461a31`。
-- 目标发布：`E:\convert\undo\notemd-deepseek-harness` 的 `main`，提交 `f8de6de`（`origin/main` 已同步）；下方记录 Phase 15/16 release gate。
+- 目标发布：`E:\convert\undo\notemd-deepseek-harness` 的 `main`，提交 `3169964`（`origin/main` 已同步）；下方记录 Phase 15-18 release evidence，Phase 19 是设计/计划阶段。
 - 范围内：全部非 Obsidian 宿主的 NoteMD 工作流，包括文档、知识库、研究、图表、工件导出、批处理和稳定 Drawnix 能力。
 - 明确排除：Obsidian UI 与宿主 API、直连 Provider 配置，以及源工作树中尚未提交的 Drawnix WIP。
 
@@ -299,3 +299,45 @@
 - `packages/notemd-bundle/package.json` 已声明 public registry 元数据、仓库链接、keywords 与 `publishConfig.access = public`。bundle 仍内嵌所有尚未发布的 `@notemd-harness/*` 包，tarball 继续作为可复现的离线路径。
 - 已验证发行产物为 `artifacts/dsh-notemd-0.1.0.tgz`。它通过了 `pnpm pack:bundle`、`pnpm verify:bundle`、clean DSH profile 验收、typecheck、lint、coverage、build、capability lane 以及 52 个文件/203 个测试的全量 suite。
 - 原 scoped package 已删除，本次迁移后的无 scope 名称可首次发布。真实发布前必须先通过 npm dry-run；仓库不会保存凭据，也不会在聊天中索取 OTP。完成 npm 2FA 后执行：`npm publish .\\artifacts\\dsh-notemd-0.1.0.tgz --access public --registry=https://registry.npmjs.org/`。
+## 19. Phase 19 Composite workflow 架构与实施计划（2026-08-21）
+
+**阶段状态：** 架构与实施计划已落盘。本阶段尚未开始运行时实现。
+
+**证据锁：** 目标 dsh-NotEMD main 3169964，npm dsh-notemd@0.1.1；当前源观察点 ref/obsidian-NotEMD main 07c629c6f99a1171a6a63eaf50ddb0dce0f5fed5；历史 oracle obsidian-NoteMD_new 4168a51cd19ad8c3d1e05f604b50936255461a31。没有复制或接受任何 Drawnix WIP。
+
+### 深度比对
+
+| 要求 | 当前证据 | 诊断 |
+| --- | --- | --- |
+| 默认 One-Click Extract 串联 add-links、title generation、Mermaid repair 并传递 folder context | source workflowButtons.ts 与 NotemdSidebarView.ts:927-1160 | 没有具名 DSH composite definition、显式 path request 或 aggregate plan。 |
+| title batch 将生成文件物化到 complete folder | source fileUtils.ts:1262 与 main.ts:2688 | planTitlesInFolder 是原地替换；直接复用会固化错误语义。 |
+| Mermaid batch 校验、修复、写 report，并可移动 unresolved file | source fileUtils.ts:1521 | planMermaidRepairsInFolder 只替换 fenced Markdown。 |
+| 后续步骤读取前一步的规划输出 | 当前 planner 只读物理 vault | 必须增加 virtual overlay 与 virtual revision 校验。 |
+| 一个 approval 覆盖整个 workflow | 现有 approval/executor 按 plan 作用 | composite 必须 finalize 一个 WorkspaceMutationPlan 与一份 receipt。 |
+| Diagram Markdown 到 intent 推断 | source registry/types 支持；migration-fixture-adapters.ts 使用 synthetic mermaidSpec(source) | 仍是独立 parity gap，本阶段不偷换为已完成。 |
+
+现有 planExtractAndGenerate 同样不足：它只生成第一个 concept，并使用硬编码 concepts/、generated/ 目标。
+
+### 已落盘架构
+
+- 纯包 packages/notemd-composites。
+- 具名 definition one-click-extract@1，严格为 add-links -> generate-complete -> repair-mermaid，固定 fail-fast。
+- 显式 request path：sourcePath、conceptFolderPath、completedFolderPath、mermaidFolderPath，以及可选 mermaidErrorFolderPath。
+- CompositeWorkspaceView 读写 virtual overlay、校验 virtual revision、限制 file/byte budget，并为每个 destination finalize 一个净 mutation。
+- 可选类型化 mutation lineage 记录 workflow id/version、definition digest、step id、ordinal，旧 plan digest 不变。
+- NotemdCompositeWorkflowService 使用 Cordis static injection 注入 notemdVault 与 notemdWorkflows。现有 approval ledger、FileJobStore、DurableWorkflowRunner 与 journaled executor 继续是唯一 authority。
+- 本阶段没有实现 Tool：notemd_plan_one_click_extract 与 notemd_job_start_one_click_extract 仍是计划项。
+
+### 被拒方案
+
+raw custom-workflow DSL 与 generic dispatch 会产生无界 Tool surface，拒绝。public continueOnError 会用一个参数改变 transaction 语义，拒绝；best-effort 必须是独立 definition 与 receipt contract。逐 step apply 与临时 overlay 文件会产生 partial 或未审批工作区状态，拒绝。SVG 仍只是 target-specific derivative，不是通用 export parity。
+
+### 计划与出口证据
+
+双语八任务计划位于 docs/superpowers/plans/2026-08-21-dsh-notemd-composite-workflow.md，覆盖 source fixture、mutation lineage、overlay aggregation、source-faithful atomic planner、Cordis integration、具名 Tool/job、aggregate approval acceptance 与 release evidence。
+
+Phase 19 没有修改运行时代码。第一实现阶段只有在 deterministic source/overlay test、definition digest/collision test、一个 aggregate approval receipt、stale-revision/cancel test、clean DSH acceptance，以及完整 typecheck/lint/test/coverage/build/pack/verify gate 通过后才可退出。
+
+### 后续方向
+
+先实现 source-faithful atomic batch planner 与 overlay tests，再暴露 Tool 或 durable job。当前 source remote-main 的 diagram/normalization drift 与全部 Drawnix WIP 继续留在 audit-only lane。
