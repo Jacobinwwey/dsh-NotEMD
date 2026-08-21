@@ -10,6 +10,10 @@ import type {
 import type { NotemdResearch } from '@notemd-harness/research'
 import type { NotemdVault } from '@notemd-harness/vault'
 import type { WorkspaceChangeEvent } from '@notemd-harness/workspace-events'
+import type {
+  CompositeWorkflowDefinition,
+  OneClickExtractRequest,
+} from '@notemd-harness/composites'
 import type { TextTransformer, WorkflowPlanner } from '@notemd-harness/workflows'
 
 import type { ApprovalLedger } from './approval-ledger.js'
@@ -27,6 +31,7 @@ export interface NotemdJobs {
   startTitlePlans(request: TitleJobRequest): Promise<JobRecord>
   startResearchSyntheses(request: ResearchJobRequest): Promise<JobRecord>
   startConceptExtractions(request: ConceptJobRequest): Promise<JobRecord>
+  startOneClickExtract(request: OneClickExtractJobRequest): Promise<JobRecord>
   resume(id: string): Promise<JobRecord>
   get(id: string): Promise<JobRecord | undefined>
   cancel(id: string): Promise<JobRecord>
@@ -44,6 +49,15 @@ export interface TranslationJobRequest extends PlanningJobRequest {
 
 export interface ResearchJobRequest extends PlanningJobRequest {
   readonly evidenceIds: readonly string[]
+}
+
+export interface OneClickExtractJobRequest extends OneClickExtractRequest {
+  readonly idempotencyKey: string
+}
+
+export interface NotemdCompositeWorkflows {
+  definition(): CompositeWorkflowDefinition
+  planOneClickExtract(request: OneClickExtractRequest, signal?: AbortSignal): Promise<WorkspaceMutationPlan>
 }
 
 interface PlanningJobRequest {
@@ -87,6 +101,7 @@ export interface NotemdToolContext {
   readonly notemdKnowledge?: NotemdKnowledge
   readonly notemdTextTransformer: TextTransformer
   readonly notemdWorkflows: WorkflowPlanner
+  readonly notemdCompositeWorkflows: NotemdCompositeWorkflows
   readonly notemdResearch: NotemdResearch
   readonly notemdArtifacts: NotemdArtifacts
   readonly notemdApprovalLedger: ApprovalLedger

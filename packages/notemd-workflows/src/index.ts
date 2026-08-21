@@ -46,7 +46,40 @@ export interface TextTransformer {
   complete(request: { system: string; prompt: string; signal?: AbortSignal }): Promise<TextCompletion>
 }
 
-export interface WorkflowPlanner {
+export type BeforeWorkflowCompletion = (request: { system: string; prompt: string }) => void
+
+export class WorkflowOperationError extends Error {
+  constructor(
+    readonly code:
+      | 'WORKFLOW_PATH_INVALID'
+      | 'WORKFLOW_DESTINATION_COLLISION'
+      | 'WORKFLOW_ERROR_DESTINATION_REQUIRED'
+      | 'WORKFLOW_RESPONSE_INVALID',
+    message: string,
+  ) {
+    super(message)
+    this.name = 'WorkflowOperationError'
+  }
+}
+
+export interface SourceFaithfulBatchPlanner {
+  planBatchTitleGeneration(
+    sourceFolderPath: string,
+    completedFolderPath: string,
+    signal?: AbortSignal,
+  ): Promise<WorkspaceMutationPlan | undefined>
+  planBatchMermaidRepair(
+    folderPath: string,
+    errorFolderPath?: string,
+    signal?: AbortSignal,
+  ): Promise<WorkspaceMutationPlan | undefined>
+}
+
+export interface ScopedWorkflowPlannerFactory {
+  createScopedPlanner(vault: NotemdVault, beforeCompletion?: BeforeWorkflowCompletion): WorkflowPlanner
+}
+
+export interface WorkflowPlanner extends SourceFaithfulBatchPlanner {
   planWikiLinks(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan>
   planTranslation(path: string, language: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan>
   planTitleGeneration(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan>
@@ -100,6 +133,7 @@ export class NotemdWorkflowPlanner implements WorkflowPlanner {
   constructor(
     private readonly vault: NotemdVault,
     private readonly transformer: TextTransformer,
+    private readonly beforeCompletion?: BeforeWorkflowCompletion,
   ) {}
 
   async planWikiLinks(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan> {
@@ -272,6 +306,86 @@ export class NotemdWorkflowPlanner implements WorkflowPlanner {
     return this.planFolder(folderPath, (path) => this.planTitleGeneration(path, signal), signal)
   }
 
+  async planBatchTitleGeneration(
+    sourceFolderPath: string,
+    completedFolderPath: string,
+    signal?: AbortSignal,
+  ): Promise<WorkspaceMutationPlan | undefined> {
+    const sourceRoot = normalizeFolderPath(sourceFolderPath)
+    const completedRoot = normalizeFolderPath(completedFolderPath)
+    if (sourceRoot === completedRoot || completedRoot.startsWith(sourceRoot + '/')) {
+      throw new WorkflowOperationError(
+        'WORKFLOW_PATH_INVALID',
+        'Completed output must be outside the source folder: ' + completedRoot,
+      )
+    }
+
+    const allPaths = await this.vault.listMarkdown(signal)
+    const completedPaths = new Set(allPaths.filter((path) => path.startsWith(completedRoot + '/')))
+    const sourcePaths = allPaths
+      .filter((path) => path.startsWith(sourceRoot + '/'))
+      .filter((path) => !path.endsWith('_processed.md'))
+      .sort((left, right) => left.localeCompare(right))
+
+    const documents = await Promise.all(sourcePaths.map((path) => this.vault.read(path, signal)))
+    const destinations = new Set<string>()
+    const mutations: WorkspaceMutationPlan['mutations'][number][] = []
+    const sourceRefs = documents.map((document) => document.path)
+    const provenance = {
+      operationId: 'content.batch-generate-from-titles',
+      sourceRefs,
+      evidenceRefs: [],
+    }
+
+    for (const document of documents) {
+      const basename = document.path.split('/').at(-1)
+      if (basename === undefined || basename.length === 0) {
+        throw new WorkflowOperationError(
+          'WORKFLOW_PATH_INVALID',
+          'Cannot derive a completed destination for ' + document.path,
+        )
+      }
+      const destination = completedRoot + '/' + basename
+      if (completedPaths.has(destination) || destinations.has(destination)) {
+        throw new WorkflowOperationError(
+          'WORKFLOW_DESTINATION_COLLISION',
+          'Completed destination already exists: ' + destination,
+        )
+      }
+      destinations.add(destination)
+
+      const generated = await this.complete(
+        'Generate a complete Markdown note from this title. Return Markdown only with one leading H1.',
+        document.content,
+        signal,
+      )
+      assertGeneratedMarkdown(generated, document.path)
+      mutations.push({
+        kind: 'write-text',
+        destination,
+        expectedRevision: 'absent',
+        provenance,
+        conflictPolicy: 'reject',
+        mediaType: 'text/markdown',
+        content: generated.trim() + '\n',
+        contentSha256: createContentSha256(generated.trim() + '\n'),
+      })
+      mutations.push({
+        kind: 'delete',
+        destination: document.path,
+        expectedRevision: document.revision,
+        provenance,
+        conflictPolicy: 'reject',
+        expectedContentSha256: createContentSha256(document.content),
+      })
+    }
+
+    if (mutations.length === 0) {
+      return undefined
+    }
+    return createWorkspaceMutationPlan({ provenance, mutations })
+  }
+
   async planTranslationsInFolder(
     folderPath: string,
     language: string,
@@ -288,6 +402,147 @@ export class NotemdWorkflowPlanner implements WorkflowPlanner {
     return this.planFolder(folderPath, (path) => this.planMermaidRepair(path, signal), signal)
   }
 
+  async planBatchMermaidRepair(
+    folderPath: string,
+    errorFolderPath?: string,
+    signal?: AbortSignal,
+  ): Promise<WorkspaceMutationPlan | undefined> {
+    const folderRoot = normalizeFolderPath(folderPath)
+    const errorRoot = errorFolderPath === undefined ? undefined : normalizeFolderPath(errorFolderPath)
+    if (errorRoot !== undefined && (errorRoot === folderRoot || errorRoot.startsWith(folderRoot + '/'))) {
+      throw new WorkflowOperationError(
+        'WORKFLOW_PATH_INVALID',
+        'Mermaid error output must be outside the source folder: ' + errorRoot,
+      )
+    }
+
+    const paths = (await this.vault.listMarkdown(signal))
+      .filter((path) => path.startsWith(folderRoot + '/'))
+      .sort((left, right) => left.localeCompare(right))
+    const mutations: WorkspaceMutationPlan['mutations'][number][] = []
+    const unresolved: string[] = []
+    const sourceRefs: string[] = []
+    const plannedDestinations = new Set<string>()
+
+    for (const path of paths) {
+      const document = await this.vault.read(path, signal)
+      sourceRefs.push(document.path)
+      if (isMermaidDocumentValid(document.content)) {
+        continue
+      }
+
+      const repaired = await replaceMermaidFenceBodies(document.content, async (body) =>
+        this.complete(mermaidRepairSystemPrompt, body, signal))
+      const finalContent = repaired.trim() + '\n'
+      if (isMermaidDocumentValid(finalContent)) {
+        mutations.push({
+          kind: 'write-text',
+          destination: document.path,
+          expectedRevision: document.revision,
+          provenance: {
+            operationId: 'mermaid.batch-fix',
+            sourceRefs: [document.path],
+            evidenceRefs: [],
+          },
+          conflictPolicy: 'reject',
+          mediaType: 'text/markdown',
+          content: finalContent,
+          contentSha256: createContentSha256(finalContent),
+        })
+        continue
+      }
+
+      if (errorRoot === undefined) {
+        throw new WorkflowOperationError(
+          'WORKFLOW_ERROR_DESTINATION_REQUIRED',
+          'An error folder is required for unresolved Mermaid output: ' + document.path,
+        )
+      }
+      const basename = document.path.split('/').at(-1)
+      if (basename === undefined || basename.length === 0) {
+        throw new WorkflowOperationError(
+          'WORKFLOW_PATH_INVALID',
+          'Cannot derive an error destination for ' + document.path,
+        )
+      }
+      const errorDestination = errorRoot + '/' + basename
+      if (plannedDestinations.has(errorDestination) || (await this.vault.listMarkdown()).includes(errorDestination)) {
+        throw new WorkflowOperationError(
+          'WORKFLOW_DESTINATION_COLLISION',
+          'Mermaid error destination already exists: ' + errorDestination,
+        )
+      }
+      plannedDestinations.add(errorDestination)
+      unresolved.push(errorDestination)
+      const provenance = {
+        operationId: 'mermaid.batch-fix',
+        sourceRefs: [document.path],
+        evidenceRefs: [],
+      }
+      mutations.push({
+        kind: 'write-text',
+        destination: errorDestination,
+        expectedRevision: 'absent',
+        provenance,
+        conflictPolicy: 'reject',
+        mediaType: 'text/markdown',
+        content: finalContent,
+        contentSha256: createContentSha256(finalContent),
+      })
+      mutations.push({
+        kind: 'delete',
+        destination: document.path,
+        expectedRevision: document.revision,
+        provenance,
+        conflictPolicy: 'reject',
+        expectedContentSha256: createContentSha256(document.content),
+      })
+    }
+
+    if (unresolved.length > 0) {
+      const reportPath = errorRoot + '/report.md'
+      if (plannedDestinations.has(reportPath) || (await this.vault.listMarkdown()).includes(reportPath)) {
+        throw new WorkflowOperationError(
+          'WORKFLOW_DESTINATION_COLLISION',
+          'Mermaid report destination already exists: ' + reportPath,
+        )
+      }
+      plannedDestinations.add(reportPath)
+      const report = [
+        '# Mermaid Repair Report',
+        '',
+        ...unresolved.sort((left, right) => left.localeCompare(right)).map((path) => '- ' + path),
+        '',
+      ].join('\n')
+      const reportProvenance = {
+        operationId: 'mermaid.batch-fix',
+        sourceRefs,
+        evidenceRefs: [],
+      }
+      mutations.push({
+        kind: 'write-text',
+        destination: reportPath,
+        expectedRevision: 'absent',
+        provenance: reportProvenance,
+        conflictPolicy: 'reject',
+        mediaType: 'text/markdown',
+        content: report,
+        contentSha256: createContentSha256(report),
+      })
+    }
+
+    if (mutations.length === 0) {
+      return undefined
+    }
+    return createWorkspaceMutationPlan({
+      provenance: {
+        operationId: 'mermaid.batch-fix',
+        sourceRefs,
+        evidenceRefs: [],
+      },
+      mutations,
+    })
+  }
   async planFormulaRepairsInFolder(folderPath: string): Promise<readonly WorkspaceMutationPlan[]> {
     return this.planFolder(folderPath, (path) => this.planFormulaRepair(path))
   }
@@ -477,6 +732,7 @@ export class NotemdWorkflowPlanner implements WorkflowPlanner {
   }
 
   private async complete(system: string, prompt: string, signal?: AbortSignal): Promise<string> {
+    this.beforeCompletion?.({ system, prompt })
     const request: { system: string; prompt: string; signal?: AbortSignal } = { system, prompt }
     if (signal !== undefined) {
       request.signal = signal
@@ -548,6 +804,32 @@ function normalizeTargetPaths(paths: readonly string[]): readonly string[] {
     }
   }
   return Object.freeze(normalized)
+}
+
+function assertGeneratedMarkdown(content: string, sourcePath: string): void {
+  const trimmed = content.trim()
+  if (trimmed.length === 0 || !/^#(?:\s|$)/u.test(trimmed)) {
+    throw new WorkflowOperationError(
+      'WORKFLOW_RESPONSE_INVALID',
+      'Title generation returned malformed Markdown for ' + sourcePath,
+    )
+  }
+}
+
+function isMermaidDocumentValid(content: string): boolean {
+  const fencePattern = /(?<fence>[\x60]{3,}|~{3,})mermaid[^\n]*\n(?<body>[\s\S]*?)\n\k<fence>(?=\n|$)/gu
+  const matches = [...content.matchAll(fencePattern)]
+  if (matches.length === 0) {
+    return true
+  }
+  return matches.every((match) => {
+    const body = match.groups?.body?.trim() ?? ''
+    if (body.length === 0 || /\s--\s/u.test(body)) {
+      return false
+    }
+    return /^(?:flowchart|graph|sequenceDiagram|classDiagram|erDiagram|stateDiagram(?:-v2)?|mindmap|timeline|quadrantChart|gantt|journey|pie)\b/mu.test(body)
+      && /(?:-->|---|-.->|==>)/u.test(body)
+  })
 }
 
 async function readExistingDocuments(

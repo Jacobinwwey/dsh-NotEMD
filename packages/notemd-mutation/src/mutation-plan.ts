@@ -6,6 +6,11 @@ import {
   type ContentSha256,
   type StagedAssetRef,
 } from './staged-asset.js'
+import {
+  createCompositeMutationLineage,
+  type CompositeMutationLineage,
+  type CompositeMutationLineageDraft,
+} from './composite-lineage.js'
 
 export type WorkspaceRevision = string
 export type ExpectedWorkspaceRevision = WorkspaceRevision | 'absent'
@@ -15,12 +20,14 @@ export interface MutationProvenanceDraft {
   readonly operationId: string
   readonly sourceRefs: readonly string[]
   readonly evidenceRefs: readonly string[]
+  readonly composite?: CompositeMutationLineageDraft
 }
 
 export interface MutationProvenance {
   readonly operationId: string
   readonly sourceRefs: readonly string[]
   readonly evidenceRefs: readonly string[]
+  readonly composite?: CompositeMutationLineage
 }
 
 interface WorkspaceMutationDraftBase {
@@ -189,10 +196,14 @@ function cloneMutationBase(draft: WorkspaceMutationDraft): WorkspaceMutationBase
 }
 
 function cloneProvenance(draft: MutationProvenanceDraft): MutationProvenance {
+  const composite = draft.composite === undefined
+    ? undefined
+    : createCompositeMutationLineage(draft.composite)
   return Object.freeze({
     operationId: requireNonEmptyText(draft.operationId, 'Mutation provenance operation id'),
     sourceRefs: freezeReferenceList(draft.sourceRefs, 'Mutation provenance source reference'),
     evidenceRefs: freezeReferenceList(draft.evidenceRefs, 'Mutation provenance evidence reference'),
+    ...(composite === undefined ? {} : { composite }),
   })
 }
 
@@ -281,6 +292,7 @@ function canonicalProvenance(provenance: MutationProvenance): object {
     operationId: provenance.operationId,
     sourceRefs: provenance.sourceRefs,
     evidenceRefs: provenance.evidenceRefs,
+    ...(provenance.composite === undefined ? {} : { composite: provenance.composite }),
   }
 }
 

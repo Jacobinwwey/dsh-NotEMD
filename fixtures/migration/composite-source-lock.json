@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "source": {
+    "repository": "E:\\convert\\undo\\obsidian-NoteMD_new",
+    "observation": "ref/obsidian-NotEMD",
+    "commit": "07c629c6f99a1171a6a63eaf50ddb0dce0f5fed5",
+    "historicalOracle": "4168a51cd19ad8c3d1e05f604b50936255461a31",
+    "defaultWorkflowName": "One-Click Extract",
+    "defaultActionIds": [
+      "process-current-add-links",
+      "batch-generate-from-titles",
+      "batch-mermaid-fix"
+    ]
+  },
+  "request": {
+    "sourcePath": "notes/source.md",
+    "conceptFolderPath": "concepts",
+    "completedFolderPath": "completed",
+    "mermaidFolderPath": "completed",
+    "mermaidErrorFolderPath": "mermaid-errors"
+  },
+  "inputPaths": [
+    "notes/source.md",
+    "concepts/alpha.md",
+    "concepts/beta.md"
+  ],
+  "expectedOutputPaths": [
+    "notes/source.md",
+    "completed/alpha.md",
+    "completed/beta.md",
+    "mermaid-errors/report.md"
+  ],
+  "collisionCases": [
+    {
+      "id": "completed-destination-exists",
+      "path": "completed/alpha.md",
+      "disposition": "reject-before-approval"
+    },
+    {
+      "id": "mermaid-error-destination-exists",
+      "path": "mermaid-errors/alpha.md",
+      "disposition": "reject-before-approval"
+    }
+  ],
+  "failureCases": [
+    {
+      "id": "source-revision-changed",
+      "disposition": "closed-conflict"
+    },
+    {
+      "id": "malformed-llm-markdown",
+      "disposition": "closed-invalid-output"
+    },
+    {
+      "id": "cancelled-between-steps",
+      "disposition": "closed-cancelled"
+    }
+  ]
+}

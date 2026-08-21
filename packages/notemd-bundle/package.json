@@ -73,6 +73,10 @@
       "types": "./lib/workflows.d.ts",
       "default": "./lib/workflows.js"
     },
+    "./composites": {
+      "types": "./lib/composites.d.ts",
+      "default": "./lib/composites.js"
+    },
     "./tools": {
       "types": "./lib/tools.d.ts",
       "default": "./lib/tools.js"
@@ -104,6 +108,7 @@
   },
   "dependencies": {
     "@notemd-harness/artifacts": "workspace:*",
+    "@notemd-harness/composites": "workspace:*",
     "@notemd-harness/documents": "workspace:*",
     "@notemd-harness/export-media": "workspace:*",
     "@notemd-harness/export-pptx": "workspace:*",
@@ -132,6 +137,7 @@
   },
   "bundledDependencies": [
     "@notemd-harness/artifacts",
+    "@notemd-harness/composites",
     "@notemd-harness/documents",
     "@notemd-harness/export-media",
     "@notemd-harness/export-pptx",

@@ -18,6 +18,7 @@
     "baseUrl": ".",
     "paths": {
       "@notemd-harness/mutation": ["packages/notemd-mutation/src/index.ts"],
+      "@notemd-harness/composites": ["packages/notemd-composites/src/index.ts"],
       "@notemd-harness/vault": ["packages/notemd-vault/src/index.ts"],
       "@notemd-harness/vault-local": ["packages/notemd-vault-local/src/index.ts"],
       "@notemd-harness/workspace-events": ["packages/notemd-workspace-events/src/index.ts"],

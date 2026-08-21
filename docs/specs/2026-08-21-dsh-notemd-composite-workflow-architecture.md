@@ -2,7 +2,7 @@
 
 > Chinese version: 2026-08-21-dsh-notemd-composite-workflow-architecture.zh-CN.md
 
-**Decision status:** Architecture and implementation plan recorded. Runtime implementation has not started in this phase.
+**Decision status:** Architecture is implemented for `one-click-extract@1`; the release gate is the remaining publication boundary.
 
 **Scope lock:** The target is the standalone DeepSeek Harness bundle. Obsidian UI, editor, command, modal, settings, and host lifecycle behavior remain outside the bundle. DSH owns LLM, Web, provider selection, credentials, and transport.
 
@@ -31,7 +31,9 @@ The source implementation carries hidden UI state between steps: a preferred con
 
 This is deliberately narrower than importing the source custom-workflow DSL. A raw action-list dispatcher would expose an unbounded Tool surface, make operation compatibility implicit, and let callers bypass step invariants. Future user-defined composites must be separately versioned definitions with capability declarations; they are not part of one-click-extract@1.
 
-## 2. Current gap against the source contract
+## 2. Design-lock gap against the source contract
+
+The table below records the gaps at the 2026-08-21 design lock. The measured implementation status is recorded in section 11; it does not rewrite the historical comparison.
 
 | Source behavior or previous requirement | Current target evidence | Defect to close |
 | --- | --- | --- |
@@ -149,11 +151,11 @@ The existing workflow service also exposes an explicit scoped planner factory:
 
 ~~~ts
 export interface ScopedWorkflowPlannerFactory {
-  createScopedPlanner(vault: NotemdVault): WorkflowPlanner
+  createScopedPlanner(vault: NotemdVault, beforeCompletion?: BeforeWorkflowCompletion): WorkflowPlanner
 }
 ~~~
 
-NotemdWorkflowsService implements this factory. The composite service injects notemdVault and notemdWorkflows, then asks the existing service to create a planner over the overlay. This avoids a second transformer owner and keeps the dependency graph acyclic.
+`NotemdWorkflowsService` implements this factory. The optional `beforeCompletion` guard is supplied by the composite overlay and runs before every LLM request, so input budgets are enforced without moving provider ownership into the composite package. The composite service injects `notemdVault` and `notemdWorkflows`, then asks the existing service to create a planner over the overlay. This avoids a second transformer owner and keeps the dependency graph acyclic.
 
 ## 6. Step semantics and aggregation
 
@@ -187,7 +189,7 @@ The aggregate is created through createWorkspaceMutationPlan, so canonical desti
 
 - notemd_plan_one_click_extract returns exactly one workspaceMutationPlan/v1.
 - notemd_job_start_one_click_extract stores only the idempotency key, canonical paths, workflow id/version, and definition digest. It never stores credentials, endpoints, raw Web bodies, or unbounded prompts.
-- notemd_job_resume and notemd_job_status remain the existing named lifecycle surface. The executor key is one-click-extract@1; an unknown definition digest fails closed with JOB_WORKFLOW_MISMATCH.
+- notemd_job_resume and notemd_job_status remain the existing named lifecycle surface. The durable executor key is `one-click-extract-v1`; an unknown definition digest fails closed with JOB_WORKFLOW_MISMATCH.
 - One aggregate plan receives one approval receipt. Step-level approval is not exposed.
 - The first definition is fixed fail-fast. Step error, cancellation, stale virtual revision, collision, budget overflow, or unavailable dependency returns a closed failure and no approvable partial plan.
 - The source continue_on_error setting is not carried as a bool or enum parameter. A future best-effort workflow is a different named definition with a different receipt and partial-result contract.
@@ -222,6 +224,14 @@ Primary risks:
 
 ## 10. Architecture-phase exit
 
-This phase is complete when the paired decision record and implementation plan are committed, progress and audit records contain exact target/source locks and say runtime implementation has not started, and the plan names every file, interface, focused test, full gate, and release condition.
+The architecture phase is complete. Its paired decision record and implementation plan remain the source of truth for the design-lock assumptions; runtime evidence is tracked separately below and in the bilingual progress/audit documents.
 
-The README homepage is not changed to contain the implementation plan. The next phase implements source-faithful atomic batch planners and the virtual overlay. No runtime composite claim is valid before the focused conformance fixture, aggregate approval test, clean-profile acceptance, and full release gate pass.\n
+The README homepage is not changed to contain the implementation plan. The preceding sentence records the design-lock rule; section 11 records the current runtime evidence and release boundary.
+## 11. Measured runtime implementation (2026-08-22)
+
+- Implemented files: `packages/notemd-composites`, `packages/notemd-mutation/src/composite-lineage.ts`, source-faithful batch planners in `packages/notemd-workflows`, Cordis adapter/patch rows in `packages/notemd-bundle`, named plan/job Tools in `packages/notemd-tools`, durable executor registration, deterministic fixtures, and clean-profile acceptance.
+- Definition identity: `one-click-extract@1`, definition digest `66f0e111d94d98cec3bab1b00f7c8f72ab096c0a0a69d94061e2ac88c6e7ac4c`, ordered steps `add-links -> generate-complete -> repair-mermaid`, fixed `fail-fast` policy.
+- Safety behavior: one aggregate `WorkspaceMutationPlan/v1`, optional typed lineage, virtual read/list and revision checks, no physical writes before approval, collision diagnostics including duplicate Mermaid error basenames, virtual create/delete net no-op detection, UTF-8 file/byte limits, and a completion-input guard before each LLM request.
+- Compatibility decision: durable jobs use the existing lowercase kebab executor key `one-click-extract-v1`; persisted input separately records `workflowId`, `workflowVersion`, and `definitionDigest`. This preserves the current `FileJobStore` contract while still failing closed on definition drift.
+- Focused regression evidence: source-faithful planner, overlay, accumulator, definition, Tool/job, lineage, and approval suites pass; the newly added robustness cases cover duplicate error destinations, virtual create/delete no-op, and completion-guard injection.
+- Remaining release gate: run the full typecheck, lint, test, coverage, build, bundle pack/verify, clean DSH acceptance, `git diff --check`, then commit and push `main` non-force. Drawnix WIP, native binary renderers, and source diagram normalization drift remain explicitly out of scope.

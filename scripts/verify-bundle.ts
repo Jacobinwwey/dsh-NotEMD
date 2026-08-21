@@ -9,6 +9,7 @@ const execFile = promisify(executeFile)
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const bundledInternalPackages = [
   '@notemd-harness/artifacts',
+  '@notemd-harness/composites',
   '@notemd-harness/documents',
   '@notemd-harness/export-media',
   '@notemd-harness/export-pptx',

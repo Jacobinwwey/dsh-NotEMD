@@ -39,7 +39,7 @@
 - Produces CompositeSourceObservation with sourceCommit, defaultActionIds, inputPaths, expectedOutputPaths, collisionCases, and failureCases.
 - The fixture must encode the source chain process-current-add-links -> batch-generate-from-titles -> batch-mermaid-fix and the folder hand-off from sourceFolderPath to completeFolderPath.
 
-- [ ] **Step 1: Write the failing fixture assertions**
+- [x] **Step 1: Write the failing fixture assertions**
 
 ~~~ts
 it('records the three source actions in order', async () => {
@@ -58,23 +58,23 @@ it('requires explicit destination and unresolved-error paths', async () => {
 })
 ~~~
 
-- [ ] **Step 2: Run the focused test and verify the missing observation fails**
+- [x] **Step 2: Run the focused test and verify the missing observation fails**
 
 Run: rtk pnpm exec vitest run --config vitest.config.ts packages/notemd-workflows/test/composite-source-contracts.test.ts
 
 Expected: FAIL because the composite lock and source fixture are not registered.
 
-- [ ] **Step 3: Add the pinned observation and deterministic Markdown inputs**
+- [x] **Step 3: Add the pinned observation and deterministic Markdown inputs**
 
 Store the source commit, action order, output paths, pre-existing destination collision, unresolved Mermaid case, and exact SHA-256 hashes in composite-source-lock.json. Keep generated prose deterministic and small; do not snapshot provider responses or credentials.
 
-- [ ] **Step 4: Run the focused test and the existing source contract gate**
+- [x] **Step 4: Run the focused test and the existing source contract gate**
 
 Run: rtk pnpm exec vitest run --config vitest.config.ts packages/notemd-workflows/test/composite-source-contracts.test.ts packages/notemd-workflows/test/source-contracts.test.ts
 
 Expected: PASS with the existing 29-operation matrix unchanged.
 
-- [ ] **Step 5: Commit the fixture contract**
+- [x] **Step 5: Commit the fixture contract**
 
 Run: rtk git add fixtures/migration packages/notemd-workflows/test/composite-source-contracts.test.ts; rtk git commit -m "test: lock one-click extract source semantics"
 
@@ -94,7 +94,7 @@ Run: rtk git add fixtures/migration packages/notemd-workflows/test/composite-sou
 - Add optional composite to MutationProvenanceDraft and MutationProvenance.
 - Canonicalize composite lineage only when present; old plans without it must hash exactly as before.
 
-- [ ] **Step 1: Write digest-compatibility and validation tests**
+- [x] **Step 1: Write digest-compatibility and validation tests**
 
 ~~~ts
 it('keeps the legacy digest when composite lineage is absent', () => {
@@ -110,23 +110,23 @@ it('includes ordered lineage in the composite plan digest', () => {
 })
 ~~~
 
-- [ ] **Step 2: Run the mutation tests and capture the red state**
+- [x] **Step 2: Run the mutation tests and capture the red state**
 
 Run: rtk pnpm exec vitest run --config vitest.config.ts packages/notemd-mutation/test/mutation-plan.test.ts packages/notemd-mutation/test/composite-lineage.test.ts
 
 Expected: FAIL because the optional lineage type and canonicalization do not exist.
 
-- [ ] **Step 3: Implement the narrow optional extension**
+- [x] **Step 3: Implement the narrow optional extension**
 
 Use a separate composite-lineage.ts validator for non-empty workflow and step identifiers, version 1, a 64-character SHA-256 definition digest, and a non-negative safe ordinal. Include the normalized record in canonicalProvenance only when draft.composite exists. Do not alter version, id format, conflict policy, or staged-asset rules.
 
-- [ ] **Step 4: Run focused and package gates**
+- [x] **Step 4: Run focused and package gates**
 
 Run: rtk pnpm exec vitest run --config vitest.config.ts packages/notemd-mutation/test/mutation-plan.test.ts packages/notemd-mutation/test/composite-lineage.test.ts; rtk pnpm --filter @notemd-harness/mutation typecheck; rtk pnpm --filter @notemd-harness/mutation build
 
 Expected: PASS; legacy fixture digest remains unchanged.
 
-- [ ] **Step 5: Commit the mutation contract**
+- [x] **Step 5: Commit the mutation contract**
 
 Run: rtk git add packages/notemd-mutation; rtk git commit -m "feat: add optional composite mutation lineage"
 
@@ -149,7 +149,7 @@ Run: rtk git add packages/notemd-mutation; rtk git commit -m "feat: add optional
 - MutationAccumulator records base state, virtual state, and step lineage, then emits one net WorkspaceMutationPlan.
 - Diagnostics are a closed union: composite-path-invalid, composite-virtual-revision-conflict, composite-destination-collision, composite-binary-dependency-unsupported, composite-budget-exceeded, and composite-no-op.
 
-- [ ] **Step 1: Write overlay tests for read-after-plan and delete visibility**
+- [x] **Step 1: Write overlay tests for read-after-plan and delete visibility**
 
 ~~~ts
 it('makes a planned Markdown write visible to the next step', async () => {
@@ -166,7 +166,7 @@ it('removes a planned delete from listMarkdown without touching disk', async () 
 })
 ~~~
 
-- [ ] **Step 2: Write accumulator collision and net-transition tests**
+- [x] **Step 2: Write accumulator collision and net-transition tests**
 
 ~~~ts
 it('coalesces sequential text writes into one base-revision write', () => {
@@ -185,23 +185,23 @@ it('fails closed for incompatible same-destination media types', () => {
 })
 ~~~
 
-- [ ] **Step 3: Run the new tests to verify the red state**
+- [x] **Step 3: Run the new tests to verify the red state**
 
 Run: rtk pnpm exec vitest run --config vitest.config.ts packages/notemd-composites/test/workspace-overlay.test.ts packages/notemd-composites/test/mutation-accumulator.test.ts
 
 Expected: FAIL because the package and overlay do not exist.
 
-- [ ] **Step 4: Implement lazy base reads, virtual revisions, bounded state, and net aggregation**
+- [x] **Step 4: Implement lazy base reads, virtual revisions, bounded state, and net aggregation**
 
 The overlay must read the base vault once per path, validate every incoming expectedRevision against virtual state, expose sorted Markdown paths, and retain physical state untouched. The accumulator must collapse final state back to one mutation per destination and invoke createWorkspaceMutationPlan. Apply file-count and UTF-8 byte budgets before accepting another step.
 
-- [ ] **Step 5: Run focused package gates**
+- [x] **Step 5: Run focused package gates**
 
 Run: rtk pnpm exec vitest run --config vitest.config.ts packages/notemd-composites/test/workspace-overlay.test.ts packages/notemd-composites/test/mutation-accumulator.test.ts; rtk pnpm --filter @notemd-harness/composites typecheck; rtk pnpm --filter @notemd-harness/composites build
 
 Expected: PASS with no physical workspace writes.
 
-- [ ] **Step 6: Commit the overlay boundary**
+- [x] **Step 6: Commit the overlay boundary**
 
 Run: rtk git add pnpm-workspace.yaml tsconfig.json packages/notemd-composites; rtk git commit -m "feat: add composite workspace overlay"
 
@@ -223,7 +223,7 @@ Run: rtk git add pnpm-workspace.yaml tsconfig.json packages/notemd-composites; r
 - Return undefined for a valid empty batch; throw a typed error for invalid paths, collisions, stale revisions, or malformed generated content.
 - Export createOneClickExtractDefinition() and planOneClickExtract(request, dependencies, signal?).
 
-- [ ] **Step 1: Write source-faithful planner tests**
+- [x] **Step 1: Write source-faithful planner tests**
 
 ~~~ts
 it('writes generated title output to completedFolderPath and removes the source copy', async () => {
@@ -237,7 +237,7 @@ it('reports unresolved Mermaid files and emits the configured error-folder move'
 })
 ~~~
 
-- [ ] **Step 2: Write the definition test before implementation**
+- [x] **Step 2: Write the definition test before implementation**
 
 ~~~ts
 it('has a stable ordered definition digest and fixed fail-fast policy', () => {
@@ -253,23 +253,23 @@ it('has a stable ordered definition digest and fixed fail-fast policy', () => {
 })
 ~~~
 
-- [ ] **Step 3: Run the focused tests and verify the semantic gap**
+- [x] **Step 3: Run the focused tests and verify the semantic gap**
 
 Run: rtk pnpm exec vitest run --config vitest.config.ts packages/notemd-workflows/test/source-faithful-batch-planners.test.ts packages/notemd-composites/test/one-click-extract.test.ts
 
 Expected: FAIL because current folder planners do not model source move/report semantics and the definition is absent.
 
-- [ ] **Step 4: Implement the named planners and definition**
+- [x] **Step 4: Implement the named planners and definition**
 
 Keep existing planTitlesInFolder and planMermaidRepairsInFolder behavior unchanged for their current Tools. Add separate source-faithful operations that use deterministic lexical snapshots, explicit output folders, content-addressed generated writes, delete/write moves, report paths, and closed collision diagnostics. Implement one-click-extract as a typed three-step definition that calls only these named operations and applies each result to CompositeWorkspaceView.
 
-- [ ] **Step 5: Run workflow and composite focused gates**
+- [x] **Step 5: Run workflow and composite focused gates**
 
 Run: rtk pnpm exec vitest run --config vitest.config.ts packages/notemd-workflows/test/source-faithful-batch-planners.test.ts packages/notemd-composites/test/one-click-extract.test.ts packages/notemd-workflows/test/composite-source-contracts.test.ts; rtk pnpm --filter @notemd-harness/workflows typecheck; rtk pnpm --filter @notemd-harness/composites typecheck
 
 Expected: PASS with source fixture output paths and definition digest fixed.
 
-- [ ] **Step 6: Commit atomic and definition behavior**
+- [x] **Step 6: Commit atomic and definition behavior**
 
 Run: rtk git add packages/notemd-workflows packages/notemd-composites; rtk git commit -m "feat: define one-click extract semantics"
 
@@ -291,7 +291,7 @@ Run: rtk git add packages/notemd-workflows packages/notemd-composites; rtk git c
 - NotemdCompositeWorkflowService extends Cordis Service and declares static inject = ['notemdVault', 'notemdWorkflows'] as const.
 - Service method planOneClickExtract(request, signal?) delegates to @notemd-harness/composites and returns one WorkspaceMutationPlan.
 
-- [ ] **Step 1: Write Cordis boundary tests**
+- [x] **Step 1: Write Cordis boundary tests**
 
 ~~~ts
 it('declares static injection and does not own a second vault or transformer', () => {
@@ -303,27 +303,27 @@ it('registers one service and one dependency row in the complete patch', () => {
 })
 ~~~
 
-- [ ] **Step 2: Run the boundary tests and capture the red state**
+- [x] **Step 2: Run the boundary tests and capture the red state**
 
 Run: rtk pnpm exec vitest run --config vitest.config.ts packages/notemd-bundle/test/composites.contract.test.ts packages/notemd-bundle/test/runtime-boundary.test.ts
 
 Expected: FAIL because the service and patch row do not exist.
 
-- [ ] **Step 3: Add the scoped factory and thin Cordis adapter**
+- [x] **Step 3: Add the scoped factory and thin Cordis adapter**
 
 Keep NotemdWorkflowsService as the transformer owner. The composite service only validates lifecycle state, calls the pure planner, and lets Cordis own any future effects. It must not read environment variables, create a provider, access Obsidian APIs, or write the workspace.
 
-- [ ] **Step 4: Complete the bundle registration**
+- [x] **Step 4: Complete the bundle registration**
 
 Add the composite package to dependencies and bundledDependencies. Add a complete replacement row to cordis.patch.yml so clean-profile loading either installs the named service or reports its optional DSH dependency outcome explicitly.
 
-- [ ] **Step 5: Run bundle typecheck/build and boundary tests**
+- [x] **Step 5: Run bundle typecheck/build and boundary tests**
 
 Run: rtk pnpm exec vitest run --config vitest.config.ts packages/notemd-bundle/test/composites.contract.test.ts packages/notemd-bundle/test/runtime-boundary.test.ts; rtk pnpm --filter dsh-notemd typecheck; rtk pnpm --filter dsh-notemd build
 
 Expected: PASS with one composition root and no import cycle.
 
-- [ ] **Step 6: Commit Cordis integration**
+- [x] **Step 6: Commit Cordis integration**
 
 Run: rtk git add packages/notemd-bundle; rtk git commit -m "feat: register composite workflow service"
 
@@ -349,7 +349,7 @@ Run: rtk git add packages/notemd-bundle; rtk git commit -m "feat: register compo
 - Add OneClickExtractJobRequest with idempotencyKey, sourcePath, conceptFolderPath, completedFolderPath, mermaidFolderPath, and optional mermaidErrorFolderPath.
 - Register exactly notemd_plan_one_click_extract and notemd_job_start_one_click_extract; resume/status/cancel remain unchanged.
 
-- [ ] **Step 1: Write closed Tool and job contract tests**
+- [x] **Step 1: Write closed Tool and job contract tests**
 
 ~~~ts
 it('rejects unknown composite request fields at the Tool edge', async () => {
@@ -366,31 +366,32 @@ it('rejects unknown composite request fields at the Tool edge', async () => {
 it('persists only canonical paths and definition identity in a composite job', async () => {
   const job = await jobs.startOneClickExtract(validRequest())
   expect(job.input).not.toHaveProperty('prompt')
-  expect(job.input).toMatchObject({ workflow: 'one-click-extract@1' })
+  expect(job.workflow).toBe('one-click-extract-v1')
+  expect(job.input).toMatchObject({ workflowId: 'one-click-extract', workflowVersion: 1, definitionDigest: expect.any(String) })
 })
 ~~~
 
-- [ ] **Step 2: Run the focused contract tests and verify the red state**
+- [x] **Step 2: Run the focused contract tests and verify the red state**
 
 Run: rtk pnpm exec vitest run --config vitest.config.ts packages/notemd-tools/test/composite-tools.contract.test.ts packages/notemd-tools/test/tools.contract.test.ts packages/notemd-jobs/test/durable-workflow-runner.test.ts
 
 Expected: FAIL because the service interface, Tool registrations, and executor entry are absent.
 
-- [ ] **Step 3: Implement edge validation and named registration**
+- [x] **Step 3: Implement edge validation and named registration**
 
 Use the existing requiredString/path normalization helpers and closed author schema. Do not accept an actions array, raw DSL, provider fields, or a failure-policy selector. The plan Tool returns one existing workspaceMutationPlan schema; the job Tool uses the existing jobRecord schema.
 
-- [ ] **Step 4: Extend the existing job runner without a new store**
+- [x] **Step 4: Extend the existing job runner without a new store**
 
-Register one executor keyed by one-click-extract@1. Persist the request paths, idempotency key, definition digest, and step checkpoint metadata only. Resolve the composite service at execution time; preserve explicit resume, cancellation, and terminal state handling.
+Register one executor keyed by one-click-extract-v1. Persist the request paths, idempotency key, workflow id/version, definition digest, and step checkpoint metadata only. Resolve the composite service at execution time; preserve explicit resume, cancellation, and terminal state handling.
 
-- [ ] **Step 5: Run Tool/job focused gates and package checks**
+- [x] **Step 5: Run Tool/job focused gates and package checks**
 
 Run: rtk pnpm exec vitest run --config vitest.config.ts packages/notemd-tools/test/composite-tools.contract.test.ts packages/notemd-tools/test/tools.contract.test.ts packages/notemd-jobs/test/durable-workflow-runner.test.ts; rtk pnpm --filter @notemd-harness/tools typecheck; rtk pnpm --filter @notemd-harness/jobs typecheck
 
 Expected: PASS with no second approval or mutation path.
 
-- [ ] **Step 6: Commit named Tool and job surfaces**
+- [x] **Step 6: Commit named Tool and job surfaces**
 
 Run: rtk git add packages/notemd-tools packages/notemd-bundle/src/tools.ts packages/notemd-bundle/src/jobs.ts packages/notemd-jobs; rtk git commit -m "feat: expose one-click extract tools and jobs"
 
@@ -411,7 +412,7 @@ Run: rtk git add packages/notemd-tools packages/notemd-bundle/src/tools.ts packa
 - Cancellation returns a terminal cancelled job state without an approvable partial plan.
 - An unavailable optional DSH runtime returns the named capability-unavailable outcome; it is not converted into success.
 
-- [ ] **Step 1: Write the approval and lifecycle tests**
+- [x] **Step 1: Write the approval and lifecycle tests**
 
 ~~~ts
 it('uses one receipt for all three steps and applies once', async () => {
@@ -428,27 +429,27 @@ it('fails closed on stale source revision before approval', async () => {
 })
 ~~~
 
-- [ ] **Step 2: Run the focused lifecycle tests and capture missing behavior**
+- [x] **Step 2: Run the focused lifecycle tests and capture missing behavior**
 
 Run: rtk pnpm exec vitest run --config vitest.config.ts packages/notemd-composites/test/one-click-extract.integration.test.ts packages/notemd-bundle/test/composite-approval.test.ts
 
 Expected: FAIL until the aggregate receipt, stale-revision, and cancellation paths are wired.
 
-- [ ] **Step 3: Wire the existing approval/event path**
+- [x] **Step 3: Wire the existing approval/event path**
 
 Do not add a composite-specific executor. The aggregate WorkspaceMutationPlan enters the existing approval ledger, is consumed by the existing one-time receipt, and is applied by LocalMutationExecutor. Workspace events are emitted only from the committed receipt.
 
-- [ ] **Step 4: Extend clean DSH profile acceptance**
+- [x] **Step 4: Extend clean DSH profile acceptance**
 
 Install the packed dsh-notemd tarball into an isolated profile, invoke notemd_plan_one_click_extract with the deterministic fixture, assert the closed output schema, and assert unavailable DSH capabilities remain explicit.
 
-- [ ] **Step 5: Run the focused and acceptance gates**
+- [x] **Step 5: Run the focused and acceptance gates**
 
 Run: rtk pnpm exec vitest run --config vitest.config.ts packages/notemd-composites/test/one-click-extract.integration.test.ts packages/notemd-bundle/test/composite-approval.test.ts; rtk pnpm accept:dsh
 
 Expected: PASS; no physical file changes occur before approval.
 
-- [ ] **Step 6: Commit the acceptance evidence**
+- [x] **Step 6: Commit the acceptance evidence**
 
 Run: rtk git add packages/notemd-composites packages/notemd-bundle scripts; rtk git commit -m "test: verify composite approval and acceptance"
 
@@ -471,17 +472,17 @@ Run: rtk git add packages/notemd-composites packages/notemd-bundle scripts; rtk 
 - Phase records must distinguish implemented code, measured evidence, and planned work.
 - English and Chinese documents must contain the same source/target locks, phase status, rejected alternatives, and exit criteria.
 
-- [ ] **Step 1: Record the implementation phase honestly**
+- [x] **Step 1: Record the implementation phase honestly**
 
-Update Phase 19 only with measured facts. Before runtime code lands, the status must read: Architecture and implementation plan recorded. Runtime implementation not started in this phase. After each subsequent task, append its exact files, focused test count, capability limits, and next gate.
+Update Phase 19 only with measured facts. The runtime status now records the implemented packages, focused robustness cases, compatibility decision, exact definition digest, and the remaining fresh release gate.
 
-- [ ] **Step 2: Run documentation checks**
+- [x] **Step 2: Run documentation checks**
 
 Run: rtk git diff --check; rtk rg "one-click-extract|3169964|07c629c6|dsh-notemd@0.1.1" docs/specs docs/superpowers/plans docs/walkthroughs
 
 Expected: both language pairs contain the same identity and workflow terms, and no homepage plan link is added.
 
-- [ ] **Step 3: Run the full repository release gate**
+- [x] **Step 3: Run the full repository release gate**
 
 Run: rtk pnpm typecheck; rtk pnpm lint; rtk pnpm test; rtk pnpm test:coverage; rtk pnpm build; rtk pnpm pack:bundle; rtk pnpm verify:bundle; rtk pnpm accept:dsh; rtk git diff --check
 

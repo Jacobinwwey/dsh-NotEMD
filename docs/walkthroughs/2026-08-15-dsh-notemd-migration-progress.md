@@ -7,7 +7,7 @@
 ## 1. Scope Baseline
 
 - Source baseline: `E:\convert\undo\obsidian-NoteMD_new` at `4168a51cd19ad8c3d1e05f604b50936255461a31`.
-- Target release: `E:\convert\undo\notemd-deepseek-harness` on `main` at `3169964` (`origin/main` synchronized); the Phase 15-18 release evidence is recorded below and Phase 19 is a design/plan phase.
+- Target release: `E:\convert\undo\notemd-deepseek-harness` on `main` at the design lock `3169964` (`origin/main` synchronized); Phase 19 runtime implementation evidence is recorded below and the final release gate is pending.
 - In scope: every non-Obsidian-host NoteMD workflow, including documents, knowledge, research, diagrams, artifact export, batch execution, and stable Drawnix behavior.
 - Deliberately out of scope: Obsidian UI and host APIs, direct provider configuration, and the source working tree's uncommitted Drawnix WIP.
 
@@ -300,13 +300,13 @@ No completed Task 1-12 is reopened by this audit; the next phase starts from the
 - `packages/notemd-bundle/package.json` now declares public registry metadata, repository links, keywords, and `publishConfig.access = public`. The bundle still embeds all unpublished `@notemd-harness/*` packages and keeps the tarball as the reproducible offline path.
 - The verified release artifact is `artifacts/dsh-notemd-0.1.0.tgz`. It passed `pnpm pack:bundle`, `pnpm verify:bundle`, clean DSH profile acceptance, typecheck, lint, coverage, build, capability lane, and the 52-file/203-test suite.
 - The package was deleted before this migration, so the unscoped name is available for first publication. npm dry-run must pass before the real publish; no credential or OTP is stored in the repository or requested through chat. Publish with `npm publish .\\artifacts\\dsh-notemd-0.1.0.tgz --access public --registry=https://registry.npmjs.org/` after completing npm 2FA.
-## 19. Phase 19 Composite workflow architecture and implementation plan (2026-08-21)
+## 19. Phase 19 Composite workflow implementation evidence (2026-08-21 to 2026-08-22)
 
-**Phase status:** Architecture and implementation plan recorded. Runtime implementation not started in this phase.
+**Phase status:** Runtime implementation complete in the working tree; final release gates and remote publication remain.
 
 **Evidence lock:** Target dsh-NotEMD main 3169964, npm dsh-notemd@0.1.1; current source observation ref/obsidian-NotEMD main 07c629c6f99a1171a6a63eaf50ddb0dce0f5fed5; historical oracle obsidian-NoteMD_new 4168a51cd19ad8c3d1e05f604b50936255461a31. No Drawnix WIP was copied or accepted.
 
-### Deep comparison
+### Design-lock comparison
 
 | Requirement | Current evidence | Diagnosis |
 | --- | --- | --- |
@@ -327,7 +327,16 @@ The current planExtractAndGenerate is also insufficient: it generates only the f
 - CompositeWorkspaceView reads and lists a virtual overlay, validates virtual revisions, enforces file/byte budgets, and finalizes one net mutation per destination.
 - Optional typed mutation lineage records workflow id/version, definition digest, step id, and ordinal without changing legacy plan digests.
 - NotemdCompositeWorkflowService uses Cordis static injection of notemdVault and notemdWorkflows. Existing approval ledger, FileJobStore, DurableWorkflowRunner, and journaled executor remain the only authorities.
-- Named Tool surfaces are not implemented in this phase: notemd_plan_one_click_extract and notemd_job_start_one_click_extract are planned, not shipped.
+- Named Tool surfaces are implemented: `notemd_plan_one_click_extract` and `notemd_job_start_one_click_extract`; resume/status/cancel remain the existing lifecycle surface.
+
+### Runtime evidence
+
+- Source lock and deterministic fixture: `fixtures/migration/composite-source-lock.json` plus `fixtures/migration/one-click-extract/`; the source chain is fixed as `process-current-add-links -> batch-generate-from-titles -> batch-mermaid-fix`.
+- Pure implementation: `packages/notemd-composites` provides `CompositeWorkspaceView`, `MutationAccumulator`, closed diagnostics, source-faithful planners, and the stable definition digest `66f0e111d94d98cec3bab1b00f7c8f72ab096c0a0a69d94061e2ac88c6e7ac4c`.
+- Mutation compatibility: optional composite lineage is included only when present; legacy `WorkspaceMutationPlan/v1` digest behavior remains unchanged. Virtual create/delete collapses to a net no-op, and duplicate Mermaid error basenames fail closed before aggregation.
+- Cordis/DSH boundary: `NotemdCompositeWorkflowService` injects only `notemdVault` and `notemdWorkflows`; completion input budgets are checked before every LLM request through the scoped planner guard.
+- Approval/job evidence: one aggregate plan, one approval receipt, one committed mutation receipt; stale virtual revision, duplicate receipt, cancellation, and missing-document closed outcomes are covered. Durable jobs use `one-click-extract-v1` and persist workflow identity plus definition digest.
+- Fresh release-gate evidence: root typecheck, lint, `62` Vitest files / `238` tests, coverage (Statements `77.70%`, Branches `73.85%`, Functions `85.65%`), build, `pack:bundle`, `verify:bundle`, clean DSH profile acceptance, and `git diff --check` all passed. The only remaining actions are commit, non-force push, and remote parity verification.
 
 ### Rejected alternatives
 
@@ -337,8 +346,8 @@ Raw custom-workflow DSL and generic dispatch are rejected because they create an
 
 The paired eight-task plan is at docs/superpowers/plans/2026-08-21-dsh-notemd-composite-workflow.md. It covers source fixtures, mutation lineage, overlay aggregation, source-faithful atomic planners, Cordis integration, named Tools/jobs, aggregate approval acceptance, and release evidence.
 
-No runtime code changed in Phase 19. The first implementation phase exits only after deterministic source and overlay tests, definition digest and collision tests, one aggregate approval receipt, stale-revision/cancellation tests, clean DSH acceptance, and the full typecheck/lint/test/coverage/build/pack/verify gate.
+Phase 19 exits only after deterministic source and overlay tests, definition digest and collision tests, one aggregate approval receipt, stale-revision/cancellation tests, clean DSH acceptance, and the full typecheck/lint/test/coverage/build/pack/verify gate. The implementation has reached that boundary except for the final fresh release-gate run and remote parity check.
 
 ### Next direction
 
-Implement source-faithful atomic batch planners and overlay tests before exposing any Tool or durable job. Keep current source remote-main diagram/normalization drift and all Drawnix WIP in audit-only lanes.
+Run the fresh full release gate, publish `main` non-force, and record exact local/remote parity. Keep current source remote-main diagram/normalization drift and all Drawnix WIP in audit-only lanes.

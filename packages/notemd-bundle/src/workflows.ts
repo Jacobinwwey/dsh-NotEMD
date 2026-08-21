@@ -1,9 +1,15 @@
 import { Service, type Context } from '@deepseek-ai/cordis'
-import { NotemdWorkflowPlanner, type WorkflowPlanner } from '@notemd-harness/workflows'
+import {
+  NotemdWorkflowPlanner,
+  type BeforeWorkflowCompletion,
+  type ScopedWorkflowPlannerFactory,
+  type WorkflowPlanner,
+} from '@notemd-harness/workflows'
 import type { WorkspaceMutationPlan } from '@notemd-harness/mutation'
 import type { ResearchEvidence } from '@notemd-harness/research'
+import type { NotemdVault } from '@notemd-harness/vault'
 
-export class NotemdWorkflowsService extends Service implements WorkflowPlanner {
+export class NotemdWorkflowsService extends Service implements WorkflowPlanner, ScopedWorkflowPlannerFactory {
   static inject = ['notemdVault', 'notemdTextTransformer'] as const
 
   private planner: NotemdWorkflowPlanner | undefined
@@ -14,6 +20,10 @@ export class NotemdWorkflowsService extends Service implements WorkflowPlanner {
 
   protected async [Service.init](): Promise<void> {
     this.planner = new NotemdWorkflowPlanner(this.ctx.notemdVault, this.ctx.notemdTextTransformer)
+  }
+
+  createScopedPlanner(vault: NotemdVault, beforeCompletion?: BeforeWorkflowCompletion): WorkflowPlanner {
+    return new NotemdWorkflowPlanner(vault, this.ctx.notemdTextTransformer, beforeCompletion)
   }
 
   planWikiLinks(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan> {
@@ -68,6 +78,14 @@ export class NotemdWorkflowsService extends Service implements WorkflowPlanner {
     return this.requirePlanner().planTitlesInFolder(folderPath, signal)
   }
 
+  planBatchTitleGeneration(
+    sourceFolderPath: string,
+    completedFolderPath: string,
+    signal?: AbortSignal,
+  ): ReturnType<WorkflowPlanner['planBatchTitleGeneration']> {
+    return this.requirePlanner().planBatchTitleGeneration(sourceFolderPath, completedFolderPath, signal)
+  }
+
   planTranslationsInFolder(
     folderPath: string,
     language: string,
@@ -82,6 +100,14 @@ export class NotemdWorkflowsService extends Service implements WorkflowPlanner {
 
   planMermaidRepairsInFolder(folderPath: string, signal?: AbortSignal): Promise<readonly WorkspaceMutationPlan[]> {
     return this.requirePlanner().planMermaidRepairsInFolder(folderPath, signal)
+  }
+
+  planBatchMermaidRepair(
+    folderPath: string,
+    errorFolderPath?: string,
+    signal?: AbortSignal,
+  ): ReturnType<WorkflowPlanner['planBatchMermaidRepair']> {
+    return this.requirePlanner().planBatchMermaidRepair(folderPath, errorFolderPath, signal)
   }
 
   planFormulaRepairsInFolder(folderPath: string): Promise<readonly WorkspaceMutationPlan[]> {

@@ -3,7 +3,7 @@
 > Chinese version: [2026-08-17-dsh-notemd-current-state-architecture-audit.zh-CN.md](2026-08-17-dsh-notemd-current-state-architecture-audit.zh-CN.md)
 
 **Audit date:** 2026-08-17
-**Target release:** `3169964` (`main`, `origin/main`); Phase 15-18 release evidence is historical, and Phase 19 records the composite architecture plan.
+**Target release design lock:** `3169964` (`main`, `origin/main`); Phase 15-18 evidence is historical, and Phase 19 now records runtime implementation evidence plus the final release gate.
 **Pinned source oracle:** `E:\convert\undo\obsidian-NoteMD_new` at `4168a51cd19ad8c3d1e05f604b50936255461a31`
 **Source-intake candidate:** `cdf580c6c876190ecc1040caea08e5ba5bee004f` with a dirty checkout; see `fixtures/migration/source-intake-lock.json`.
 **DSH reference:** `ref/deepseek-harness` at `47f943859bef60e4160492346772ded9b24f765a`
@@ -180,7 +180,7 @@ The architecture record is a decision log; the plan is executable work; the prog
 ## 8. Phase 19 Composite workflow architecture review (2026-08-21)
 
 - Current target lock: dsh-NotEMD main 3169964, npm dsh-notemd@0.1.1; source observation ref/obsidian-NotEMD@07c629c6f99a1171a6a63eaf50ddb0dce0f5fed5; historical oracle obsidian-NoteMD_new@4168a51cd19ad8c3d1e05f604b50936255461a31.
-- Existing mutation, approval, journal, DSH LLM/Web, artifact, and single-process job foundations are reusable. No runtime composite implementation exists at this lock.
+- Existing mutation, approval, journal, DSH LLM/Web, artifact, and single-process job foundations are reusable. The design-lock snapshot had no runtime composite implementation; the current working tree now contains the planned runtime.
 - Source workflowButtons.ts defines the three-step default chain, while NotemdSidebarView.ts:927-1160 carries hidden folder context. The DSH bundle has no named composite definition or explicit path request.
 - Source batch title generation moves generated files to a complete folder, but planTitlesInFolder replaces files in place. Source Mermaid validation, report, and error-folder behavior is also absent from planMermaidRepairsInFolder.
 - Current planners read the physical vault only. A virtual overlay, virtual revision validation, deterministic net-transition accumulator, and aggregate digest are required before a Tool or job surface is exposed.
@@ -188,5 +188,6 @@ The architecture record is a decision log; the plan is executable work; the prog
 - Decision: add pure @notemd-harness/composites, one-click-extract@1, fixed fail-fast semantics, optional mutation lineage, and a thin NotemdCompositeWorkflowService with static injection of notemdVault and notemdWorkflows. Reuse the existing approval receipt, FileJobStore, DurableWorkflowRunner, and journaled executor.
 - Rejected: raw custom-workflow DSL, generic dispatcher, public continueOnError, immediate per-step apply, temporary workspace writes, and universal SVG parity.
 - Execution plan: docs/superpowers/plans/2026-08-21-dsh-notemd-composite-workflow.md, eight tasks covering source fixtures, mutation lineage, overlay, atomic planners, Cordis integration, named Tools/jobs, acceptance, and release evidence.
-- Phase status is planning-only: Architecture and implementation plan recorded. Runtime implementation not started in this phase. No composite Tool, job, package, or patch row is shipped at this lock.
-- Next gate: implement source-faithful atomic batch planners and overlay tests first; only then add the named plan Tool and durable job. Keep Drawnix WIP and source diagram drift in audit-only lanes.
+- Phase status at the design lock was planning-only. Current evidence: `@notemd-harness/composites`, the named plan/job Tools, Cordis patch row, durable `one-click-extract-v1` executor entry, aggregate approval path, and clean-profile acceptance are implemented in the working tree.
+- Robustness evidence includes duplicate Mermaid error-destination collision rejection, virtual create/delete net no-op handling, and a completion-input budget guard before every LLM request. Legacy Plan v1 digests remain compatible when lineage is absent.
+- Next gate: execute the fresh full typecheck/lint/test/coverage/build/pack/verify/acceptance release gate, then publish `main` non-force and verify remote parity. Keep Drawnix WIP and source diagram drift in audit-only lanes.

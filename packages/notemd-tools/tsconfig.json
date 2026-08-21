@@ -8,6 +8,7 @@
   },
   "references": [
     { "path": "../notemd-artifacts" },
+    { "path": "../notemd-composites" },
     { "path": "../notemd-jobs" },
     { "path": "../notemd-knowledge" },
     { "path": "../notemd-llm-openai-compatible" },

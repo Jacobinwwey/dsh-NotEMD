@@ -6,6 +6,7 @@ export {
   type NotemdApprovalConfig,
 } from './approval.js'
 export * from './artifacts.js'
+export * from './composites.js'
 export * from './jobs.js'
 export * from './knowledge.js'
 export * from './llm.js'

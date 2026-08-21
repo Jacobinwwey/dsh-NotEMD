@@ -75,6 +75,7 @@ export async function acceptDshProfile(): Promise<void> {
     assert(['available', 'unavailable'].includes(evidence.drawnixRendererStatus), 'The installed Drawnix capability Tool returned an invalid status.')
     assert(['available', 'unavailable'].includes(evidence.circuitikzRendererStatus), 'The installed Circuitikz capability Tool returned an invalid status.')
     assert(evidence.legacyProviderToolMissing, 'The default DSH bridge registered a legacy provider diagnostic Tool.')
+    assert(evidence.compositeStatus === 'failed', 'The installed composite Tool did not load its named runtime service.')
 
     process.stdout.write('Clean DeepSeek Harness profile acceptance passed.\n')
   } finally {
@@ -138,6 +139,7 @@ function parseRunnerEvidence(stdout: string): {
   readonly drawnixRendererStatus: string
   readonly circuitikzRendererStatus: string
   readonly legacyProviderToolMissing: boolean
+  readonly compositeStatus: string
 } {
   const line = stdout.trim().split(/\r?\n/u).at(-1)
   if (line === undefined) {
@@ -155,6 +157,7 @@ function parseRunnerEvidence(stdout: string): {
     readonly drawnixRendererStatus: string
     readonly circuitikzRendererStatus: string
     readonly legacyProviderToolMissing: boolean
+    readonly compositeStatus: string
   }
 }
 
@@ -207,6 +210,7 @@ import NotemdResearchService from 'dsh-notemd/research'
 import NotemdVaultLocalService from 'dsh-notemd/vault-local'
 import NotemdWorkspaceChangeService from 'dsh-notemd/workspace-changes'
 import NotemdWorkflowsService from 'dsh-notemd/workflows'
+import NotemdCompositeWorkflowService from 'dsh-notemd/composites'
 import { NotemdApprovalGateService, NotemdApprovalLedgerService } from 'dsh-notemd/approval'
 import { apply as applyTools, inject as toolsInject } from 'dsh-notemd/tools'
 
@@ -244,6 +248,7 @@ await ctx.plugin(NotemdTextTransformerService, {
   promptPolicyId: 'notemd.acceptance.v1',
 })
 await ctx.plugin(NotemdWorkflowsService)
+await ctx.plugin(NotemdCompositeWorkflowService)
 await ctx.plugin(NotemdResearchService, { workspaceRoot })
 await ctx.plugin(NotemdJobsService, { workspaceRoot, concurrency: 2 })
 await ctx.plugin(NotemdKnowledgeService)
@@ -270,6 +275,17 @@ assert(read.document.path === 'notes/architecture.md', 'The read Tool did not re
 
 const legacyProviderToolMissing = await toolIsMissing('notemd_provider_diagnostic')
 assert(legacyProviderToolMissing, 'The default DSH bridge unexpectedly registered a legacy provider diagnostic Tool.')
+const compositePlanFailure = await invoke('notemd_plan_one_click_extract', {
+  sourcePath: 'notes/missing-composite-source.md',
+  conceptFolderPath: 'concepts',
+  completedFolderPath: 'completed',
+  mermaidFolderPath: 'completed',
+  mermaidErrorFolderPath: 'mermaid-errors',
+})
+assert(
+  compositePlanFailure.status === 'failed' && compositePlanFailure.code === 'composite-document-not-found',
+  'The installed composite Tool did not report its closed missing-document outcome.',
+)
 const research = await invoke('notemd_research_discover', { query: 'research capability test', maxResults: 1 })
 assert(research.status === 'unavailable' && research.code === 'capability-unavailable', 'The empty DSH web runtime did not report research as unavailable.')
 const mermaidRenderStatus = await invoke('notemd_mermaid_render_status', {})
@@ -403,6 +419,7 @@ process.stdout.write(JSON.stringify({
   drawnixRendererStatus: drawnixRenderStatus.capability.status,
   circuitikzRendererStatus: circuitikzRenderStatus.capability.status,
   legacyProviderToolMissing,
+  compositeStatus: compositePlanFailure.status,
 }) + '\n')
 
 async function toolIsMissing(name) {

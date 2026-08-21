@@ -13,6 +13,8 @@ import type {
   FormulaRepairJobRequest,
   MermaidRepairJobRequest,
   NotemdJobs,
+  NotemdCompositeWorkflows,
+  OneClickExtractJobRequest,
   ResearchJobRequest,
   TitleJobRequest,
   TranslationJobRequest,
@@ -30,8 +32,10 @@ export interface NotemdJobsConfig extends WorkspaceRootConfig {
   readonly concurrency?: number
 }
 
+export const ONE_CLICK_EXTRACT_JOB_WORKFLOW = 'one-click-extract-v1'
+
 export class NotemdJobsService extends Service implements NotemdJobs {
-  static inject = ['notemdWorkflows', 'notemdResearch'] as const
+  static inject = ['notemdWorkflows', 'notemdResearch', 'notemdCompositeWorkflows'] as const
 
   private store: FileJobStore | undefined
   private executors = new Map<string, WorkflowJobExecutor>()
@@ -48,7 +52,7 @@ export class NotemdJobsService extends Service implements NotemdJobs {
   protected async [Service.init](): Promise<void> {
     this.store = await FileJobStore.open(this.workspaceRoot)
     await this.store.recoverInterrupted()
-    this.executors = planningExecutors(this.ctx.notemdWorkflows, this.ctx.notemdResearch)
+    this.executors = planningExecutors(this.ctx.notemdWorkflows, this.ctx.notemdResearch, this.compositeWorkflows())
   }
 
   async startFormulaRepairs(request: FormulaRepairJobRequest): Promise<JobRecord> {
@@ -77,6 +81,23 @@ export class NotemdJobsService extends Service implements NotemdJobs {
 
   async startConceptExtractions(request: ConceptJobRequest): Promise<JobRecord> {
     return this.startEmptyInputJob('concept-extraction', request)
+  }
+
+  async startOneClickExtract(request: OneClickExtractJobRequest): Promise<JobRecord> {
+    const definition = this.compositeWorkflows().definition()
+    return this.startJob(ONE_CLICK_EXTRACT_JOB_WORKFLOW, {
+      idempotencyKey: request.idempotencyKey,
+      targets: [request.sourcePath],
+    }, {
+      workflowId: definition.id,
+      workflowVersion: definition.version,
+      definitionDigest: definition.definitionDigest,
+      sourcePath: request.sourcePath,
+      conceptFolderPath: request.conceptFolderPath,
+      completedFolderPath: request.completedFolderPath,
+      mermaidFolderPath: request.mermaidFolderPath,
+      ...(request.mermaidErrorFolderPath === undefined ? {} : { mermaidErrorFolderPath: request.mermaidErrorFolderPath }),
+    })
   }
 
   async resume(id: string): Promise<JobRecord> {
@@ -172,9 +193,17 @@ export class NotemdJobsService extends Service implements NotemdJobs {
     }
     return executor
   }
+
+  private compositeWorkflows(): NotemdCompositeWorkflows {
+    return (this.ctx as unknown as { readonly notemdCompositeWorkflows: NotemdCompositeWorkflows }).notemdCompositeWorkflows
+  }
 }
 
-function planningExecutors(workflows: WorkflowPlanner, research: NotemdResearch): Map<string, WorkflowJobExecutor> {
+function planningExecutors(
+  workflows: WorkflowPlanner,
+  research: NotemdResearch,
+  composites: NotemdCompositeWorkflows,
+): Map<string, WorkflowJobExecutor> {
   return new Map([
     ['formula-repair', planningExecutor('formula-repair', async (target) => workflows.planFormulaRepair(target))],
     ['mermaid-repair', planningExecutor('mermaid-repair', async (target, _input, signal) => workflows.planMermaidRepair(target, signal))],
@@ -186,6 +215,13 @@ function planningExecutors(workflows: WorkflowPlanner, research: NotemdResearch)
       return workflows.planResearchSynthesis(target, evidence, signal)
     })],
     ['concept-extraction', planningExecutor('concept-extraction', async (target, _input, signal) => workflows.planConceptExtraction(target, signal))],
+    [ONE_CLICK_EXTRACT_JOB_WORKFLOW, planningExecutor(
+      ONE_CLICK_EXTRACT_JOB_WORKFLOW,
+      async (target, input, signal) => composites.planOneClickExtract(
+        compositeJobRequest(input, target, composites.definition()),
+        signal,
+      ),
+    )],
   ])
 }
 
@@ -222,6 +258,43 @@ function objectInput(input: Readonly<JsonValue>): Readonly<Record<string, JsonVa
     throw new JobStoreError('JOB_RECORD_INVALID', 'Persisted planning job input must be an object.')
   }
   return input
+}
+
+function compositeJobRequest(
+  input: Readonly<JsonValue>,
+  target: string,
+  definition: ReturnType<NotemdCompositeWorkflows['definition']>,
+): OneClickExtractJobRequest {
+  const object = objectInput(input)
+  const workflowId = stringInput(input, 'workflowId')
+  const workflowVersion = object.workflowVersion
+  const definitionDigest = stringInput(input, 'definitionDigest')
+  if (
+    workflowId !== definition.id
+    || workflowVersion !== definition.version
+    || definitionDigest !== definition.definitionDigest
+  ) {
+    throw new JobStoreError(
+      'JOB_WORKFLOW_MISMATCH',
+      'Persisted One-Click Extract definition identity does not match the installed definition.',
+    )
+  }
+  const sourcePath = stringInput(input, 'sourcePath')
+  if (sourcePath !== target) {
+    throw new JobStoreError('JOB_RECORD_INVALID', 'Persisted composite target does not match sourcePath.')
+  }
+  const mermaidErrorFolderPath = object.mermaidErrorFolderPath
+  if (mermaidErrorFolderPath !== undefined && typeof mermaidErrorFolderPath !== 'string') {
+    throw new JobStoreError('JOB_RECORD_INVALID', 'Persisted mermaidErrorFolderPath must be a string.')
+  }
+  return {
+    idempotencyKey: 'resumed:' + target,
+    sourcePath,
+    conceptFolderPath: stringInput(input, 'conceptFolderPath'),
+    completedFolderPath: stringInput(input, 'completedFolderPath'),
+    mermaidFolderPath: stringInput(input, 'mermaidFolderPath'),
+    ...(mermaidErrorFolderPath === undefined ? {} : { mermaidErrorFolderPath }),
+  }
 }
 
 function isJsonObject(value: Readonly<JsonValue>): value is Readonly<Record<string, JsonValue>> {

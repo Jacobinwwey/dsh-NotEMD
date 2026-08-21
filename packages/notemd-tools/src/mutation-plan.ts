@@ -4,6 +4,7 @@ import {
   type WorkspaceMutationDraft,
   type WorkspaceMutationPlan,
 } from '@notemd-harness/mutation'
+import type { CompositeMutationLineageDraft } from '@notemd-harness/mutation'
 
 import { isRecord, requiredObject, ToolInputError } from './tool-contract.js'
 
@@ -71,10 +72,33 @@ function mutationFrom(value: Record<string, unknown>, index: number): WorkspaceM
 }
 
 function provenanceFrom(value: Record<string, unknown>, field: string): MutationProvenanceDraft {
+  const compositeValue = value.composite
+  const composite = compositeValue === undefined
+    ? undefined
+    : compositeFrom(objectValue(compositeValue, field + '.composite'), field + '.composite')
   return {
     operationId: stringField(value, 'operationId'),
     sourceRefs: stringListField(value, 'sourceRefs', field),
     evidenceRefs: stringListField(value, 'evidenceRefs', field),
+    ...(composite === undefined ? {} : { composite }),
+  }
+}
+
+function compositeFrom(value: Record<string, unknown>, field: string): CompositeMutationLineageDraft {
+  const workflowVersion = value.workflowVersion
+  const ordinal = value.ordinal
+  if (workflowVersion !== 1) {
+    throw new ToolInputError('Tool parameter "' + field + '.workflowVersion" must be 1.')
+  }
+  if (typeof ordinal !== 'number' || !Number.isSafeInteger(ordinal) || ordinal < 0) {
+    throw new ToolInputError('Tool parameter "' + field + '.ordinal" must be a non-negative integer.')
+  }
+  return {
+    workflowId: stringField(value, 'workflowId'),
+    workflowVersion: 1,
+    definitionDigest: stringField(value, 'definitionDigest'),
+    stepId: stringField(value, 'stepId'),
+    ordinal,
   }
 }
 

@@ -1,104 +1,72 @@
-# DSH NoteMD Composite Workflow é¡¶å±‚æž¶æž„
+# DSH NoteMD Composite Workflow 顶层架构
 
 > English version: 2026-08-21-dsh-notemd-composite-workflow-architecture.md
 
-**å†³ç­–çŠ¶æ€ï¼š** æž¶æž„ä¸Žå®žæ–½è®¡åˆ’å·²è½ç›˜ã€‚æœ¬é˜¶æ®µå°šæœªå¼€å§‹è¿è¡Œæ—¶å®žçŽ°ã€‚
+**决策状态：** `one-click-extract@1` 已实现；剩余边界是发布前完整 release gate。
 
-**èŒƒå›´é”å®šï¼š** ç›®æ ‡æ˜¯ç‹¬ç«‹è¿è¡Œçš„ DeepSeek Harness bundleã€‚Obsidian UIã€ç¼–è¾‘å™¨ã€å‘½ä»¤ã€Modalã€è®¾ç½®å’Œå®¿ä¸»ç”Ÿå‘½å‘¨æœŸç»§ç»­ç•™åœ¨ bundle è¾¹ç•Œä¹‹å¤–ã€‚LLMã€Webã€Provider é€‰æ‹©ã€å‡­æ®å’Œ transport å‡ç”± DSH æ‰€æœ‰ã€‚
+**范围锁定：** 目标是可独立运行的 DeepSeek Harness bundle。Obsidian UI、编辑器、命令、Modal、设置与宿主生命周期留在 bundle 边界之外；LLM、Web、Provider、凭据与传输由 DSH 所有。
 
-**è¯æ®é”ï¼š**
+**证据锁：**
 
-- ç›®æ ‡ï¼šdsh-NotEMD main ä¸º 3169964ï¼›npm åŒ…ä¸º dsh-notemd@0.1.1ã€‚
-- å½“å‰æºè§‚å¯Ÿç‚¹ï¼šref/obsidian-NotEMD ä¸º 07c629c6f99a1171a6a63eaf50ddb0dce0f5fed5ã€‚
-- åŽ†å²è¡Œä¸º oracleï¼šobsidian-NoteMD_new ä¸º 4168a51cd19ad8c3d1e05f604b50936255461a31ã€‚
-- Slidev å…¼å®¹æ€§ä»é”å®š github:Jacobinwwey/slidev@bbcb2efae709c2ebaa96bda522cd6c192476817cã€‚
+- 目标仓库：`dsh-NotEMD`，设计锁点为 main `3169964`；npm 包 `dsh-notemd@0.1.1`。
+- 当前源观察点：`ref/obsidian-NotEMD@07c629c6f99a1171a6a63eaf50ddb0dce0f5fed5`。
+- 历史行为 oracle：`obsidian-NoteMD_new@4168a51cd19ad8c3d1e05f604b50936255461a31`。
+- Slidev 只接受 fork：`github:Jacobinwwey/slidev@bbcb2efae709c2ebaa96bda522cd6c192476817c`。
 
-## 1. æž¶æž„å†³ç­–
+## 1. 决策
 
-å¼•å…¥ä¸€ä¸ªå…·åã€ç±»åž‹åŒ–çš„ composite workflowï¼šone-click-extract@1ã€‚
+引入一个具名、类型化的 composite workflow：`one-click-extract@1`。
 
-å®ƒæ˜¯é¢†åŸŸåŒ…ï¼Œä¸æ˜¯é€šç”¨ action dispatcherã€‚å®šä¹‰åœ¨ bundle ä¸­ç¼–è¯‘å›ºåŒ–ï¼ŒåŒ…å«å›ºå®šæœ‰åºæ­¥éª¤ã€å›ºå®š fail-fast ç­–ç•¥ã€definition digest å’Œæ˜¾å¼ request schemaã€‚ç¬¬ä¸€ç‰ˆåªè§„åˆ’ä¸€ä¸ª aggregate ä¸å¯å˜ WorkspaceMutationPlanï¼›approval ä¸Ž apply ç»§ç»­å¤ç”¨çŽ°æœ‰ä¸€æ¬¡æ€§ receipt å’Œ journaled executorã€‚
+它是领域包，不是通用 action dispatcher。Definition 固化在 bundle 中，包含固定步骤顺序、固定 `fail-fast` 策略、definition digest 与显式 request schema。第一版只规划一个 aggregate `WorkspaceMutationPlan/v1`；approval 与 apply 继续复用现有一次性 receipt 和 journaled executor。
 
-æºæ’ä»¶é»˜è®¤æŒ‰é’®çš„è¯­ä¹‰æ˜¯ï¼š
+源插件默认链的语义为：
 
-~~~text
+```text
 process-current-add-links
   -> batch-generate-from-titles
   -> batch-mermaid-fix
-~~~
+```
 
-æºå®žçŽ°é€šè¿‡éšè—çš„ UI çŠ¶æ€åœ¨æ­¥éª¤é—´ä¼ é€’ preferred concept folder å’Œæœ€è¿‘ç”Ÿæˆçš„ complete folderã€‚ç‹¬ç«‹ DSH è¿è¡Œæ—¶æ— æ³•æŽ¨æ–­ active fileã€selected folderã€Obsidian settings æˆ– UI æ‰€æœ‰çš„ output folderï¼Œå› æ­¤ composite request å¿…é¡»æ˜¾å¼æä¾›è¿™äº›è·¯å¾„ï¼ŒåŽç»­æ­¥éª¤ä»Ž request ä¸Ž virtual workspace overlay æ´¾ç”Ÿè¾“å…¥ã€‚
+源实现依赖 UI 隐式传递 concept folder 与最近生成的 complete folder。独立 DSH 运行时无法推断 active file、selected folder 或 Obsidian settings，因此 request 必须显式给出路径，后续步骤通过 virtual workspace overlay 获取前一步输出。
 
-è¿™ä¸æ˜¯æŠŠæº custom-workflow DSL ç›´æŽ¥æ¬è¿›æ¥ã€‚åŽŸå§‹ action-list dispatcher ä¼šæš´éœ²æ— ç•Œ Tool surfaceï¼Œä½¿ operation å…¼å®¹æ€§å˜æˆéšå¼è¡Œä¸ºï¼Œå¹¶å…è®¸è°ƒç”¨æ–¹ç»•è¿‡æ­¥éª¤ä¸å˜é‡ã€‚åŽç»­è‹¥éœ€è¦ç”¨æˆ·è‡ªå®šä¹‰ compositeï¼Œåº”é‡‡ç”¨å¸¦ capability declaration çš„ç‹¬ç«‹ç‰ˆæœ¬åŒ– definitionï¼›ä¸å±žäºŽ one-click-extract@1ã€‚
+不迁入 source custom-workflow DSL。通用 action-list 会产生无界 Tool surface、隐藏 operation 兼容性并绕过步骤不变量；未来用户自定义 composite 必须是带 capability declaration 的新版本 definition。
 
-## 2. ç›¸å¯¹æºå¥‘çº¦çš„å½“å‰ç¼ºå£
+## 2. 设计锁点缺口
 
-| æºè¡Œä¸ºæˆ–å…ˆå‰è¦æ±‚ | å½“å‰ç›®æ ‡è¯æ® | å¾…è¡¥ç¼ºé™· |
-| --- | --- | --- |
-| é»˜è®¤ One-Click Extract æ˜¯ä¸‰æ­¥é“¾ï¼Œå¹¶ä¼ é€’ folder context | ref/obsidian-NotEMD/src/workflowButtons.ts ä¸Ž NotemdSidebarView.ts:927-1160 | æ²¡æœ‰ composite definitionã€context objectã€aggregate plan æˆ–å…·å DSH Toolã€‚ |
-| æ‰¹é‡æ ‡é¢˜ç”Ÿæˆä¼šç”Ÿæˆå†…å®¹å¹¶ç§»åŠ¨åˆ° complete folder | ref/obsidian-NotEMD/src/fileUtils.ts:1262 ä¸Ž main.ts:2688 | planTitlesInFolder æ˜¯åŽŸåœ°æ›¿æ¢ï¼Œæ²¡æœ‰ destination folder ä¸Ž move è¯­ä¹‰ã€‚ |
-| æ‰¹é‡ Mermaid fix ä¼šæ ¡éªŒã€ä¿®å¤ã€å¯é€‰ç§»åŠ¨æœªè§£å†³æ–‡ä»¶å¹¶å†™ report | ref/obsidian-NotEMD/src/fileUtils.ts:1521 | planMermaidRepairsInFolder åªæ›¿æ¢ Markdown fenceï¼Œä¸å»ºæ¨¡æ ¡éªŒã€error move æˆ– reportã€‚ |
-| composite æ­¥éª¤è¦èƒ½è¯»å–å‰ä¸€æ­¥è¾“å‡º | å½“å‰ planner åªè¯»ç‰©ç† vault | æ²¡æœ‰ virtual read/listï¼Œè‹¥æå‰å†™ç›˜å°±ä¼šç»•è¿‡ approvalã€‚ |
-| ä¸€ä¸ª workflow åªéœ€ä¸€æ¬¡ approval | å½“å‰ jobs/checkpoints æŒ‰åŽŸå­ planner ç»“æžœç»„ç»‡ | ç›´æŽ¥ä¸²è”ä¼šé€ æˆå¤šæ¬¡ approval æˆ–éƒ¨åˆ† mutationã€‚ |
-| æº diagram.generate æŽ¥å— Markdown ä¸Žç”Ÿæˆé€‰é¡¹ | å½“å‰ source çš„ registry.ts ä¸Ž diagram/types.ts | å½“å‰ conformance adapter æž„é€  synthetic DiagramSpecï¼Œæœªè¯æ˜Ž Markdown åˆ° intent çš„æŽ¨æ–­è·¯å¾„ã€‚ |
-| DSH/Cordis ownership | bundle service å·²ä½¿ç”¨ static inject ä¸Ž ctx.effect | composite service/package å¿…é¡»ç»´æŒçŽ°æœ‰ç”Ÿå‘½å‘¨æœŸä¸Žä¾èµ–æ–¹å‘ã€‚ |
+设计锁点时的缺口包括：没有具名 composite definition 与 aggregate plan；title batch 还是原地替换而不是移入 complete folder；Mermaid batch 没有完整 validation、error move 与 report；步骤只能读物理 vault；一次 workflow 不能只获得一份 approval；diagram Markdown 到 intent 的推断仍是独立 parity gap。
 
-å½“å‰ extract-and-generate planner ä¸èƒ½ä½œä¸ºæ›¿ä»£ï¼šå®ƒåªç”Ÿæˆç¬¬ä¸€ä¸ª conceptï¼Œä½¿ç”¨ç¡¬ç¼–ç çš„ concepts/ ä¸Ž generated/ï¼Œä¹Ÿæ²¡æœ‰ virtual follow-up stepã€‚
+这些是历史比对，不是当前实现状态。当前实测状态见第 11 节。
 
-## 3. ç›®æ ‡ä¸Žéžç›®æ ‡
+## 3. 目标与非目标
 
-### ç›®æ ‡
+目标：保持 `read -> plan -> approve -> apply -> receipt` 链路；在无 Obsidian host context 时调用源默认 workflow；approval 前规划无副作用；让步骤顺序、失败策略、路径解析和 lineage 可审计、可摘要、可做 digest；只复用语义已证明一致的 atomic planner；job 仅在 workflow id、version、definition digest 一致时 resume；无 lineage 的旧 Plan 保持 digest 兼容。
 
-- ä¿æŒ read -> plan -> approve -> apply -> receipt æ—¢æœ‰é“¾è·¯ã€‚
-- è®©æºé»˜è®¤ workflow åœ¨æ²¡æœ‰ Obsidian host context æ—¶å¯è°ƒç”¨ã€‚
-- approval application ä¹‹å‰ï¼Œcomposite planning ä¸äº§ç”Ÿå‰¯ä½œç”¨ã€‚
-- ä½¿æ­¥éª¤é¡ºåºã€å¤±è´¥ç­–ç•¥ã€è·¯å¾„è§£æžå’Œ lineage å¯æ£€æŸ¥ã€å¯æ‘˜è¦å’Œå¯åš digestã€‚
-- åªå¤ç”¨å·²ç»è¯æ˜Žè¯­ä¹‰ä¸€è‡´çš„å…·å atomic plannerï¼›å¯¹ä¸ä¸€è‡´å¤„å¢žåŠ  source-faithful batch plannerã€‚
-- æŒä¹…åŒ– job åªæœ‰åœ¨ workflow idã€version å’Œ definition digest ä¸€è‡´æ—¶æ‰èƒ½ resumeã€‚
-- æ²¡æœ‰ composite lineage çš„æ—§ WorkspaceMutationPlan ç»§ç»­æœ‰æ•ˆï¼Œå¹¶ä¿æŒæ—§ digest å…¼å®¹ã€‚
+非目标：执行 source custom-workflow DSL；迁移 UI 进度、Notice、选择对话框或 active-file discovery；新增通用 `notemd_run(type, options)`；在 NoteMD 中接管 Provider、凭据、endpoint、model discovery 或 Web transport；宣称多进程调度、全文件系统 ACID 或 universal SVG renderer parity；实现 dirty source checkout 中的 Drawnix WIP。
 
-### éžç›®æ ‡
+## 4. 拓扑与 ownership
 
-- å¯¼å…¥æˆ–æ‰§è¡Œæº custom-workflow DSLã€‚
-- å°† Obsidian UI è¿›åº¦ã€Noticeã€é€‰æ‹©å¯¹è¯æ¡†æˆ– active-file å‘çŽ°è¿å…¥ DSHã€‚
-- å¢žåŠ é€šç”¨ notemd_run(type, options) Toolã€‚
-- åœ¨ NoteMD ä¸­å¢žåŠ  provider credentialã€endpointã€model discovery æˆ– Web transportã€‚
-- å®£ç§°å¤šè¿›ç¨‹ job schedulingã€å…¨æ–‡ä»¶ç³»ç»Ÿ ACID æˆ– SVG projection ç­‰åŒåŽŸç”Ÿ rendererã€‚
-- ä»Ž dirty source checkout å®žçŽ° Drawnix WIPã€‚
-
-## 4. ç›®æ ‡æ‹“æ‰‘
-
-~~~mermaid
+```mermaid
 flowchart TD
   F["DSH Fiber"] --> B["notemd-bundle"]
   B --> C["NotemdCompositeWorkflowService"]
   C --> CW["@notemd-harness/composites"]
   CW --> W["scoped WorkflowPlanner"]
   W --> V["CompositeWorkspaceView"]
-  V --> O["virtual mutation overlay"]
-  O --> P["aggregate WorkspaceMutationPlan"]
+  V --> P["aggregate WorkspaceMutationPlan"]
   P --> A["existing approval ledger"]
   A --> E["existing journaled executor"]
   E --> R["committed receipt and workspace event"]
-  B --> T["named plan Tool and named job Tool"]
-  T --> C
-  B --> L["ctx.llm / ctx.web"]
-~~~
+  B --> T["named plan/job Tools"]
+```
 
-æ‰€æœ‰æƒè§„åˆ™ï¼š
+- `@notemd-harness/composites` 依赖 workflows、mutation、vault；workflows 不反向依赖 composites。
+- bundle 是唯一 Cordis composition root；纯 composites 包不创建 Context、Service、timer、process 或 global singleton。
+- `NotemdCompositeWorkflowService` 使用静态注入 `notemdVault` 与 `notemdWorkflows`。
+- Tool 调用 service；job 复用现有 `FileJobStore` 与 `DurableWorkflowRunner`，不新增 store 或 mutation executor。
 
-- @notemd-harness/composites ä¾èµ– @notemd-harness/workflowsã€@notemd-harness/mutationã€@notemd-harness/vaultï¼›workflows ä¸åå‘ä¾èµ– compositesã€‚
-- bundle æ˜¯å”¯ä¸€ Cordis composition rootã€‚çº¯ composites åŒ…ä¸åˆ›å»º Contextã€Serviceã€timerã€processã€global singletonã€‚
-- NotemdCompositeWorkflowService ä½¿ç”¨ static injectï¼›è‹¥æœªæ¥æŒæœ‰æ´»åŠ¨ planning èµ„æºï¼Œæ¸…ç†ç”± Fiber-owned effect ç®¡ç†ã€‚
-- Tool è°ƒç”¨ serviceï¼›job æ‰©å±•çŽ°æœ‰ FileJobStore ä¸Ž DurableWorkflowRunnerã€‚ç¦æ­¢ç¬¬äºŒ job store æˆ– mutation executorã€‚
+## 5. 公共契约
 
-## 5. å…¬å…±å¥‘çº¦
-
-ä»¥ä¸‹æ˜¯ v1 çš„è®¾è®¡ç›®æ ‡ï¼Œåç§°ä¿æŒå°é—­ä¸”æ˜¾å¼ã€‚
-
-~~~ts
-export type CompositeWorkflowId = 'one-click-extract'
-
+```ts
 export interface OneClickExtractRequest {
   readonly sourcePath: string
   readonly conceptFolderPath: string
@@ -109,127 +77,57 @@ export interface OneClickExtractRequest {
 }
 
 export interface CompositeWorkflowDefinition {
-  readonly id: CompositeWorkflowId
+  readonly id: 'one-click-extract'
   readonly version: 1
   readonly definitionDigest: ContentSha256
   readonly failurePolicy: 'fail-fast'
   readonly steps: readonly CompositeStepDefinition[]
 }
 
-export interface CompositeStepDefinition {
-  readonly id: 'add-links' | 'generate-complete' | 'repair-mermaid'
-  readonly operationId:
-    | 'file.process-add-links'
-    | 'content.batch-generate-from-titles'
-    | 'mermaid.batch-fix'
-  readonly ordinal: number
-}
-
-export interface CompositeStepLineage {
-  readonly workflowId: CompositeWorkflowId
-  readonly workflowVersion: 1
-  readonly definitionDigest: ContentSha256
-  readonly stepId: CompositeStepDefinition['id']
-  readonly ordinal: number
-}
-
-export interface CompositeWorkspaceView extends NotemdVault {
-  applyPlannedPlan(plan: WorkspaceMutationPlan, lineage: CompositeStepLineage): void
-  finalize(): WorkspaceMutationPlan
-}
-~~~
-
-Tool/job edge åªæ‰§è¡Œä¸€æ¬¡ request validationï¼š
-
-- æ‰€æœ‰è·¯å¾„éƒ½å¿…é¡»æ˜¯ç›¸å¯¹ã€slash-separatedã€æ—  NUL çš„ workspace pathã€‚
-- sourcePath å¿…é¡»å­˜åœ¨äºŽ base snapshot ä¸”ä¸º Markdownã€‚
-- folder path åªåšä¸€æ¬¡ canonicalizationï¼Œä¸èƒ½å·å·è¢« settings æ›¿æ¢ã€‚
-- destination å·²å­˜åœ¨æ—¶è¿”å›ž closed collision errorã€‚æºå®žçŽ°é™é»˜è·³è¿‡ complete æ–‡ä»¶çš„è¡Œä¸ºï¼ŒåŽç»­é€šè¿‡ç‹¬ç«‹ reconciliation operation è¡¨è¾¾ï¼Œä¸èƒ½éšå« overwriteã€‚
-- v1 composite çš„ virtual dependency åªæ”¯æŒ text/Markdownã€‚æœªæ¥å¯æœ‰ terminal binary artifact stepï¼Œä½† v1 åŽç»­æ­¥éª¤ä¸èƒ½è¯»å– binaryã€‚
-
-çŽ°æœ‰ workflow service å¢žåŠ æ˜¾å¼ scoped planner factoryï¼š
-
-~~~ts
 export interface ScopedWorkflowPlannerFactory {
-  createScopedPlanner(vault: NotemdVault): WorkflowPlanner
+  createScopedPlanner(vault: NotemdVault, beforeCompletion?: BeforeWorkflowCompletion): WorkflowPlanner
 }
-~~~
+```
 
-NotemdWorkflowsService å®žçŽ°è¯¥ factoryã€‚composite service æ³¨å…¥ notemdVault ä¸Ž notemdWorkflowsï¼Œå†è®©çŽ°æœ‰ service åˆ›å»º overlay plannerã€‚è¿™æ ·é¿å…ç¬¬äºŒä¸ª transformer ownerï¼Œä¸”ä¿æŒä¾èµ–å›¾æ— çŽ¯ã€‚
+Tool/job edge 只做一次验证：路径必须是相对、slash-separated、无 NUL 的 workspace path；sourcePath 必须存在且为 Markdown；folder path 只 canonicalize 一次；destination collision 返回 closed error；v1 virtual dependency 只接受 text/Markdown。`beforeCompletion` guard 在每个 LLM request 前执行，由 overlay 负责 UTF-8 input budget，不改变 Provider ownership。
 
-## 6. æ­¥éª¤è¯­ä¹‰
+## 6. 步骤与聚合
 
-one-click-extract@1 ä¸¥æ ¼åŒ…å«ä¸‰ä¸ªæœ‰åºæ­¥éª¤ï¼š
+1. `add-links` 调用现有单文档 link planner。
+2. `generate-complete` 调用 source-faithful batch title planner，生成 Markdown、删除 source 副本并写入显式 complete folder；按 lexical 顺序处理，排除已经完成的目标，不复用语义不同的 `planTitlesInFolder`。
+3. `repair-mermaid` 调用 source-faithful batch Mermaid planner；可写 repaired document、将 unresolved 文件移到 error folder、生成确定性 report，并显式拒绝同 basename destination collision。
 
-1. add-linksï¼šè°ƒç”¨çŽ°æœ‰å•æ–‡æ¡£ link planner å¤„ç† sourcePathã€‚
-2. generate-completeï¼šè°ƒç”¨æ–°çš„ source-faithful batch title plannerï¼Œè¾“å…¥ conceptFolderPath ä¸Ž completedFolderPathã€‚å¿…é¡»å»ºæ¨¡ç”Ÿæˆ Markdownã€æºæ–‡ä»¶ç§»é™¤/ç§»åŠ¨ã€complete-folder ç›®æ ‡ã€å·²å®Œæˆæ–‡ä»¶æŽ’é™¤å’Œç¡®å®šæ€§çš„è¯å…¸åºç›®æ ‡é¡ºåºã€‚ä¸èƒ½å¤ç”¨è¯­ä¹‰ä¸åŒçš„ planTitlesInFolderã€‚
-3. repair-mermaidï¼šå¯¹ mermaidFolderPath è°ƒç”¨æ–°çš„ source-faithful batch Mermaid plannerã€‚å®ƒå¯ä»¥äº§å‡º repaired writeã€æœªè§£å†³æ–‡ä»¶ç§»åˆ° mermaidErrorFolderPathï¼Œä»¥åŠç¡®å®šæ€§çš„ report writeã€‚åœ¨åªè°ƒç”¨ planMermaidRepairsInFolder æ—¶ä¸å¾—å®£ç§° source parityã€‚
+Overlay lazy 读取 base document，保留原 revision/content digest；每个 mutation 对比 virtual revision；write 对后续步骤可见，delete 从 list 中消失；lineage 附着到 staged mutation；文件数、总 UTF-8 bytes 与每次 completion input 超限时 fail closed。virtual create 后再 delete 被归并为 net no-op。finalize 为每个 destination 生成一个净变更，最终仍通过 `createWorkspaceMutationPlan`。
 
-æ­¥éª¤å¯è¿”å›žéžç©º atomic plan æˆ–æ˜¾å¼ no-op observationã€‚å…è®¸å†…éƒ¨ no-opï¼Œä½†æœ€ç»ˆå‡€çŠ¶æ€æ²¡æœ‰ mutation æ—¶ï¼Œroot workflow è¿”å›ž composite-no-opã€‚
+## 7. Approval、job 与失败语义
 
-overlay ä¸å†™æ–‡ä»¶ç³»ç»Ÿï¼š
+- `notemd_plan_one_click_extract` 只返回一个 `WorkspaceMutationPlan/v1`。
+- `notemd_job_start_one_click_extract` 只持久化 idempotency key、canonical paths、workflow id/version 和 definition digest，不保存凭据、endpoint、raw Web body 或无界 prompt。
+- executor key 采用现有 `FileJobStore` 可接受的 `one-click-extract-v1`；record 另存 `workflowId`、`workflowVersion`、`definitionDigest`，definition drift 使用 `JOB_WORKFLOW_MISMATCH` fail closed。
+- 一个 aggregate plan 只获得一份 approval receipt；步骤级 approval 不暴露。
+- step error、cancel、virtual revision conflict、collision、budget overflow 或 unavailable dependency 都不返回可审批 partial plan。
+- 不提供 public `continueOnError` flag；best-effort 必须是新的具名 definition、receipt 与 partial-result contract。
 
-1. lazy è¯»å– base documentï¼Œä¿ç•™åŽŸ revision/content digestã€‚
-2. æ¯ä¸ª step mutation éƒ½ä¸Ž current virtual revision æ ¸å¯¹ï¼Œè€Œä¸æ˜¯åªä¸Ž physical revision æ ¸å¯¹ã€‚
-3. æ›´æ–° virtual document mapï¼›Markdown write å¯¹åŽç»­æ­¥éª¤å¯è¯»ï¼Œdelete ä»Ž listMarkdown ç§»é™¤ã€‚
-4. ä¸ºæ¯ä¸ª staged mutation é™„åŠ  step lineageã€‚
-5. åœ¨ä¸‹ä¸€æ¬¡ LLM è°ƒç”¨å‰å¼ºåˆ¶æ–‡ä»¶æ•°é‡ã€UTF-8 æ€»å­—èŠ‚æ•°å’Œå•æ¬¡ completion input ä¸Šé™ã€‚
+## 8. 向前兼容
 
-finalize ä¸ºæ¯ä¸ª destination è®¡ç®—ä¸€ä¸ªå‡€å˜æ›´ï¼š
+- `WorkspaceMutationPlan.version` 保持 1；无 composite lineage 的旧 Plan 保持原 canonical digest。
+- lineage 只包含 workflow id、version、definition digest、step id、ordinal；prompt 与 provider endpoint 不进入 digest。
+- job workflow key 带 version，definition 改动不能静默 resume 旧 record。
+- 新 failure policy、binary dependency 或 user-defined step 必须使用新的 workflow id/version 与 fixture，不得修改 `one-click-extract@1`。
 
-- base å­˜åœ¨ã€final æ–‡æœ¬æ”¹å˜ï¼šä»¥ base revision ä¸º expectedRevision çš„ write-textï¼›
-- base å­˜åœ¨ã€final ä¸å­˜åœ¨ï¼šå¸¦ base content digest çš„ deleteï¼›
-- base ä¸å­˜åœ¨ã€final å­˜åœ¨ï¼šexpected absent çš„ write-textï¼›
-- base ä¸Ž final ç›¸åŒï¼šä¸äº§ç”Ÿ mutationï¼›
-- media type æˆ– staged asset ä¸å…¼å®¹ï¼šç”¨ typed diagnostic fail closedã€‚
+## 9. 被拒方案与风险
 
-aggregate ä»é€šè¿‡ createWorkspaceMutationPlan ç”Ÿæˆï¼Œå› æ­¤ destination canonical ordering å’Œæ—§ digest è§„åˆ™ç»§ç»­ä½œä¸º authorityã€‚root provenance ä¸º workflow.one-click-extractï¼Œæ¯ä¸ª mutation å¸¦å¯é€‰ composite lineageã€‚
+拒绝 generic dispatcher、复用语义不一致的 folder planner、逐 step 立即 apply、overlay 写临时文件、把 orchestration 放入 Tool/job、把 SVG 当作通用 preview，以及 public `continueOnError`。主要残余风险是 LLM 输出造成 overlay 增长、v1 对已存在 complete destination 选择 collision 而不是 source skip、source remote-main 的 diagram/normalization drift，以及 FileJobStore 仍为 single-process。
 
-## 7. Approvalã€job ä¸Žå¤±è´¥è¯­ä¹‰
+## 10. 架构阶段出口
 
-- notemd_plan_one_click_extract åªè¿”å›žä¸€ä¸ª workspaceMutationPlan/v1ã€‚
-- notemd_job_start_one_click_extract åªå­˜ idempotency keyã€canonical pathã€workflow id/version ä¸Ž definition digestï¼›ç»ä¸å­˜ credentialã€endpointã€raw Web body æˆ–æ— ç•Œ promptã€‚
-- notemd_job_resume/status ç»§ç»­å¤ç”¨å·²æœ‰å…·åç”Ÿå‘½å‘¨æœŸ surfaceã€‚job executor æ³¨å†Œä¸º one-click-extract@1ï¼›æœªçŸ¥ definition digest ä½¿ç”¨ JOB_WORKFLOW_MISMATCH fail closedã€‚
-- ä¸€ä¸ª aggregate plan åªç”Ÿæˆä¸€ä»½ approval receiptï¼Œä¸æš´éœ² step-level approvalã€‚
-- ç¬¬ä¸€ç‰ˆå›ºå®š fail-fastã€‚æ­¥éª¤å¼‚å¸¸ã€å–æ¶ˆã€virtual revision è¿‡æœŸã€collisionã€budget overflow æˆ–ä¾èµ– unavailable éƒ½è¿”å›ž closed failureï¼Œä¸è¿”å›žå¯å®¡æ‰¹çš„ partial planã€‚
-- æºè®¾ç½® continue_on_error ä¸é€šè¿‡ bool æˆ– enum å‚æ•°æ¬è¿ã€‚æœªæ¥ best-effort workflow å¿…é¡»ä½¿ç”¨ä¸åŒçš„å…·å definitionã€receipt å’Œ partial-result contractã€‚
+架构阶段已完成。配套 decision record 与 implementation plan 仍是设计锁点假设的权威来源；运行时证据单独记录在下方以及双语 progress/audit 文档中。README 首页不承载 implementation plan；runtime claim 必须有 focused conformance、aggregate approval、clean-profile acceptance 与完整 release gate 证据。
 
-## 8. å‰å‘å…¼å®¹
+## 11. 实测运行时实现（2026-08-22）
 
-- WorkspaceMutationPlan.version ä¿æŒ 1ã€‚æ²¡æœ‰ composite lineage çš„æ—§ plan ä¿æŒåŽŸ canonical digestã€‚
-- composite lineage å¯é€‰ä¸”ç±»åž‹åŒ–ï¼Œåªå« workflow idã€workflow versionã€definition digestã€step idã€ordinalï¼›prompt å’Œ provider endpoint ä¸è¿›å…¥ digestã€‚
-- job workflow key å¸¦ versionï¼Œdurable record ä¿å­˜ definition digestã€‚æ­¥éª¤é¡ºåºæˆ– policy æ”¹å˜åŽï¼Œæ—§ record ä¸èƒ½é™é»˜ resumeã€‚
-- CompositeWorkflowPlan.version ä¸º 1ï¼Œåªæ˜¯å†…éƒ¨ planning recordï¼Œä¸æ˜¯ç¬¬äºŒ mutation authorityï¼›åªæœ‰æœ€ç»ˆ WorkspaceMutationPlan è·¨è¿‡ Tool/approval boundaryã€‚
-- ä¸ä¿ç•™ä»»æ„ top-level extensionã€‚æœªæ¥ metadata å¿…é¡»æœ‰ç•Œã€JSON-safe ä¸”ç”±ç‰ˆæœ¬åŒ– family validator æ‰€æœ‰ã€‚
-- æ–° failure policyã€binary dependency æˆ– user-defined step å¿…é¡»æ–°å¢ž workflow id/version ä¸Ž fixtureï¼Œä¸å¾—æ”¹å˜ one-click-extract@1 è¯­ä¹‰ã€‚
-
-## 9. è¢«æ‹’æ–¹æ¡ˆä¸Žé£Žé™©
-
-| æ–¹æ¡ˆ | æ‹’ç»åŽŸå›  | æ®‹ä½™é£Žé™© |
-| --- | --- | --- |
-| é€šç”¨ action dispatcher | ä¸¢å¤±å°é—­ contractã€operation owner å’Œå¯å®¡æŸ¥ capability boundary | å…·å definition å¢žåŠ å®žçŽ°å†—é•¿åº¦ã€‚ |
-| åŽŸæ ·å¤ç”¨å·²æœ‰ folder planner | è¾“å‡ºä¸åŒ¹é… source title moveã€Mermaid report/error è¡Œä¸º | åœ¨ composite å¯ç”¨å‰éœ€å…ˆæŠ•å…¥ atomic source-faithful plannerã€‚ |
-| æ¯ä¸ª step ç«‹å³ apply | äº§ç”Ÿéƒ¨åˆ†å·¥ä½œåŒºçŠ¶æ€å’Œå¤šæ¬¡ approval | aggregate planning éœ€è¦æ›´å¤šå†…å­˜ä¸Ž overlay collision é€»è¾‘ã€‚ |
-| å¯¹å¤–æš´éœ² continueOnError | ä¸€ä¸ª flag æ”¹å˜ transaction è¯­ä¹‰ï¼Œapproval è¾¹ç•Œä¸æ¸… | æœªæ¥éœ€å•ç‹¬è®¾è®¡ best-effort definitionã€‚ |
-| overlay å†™ä¸´æ—¶ workspace æ–‡ä»¶ | è¿å plan purityï¼Œå¯èƒ½æ³„éœ²æœªå®¡æ‰¹å†…å®¹ | å†…å­˜ overlay å¿…é¡»æœ‰ byte/file budgetã€‚ |
-| åœ¨ tools æˆ– jobs ä¸­æ”¾ orchestration | é‡å¤é¢†åŸŸé€»è¾‘ï¼Œéž Tool caller å¾—åˆ°ä¸åŒè¯­ä¹‰ | bundle service ä¿æŒè–„ Cordis adapterã€‚ |
-| SVG ä½œä¸ºé€šç”¨ preview | ä¼šè¯¯æŠ¥ PPTX/MP4/Draw.io/Circuitikz fidelity | native capability lane ç»§ç»­ opt-in ä¸”å¦‚å®žè¿”å›žã€‚ |
-
-ä¸»è¦é£Žé™©ï¼š
-
-- LLM è¾“å‡ºå¯èƒ½ä½¿ overlay æ— ç•Œå¢žé•¿ã€‚å¿…é¡»åœ¨ä¸‹ä¸€ step è°ƒç”¨å‰ enforce budgetï¼Œè¶…é™ç›´æŽ¥æ‹’ç»ï¼Œä¸å¾—é™é»˜æˆªæ–­ã€‚
-- source folder å·²æœ‰ complete destination æ—¶ï¼Œv1 è¿”å›ž collisionï¼›å¿…é¡»åœ¨è¿ç§»è¯´æ˜Žä¸­è®°å½•ä¸Ž source skip è¡Œä¸ºçš„å·®å¼‚ã€‚
-- å½“å‰ source remote-main ç›¸å¯¹åŽ†å² oracle å­˜åœ¨ diagram/normalization æ¼‚ç§»ï¼›ä¸å¾—å€Ÿ composite æŠŠæ¼‚ç§»å·å·çº³å…¥è¿ç§» contractã€‚
-- FileJobStore ä»æ˜¯ single-processï¼›composite job ä¸ä¼šè‡ªåŠ¨æé«˜ scheduler ä¿è¯ã€‚
-
-## 10. æž¶æž„é˜¶æ®µå‡ºå£
-
-æœ¬é˜¶æ®µåœ¨ä»¥ä¸‹æ¡ä»¶æ»¡è¶³æ—¶å®Œæˆï¼š
-
-- æœ¬å†³ç­–è®°å½•ä¸Žå¯¹åº”åŒè¯­ implementation plan å‡å·²æäº¤ã€‚
-- progress ä¸Ž audit walkthrough å†™å…¥ç²¾ç¡® target/source lockï¼Œå¹¶æ˜Žç¡® runtime implementation å°šæœªå¼€å§‹ã€‚
-- è®¡åˆ’åˆ—å‡ºæ¯ä¸ªå®žçŽ°æ–‡ä»¶ã€å…¬å…± interfaceã€focused testã€full gate ä¸Ž release æ¡ä»¶ã€‚
-- README é¦–é¡µæ²¡æœ‰è¢«åŠ å…¥ implementation planã€‚
-- å·¥ä½œåŒº cleanï¼Œmain ä¸Ž origin/main åŒæ­¥ã€‚
-
-ä¸‹ä¸€é˜¶æ®µå®žçŽ° source-faithful atomic batch planner ä¸Ž virtual overlayã€‚åœ¨ focused conformance fixtureã€aggregate approval testã€clean-profile acceptance å’Œå®Œæ•´ release gate é€šè¿‡å‰ï¼Œä¸å¾—å£°ç§° runtime composite å·²å®Œæˆã€‚\n
+- 已实现：`packages/notemd-composites`、`packages/notemd-mutation/src/composite-lineage.ts`、`packages/notemd-workflows` source-faithful batch planner、`packages/notemd-bundle` Cordis adapter/patch、`packages/notemd-tools` 具名 plan/job Tool、durable executor、确定性 fixture 与 clean-profile acceptance。
+- Definition：`one-click-extract@1`，digest `66f0e111d94d98cec3bab1b00f7c8f72ab096c0a0a69d94061e2ac88c6e7ac4c`，步骤为 `add-links -> generate-complete -> repair-mermaid`，固定 `fail-fast`。
+- 安全性：aggregate `WorkspaceMutationPlan/v1`、typed lineage、virtual read/list、revision conflict、approval 前不写盘、duplicate Mermaid error basename collision、virtual create/delete no-op、UTF-8 file/byte budget，以及每次 LLM request 前的 completion guard。
+- 兼容性：job 使用 `one-click-extract-v1`，record 保留 `workflowId`、`workflowVersion`、`definitionDigest`，保持现有 FileJobStore contract 并对 definition drift fail closed。
+- focused regression 已覆盖 source-faithful planner、overlay、accumulator、definition、Tool/job、lineage、approval，以及本轮新增的 duplicate destination、virtual create/delete 和 completion guard。
+- 剩余 release gate：完整 typecheck、lint、test、coverage、build、pack/verify、clean DSH acceptance、`git diff --check`，随后提交并非强制 push `main`。Drawnix WIP、native binary renderer 与 source diagram normalization drift 仍排除。

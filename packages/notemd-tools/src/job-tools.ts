@@ -1,13 +1,15 @@
 import type { JobRecord } from '@notemd-harness/jobs'
 
-import type { NotemdToolContext } from './notemd-services.js'
+import type { NotemdToolContext, OneClickExtractJobRequest } from './notemd-services.js'
 import {
   executeTool,
+  isRecord,
   jobRecordSchema,
   nullSchema,
   outcomeOutput,
   requiredString,
   requiredStringList,
+  ToolInputError,
   type ToolDefinitionFactory,
 } from './tool-contract.js'
 
@@ -96,6 +98,18 @@ export function registerJobTools(context: NotemdToolContext, defineTool: ToolDef
   }))
 
   context.tools.register(defineTool({
+    name: 'notemd_job_start_one_click_extract',
+    description: 'Start one durable, fail-fast planning job for the named One-Click Extract workflow.',
+    parameters: oneClickExtractJobParameters,
+    output: jobOutput,
+    async execute(args) {
+      return executeTool(async () => ({
+        job: jobView(await context.notemdJobs.startOneClickExtract(parseOneClickExtractJobRequest(args))),
+      }))
+    },
+  }))
+
+  context.tools.register(defineTool({
     name: 'notemd_job_resume',
     description: 'Explicitly resume one interrupted, durable NoteMD planning job.',
     parameters: jobIdParameters,
@@ -152,12 +166,52 @@ const jobIdParameters = {
 
 const jobOutput = outcomeOutput({ job: jobRecordSchema }, ['job'])
 
+const oneClickExtractJobParameters = {
+  idempotencyKey: { type: 'string', required: true, description: 'Stable durable job idempotency key.' },
+  sourcePath: { type: 'string', required: true, description: 'Workspace-relative source Markdown path.' },
+  conceptFolderPath: { type: 'string', required: true, description: 'Workspace-relative title-source folder.' },
+  completedFolderPath: { type: 'string', required: true, description: 'Workspace-relative generated-note folder.' },
+  mermaidFolderPath: { type: 'string', required: true, description: 'Workspace-relative Mermaid repair folder.' },
+  mermaidErrorFolderPath: { type: 'string', description: 'Optional unresolved-Mermaid output folder.' },
+} as const
+
 function planningJobRequest(args: unknown): { idempotencyKey: string; targets: readonly string[] } {
   const targets = requiredStringList(args, 'targets')
   if (targets.length === 0 || targets.some((target) => target.trim().length === 0)) {
     throw new RangeError('Planning jobs require at least one non-empty target.')
   }
   return { idempotencyKey: requiredString(args, 'idempotencyKey'), targets }
+}
+
+function parseOneClickExtractJobRequest(args: unknown): OneClickExtractJobRequest {
+  if (!isRecord(args)) {
+    throw new ToolInputError('Composite job arguments must be an object.')
+  }
+  const allowed = new Set([
+    'idempotencyKey',
+    'sourcePath',
+    'conceptFolderPath',
+    'completedFolderPath',
+    'mermaidFolderPath',
+    'mermaidErrorFolderPath',
+  ])
+  for (const key of Object.keys(args)) {
+    if (!allowed.has(key)) {
+      throw new ToolInputError('Unknown One-Click Extract job parameter: ' + key)
+    }
+  }
+  const errorFolder = args.mermaidErrorFolderPath
+  if (errorFolder !== undefined && (typeof errorFolder !== 'string' || errorFolder.trim().length === 0)) {
+    throw new ToolInputError('mermaidErrorFolderPath must be non-empty text when provided.')
+  }
+  return {
+    idempotencyKey: requiredString(args, 'idempotencyKey'),
+    sourcePath: requiredString(args, 'sourcePath'),
+    conceptFolderPath: requiredString(args, 'conceptFolderPath'),
+    completedFolderPath: requiredString(args, 'completedFolderPath'),
+    mermaidFolderPath: requiredString(args, 'mermaidFolderPath'),
+    ...(errorFolder === undefined ? {} : { mermaidErrorFolderPath: errorFolder }),
+  }
 }
 
 function jobView(job: JobRecord) {

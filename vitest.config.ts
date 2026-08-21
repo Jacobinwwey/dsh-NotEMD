@@ -10,6 +10,9 @@ export default defineConfig({
       '@notemd-harness/mutation': fileURLToPath(
         new URL('./packages/notemd-mutation/src/index.ts', import.meta.url),
       ),
+      '@notemd-harness/composites': fileURLToPath(
+        new URL('./packages/notemd-composites/src/index.ts', import.meta.url),
+      ),
       '@notemd-harness/artifacts': fileURLToPath(
         new URL('./packages/notemd-artifacts/src/index.ts', import.meta.url),
       ),

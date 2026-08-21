@@ -1,4 +1,5 @@
 import type { WorkspaceMutationPlan } from '@notemd-harness/mutation'
+import type { OneClickExtractRequest } from '@notemd-harness/composites'
 import { sourceSiblingOriginalTextOutput } from '@notemd-harness/workflows'
 
 import type { NotemdToolContext } from './notemd-services.js'
@@ -10,6 +11,8 @@ import {
   outcomeOutput,
   requiredString,
   requiredStringList,
+  isRecord,
+  ToolInputError,
   type ToolDefinitionFactory,
   type ToolExecutionContext,
   workspaceMutationPlanSchema,
@@ -95,6 +98,15 @@ export function registerPlanTools(context: NotemdToolContext, defineTool: ToolDe
     description: 'Create one reviewable proposal that extracts concepts and generates the corresponding focused note.',
     parameters: pathParameters,
     execute: (args, execution) => context.notemdWorkflows.planExtractAndGenerate(requiredString(args, 'path'), execution?.signal),
+  })
+  registerPlanTool(context, defineTool, {
+    name: 'notemd_plan_one_click_extract',
+    description: 'Create one aggregate, fail-fast plan for the named One-Click Extract workflow.',
+    parameters: oneClickExtractParameters,
+    execute: (args, execution) => context.notemdCompositeWorkflows.planOneClickExtract(
+      parseOneClickExtractRequest(args),
+      execution?.signal,
+    ),
   })
   registerPlanTool(context, defineTool, {
     name: 'notemd_plan_concept_dedupe',
@@ -210,6 +222,15 @@ const folderOriginalTextParameters = {
   questions: { type: 'array', items: { type: 'string' }, required: true, description: 'Ordered extraction questions.' },
 } as const
 
+const oneClickExtractParameters = {
+  sourcePath: { type: 'string', required: true, description: 'Workspace-relative source Markdown path.' },
+  conceptFolderPath: { type: 'string', required: true, description: 'Workspace-relative title-source folder.' },
+  completedFolderPath: { type: 'string', required: true, description: 'Workspace-relative generated-note folder.' },
+  mermaidFolderPath: { type: 'string', required: true, description: 'Workspace-relative Mermaid repair folder.' },
+  mermaidErrorFolderPath: { type: 'string', description: 'Optional unresolved-Mermaid output folder.' },
+  idempotencyKey: { type: 'string', description: 'Optional caller idempotency key for a planning request.' },
+} as const
+
 function registerPlanTool(
   context: NotemdToolContext,
   defineTool: ToolDefinitionFactory,
@@ -250,4 +271,43 @@ function registerFolderPlanTool(
       return executeTool(async () => ({ plans: await definition.execute(args, execution) }))
     },
   }))
+}
+
+function parseOneClickExtractRequest(args: unknown): OneClickExtractRequest {
+  if (!isRecord(args)) {
+    throw new ToolInputError('Composite workflow arguments must be an object.')
+  }
+  const allowed = new Set([
+    'sourcePath',
+    'conceptFolderPath',
+    'completedFolderPath',
+    'mermaidFolderPath',
+    'mermaidErrorFolderPath',
+    'idempotencyKey',
+  ])
+  for (const key of Object.keys(args)) {
+    if (!allowed.has(key)) {
+      throw new ToolInputError('Unknown One-Click Extract parameter: ' + key)
+    }
+  }
+  const mermaidErrorFolderPath = optionalString(args.mermaidErrorFolderPath, 'mermaidErrorFolderPath')
+  const idempotencyKey = optionalString(args.idempotencyKey, 'idempotencyKey')
+  return {
+    sourcePath: requiredString(args, 'sourcePath'),
+    conceptFolderPath: requiredString(args, 'conceptFolderPath'),
+    completedFolderPath: requiredString(args, 'completedFolderPath'),
+    mermaidFolderPath: requiredString(args, 'mermaidFolderPath'),
+    ...(mermaidErrorFolderPath === undefined ? {} : { mermaidErrorFolderPath }),
+    ...(idempotencyKey === undefined ? {} : { idempotencyKey }),
+  }
+}
+
+function optionalString(value: unknown, key: string): string | undefined {
+  if (value === undefined) {
+    return undefined
+  }
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new ToolInputError('Tool parameter "' + key + '" must be a non-empty string when provided.')
+  }
+  return value
 }

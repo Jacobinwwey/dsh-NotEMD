@@ -11,6 +11,7 @@ export const inject = [
   'notemdKnowledge',
   'notemdTextTransformer',
   'notemdWorkflows',
+  'notemdCompositeWorkflows',
   'notemdResearch',
   'notemdArtifacts',
   'notemdApprovalLedger',

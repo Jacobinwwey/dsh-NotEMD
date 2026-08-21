@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "rootDir": "src",
+    "outDir": "lib",
+    "tsBuildInfoFile": "tsconfig.tsbuildinfo",
+    "sourceMap": false,
+    "declarationMap": false
+  },
+  "references": [
+    { "path": "../notemd-mutation" },
+    { "path": "../notemd-vault" },
+    { "path": "../notemd-workflows" }
+  ],
+  "include": ["src"]
+}

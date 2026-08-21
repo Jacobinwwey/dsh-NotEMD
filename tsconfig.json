@@ -3,6 +3,7 @@
   "references": [
     { "path": "./packages/notemd-vault" },
     { "path": "./packages/notemd-mutation" },
+    { "path": "./packages/notemd-composites" },
     { "path": "./packages/notemd-vault-local" },
     { "path": "./packages/notemd-workspace-events" },
     { "path": "./packages/notemd-jobs" },

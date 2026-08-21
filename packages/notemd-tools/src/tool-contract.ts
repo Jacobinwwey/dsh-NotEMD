@@ -344,6 +344,13 @@ function provenanceSchema(): ToolSchema {
     operationId: stringSchema(),
     sourceRefs: arraySchema(stringSchema()),
     evidenceRefs: arraySchema(stringSchema()),
+    composite: closedObjectSchema({
+      workflowId: stringSchema(),
+      workflowVersion: { type: 'integer', const: 1 },
+      definitionDigest: stringSchema(),
+      stepId: stringSchema(),
+      ordinal: integerSchema(),
+    }, ['workflowId', 'workflowVersion', 'definitionDigest', 'stepId', 'ordinal']),
   }, ['operationId', 'sourceRefs', 'evidenceRefs'])
 }
 
