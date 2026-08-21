@@ -53,6 +53,7 @@ export async function verifyBundle(rootDirectory = workspaceRoot): Promise<void>
     const packageRoot = join(extractionRoot, 'package')
     const manifest = await readManifest(join(packageRoot, 'package.json'))
     assertManifest(manifest)
+    await assertCanonicalReadmes(packageRoot, rootDirectory)
 
     for (const packageName of bundledInternalPackages) {
       const packageDirectory = join(packageRoot, 'node_modules', ...packageName.split('/'))
@@ -94,6 +95,24 @@ async function verifyPackagedArtifactSchemaRegistry(packageRoot: string): Promis
   }
 }
 
+async function assertCanonicalReadmes(packageRoot: string, rootDirectory: string): Promise<void> {
+  const packageReadme = normalizeLineEndings(await readFile(join(packageRoot, 'README.md'), 'utf8'))
+  const rootReadme = normalizeLineEndings(await readFile(join(rootDirectory, 'README.md'), 'utf8'))
+  if (packageReadme !== rootReadme) {
+    throw new Error('The packaged README.md must be an exact copy of the repository README.md.')
+  }
+
+  const packageChineseReadme = normalizeLineEndings(await readFile(join(packageRoot, 'docs', 'README.zh-CN.md'), 'utf8'))
+  const rootChineseReadme = normalizeLineEndings(await readFile(join(rootDirectory, 'README.zh-CN.md'), 'utf8'))
+  if (packageChineseReadme !== rootChineseReadme) {
+    throw new Error('The packaged docs/README.zh-CN.md must be an exact copy of the repository README.zh-CN.md.')
+  }
+}
+
+function normalizeLineEndings(value: string): string {
+  return value.replace(/\r\n/gu, '\n')
+}
+
 async function locateTarball(rootDirectory: string): Promise<string> {
   const artifactsDirectory = join(rootDirectory, 'artifacts')
   const entries = await readdir(artifactsDirectory, { withFileTypes: true })
@@ -117,7 +136,7 @@ function assertTarballLayout(entries: readonly string[]): void {
     'package/package.json',
     'package/cordis.patch.yml',
     'package/README.md',
-    'package/README.zh-CN.md',
+    'package/docs/README.zh-CN.md',
     'package/lib/index.js',
     'package/lib/index.d.ts',
     'package/lib/vault-local.js',
@@ -135,6 +154,10 @@ function assertTarballLayout(entries: readonly string[]): void {
     if (!entries.includes(requiredEntry)) {
       throw new Error(`Bundle is missing required entry: ${requiredEntry}`)
     }
+  }
+
+  if (entries.includes('package/README.zh-CN.md')) {
+    throw new Error('Bundle must keep the npm canonical README at package/README.md; publish the Chinese document under package/docs/README.zh-CN.md.')
   }
 
   for (const packageName of bundledInternalPackages) {
