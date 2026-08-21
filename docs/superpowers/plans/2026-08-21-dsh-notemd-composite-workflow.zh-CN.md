@@ -65,8 +65,8 @@
 - [x] 已同步 English/Chinese architecture、plan、progress、audit；修复历史中文 architecture/plan 文件的 mojibake，保留 source/target locks、拒绝方案、兼容性决策与 exit criteria。
 - [x] 已记录 robustness：duplicate Mermaid error destinations、virtual create/delete no-op、completion guard injection。
 - [x] 执行新鲜完整 gate：`pnpm typecheck`、`pnpm lint`、`pnpm test`、`pnpm test:coverage`、`pnpm build`、`pnpm pack:bundle`、`pnpm verify:bundle`、`pnpm accept:dsh`、`git diff --check`。
-- [ ] 检查 staged diff，只提交 scoped code/fixtures/scripts/docs；随后非强制 push `origin/main`。
-- [ ] `git fetch origin main` 后确认 local `main`、`origin/main` SHA 一致，`git status --short --branch` 只显示 clean `## main`。
+- [x] 检查 staged diff，只提交 scoped code/fixtures/scripts/docs；随后非强制 push `origin/main`。
+- [x] `git fetch origin main` 后确认 local `main`、`origin/main` SHA 一致，`git status --short --branch` 只显示 clean `## main`。
 
 ## 出口条件
 

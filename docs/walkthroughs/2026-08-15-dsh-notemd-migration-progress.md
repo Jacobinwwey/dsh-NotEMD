@@ -336,7 +336,7 @@ The current planExtractAndGenerate is also insufficient: it generates only the f
 - Mutation compatibility: optional composite lineage is included only when present; legacy `WorkspaceMutationPlan/v1` digest behavior remains unchanged. Virtual create/delete collapses to a net no-op, and duplicate Mermaid error basenames fail closed before aggregation.
 - Cordis/DSH boundary: `NotemdCompositeWorkflowService` injects only `notemdVault` and `notemdWorkflows`; completion input budgets are checked before every LLM request through the scoped planner guard.
 - Approval/job evidence: one aggregate plan, one approval receipt, one committed mutation receipt; stale virtual revision, duplicate receipt, cancellation, and missing-document closed outcomes are covered. Durable jobs use `one-click-extract-v1` and persist workflow identity plus definition digest.
-- Fresh release-gate evidence: root typecheck, lint, `62` Vitest files / `238` tests, coverage (Statements `77.70%`, Branches `73.85%`, Functions `85.65%`), build, `pack:bundle`, `verify:bundle`, clean DSH profile acceptance, and `git diff --check` all passed. The only remaining actions are commit, non-force push, and remote parity verification.
+- Fresh release-gate evidence: root typecheck, lint, `62` Vitest files / `238` tests, coverage (Statements `77.70%`, Branches `73.85%`, Functions `85.65%`), build, `pack:bundle`, `verify:bundle`, clean DSH profile acceptance, and `git diff --check` all passed. Implementation commit `93d1755` was pushed non-force to `origin/main`; local and remote resolve to `93d1755026bb44eb259298e07de268a74fbbd1ae`, and the worktree is clean.
 
 ### Rejected alternatives
 

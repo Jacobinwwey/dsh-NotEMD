@@ -2,7 +2,7 @@
 
 > English version: 2026-08-21-dsh-notemd-composite-workflow-architecture.md
 
-**决策状态：** `one-click-extract@1` 已实现；剩余边界是发布前完整 release gate。
+**决策状态：** `one-click-extract@1` 的架构与运行时实现已完成；release gate 与 `origin/main` parity 已验证。
 
 **范围锁定：** 目标是可独立运行的 DeepSeek Harness bundle。Obsidian UI、编辑器、命令、Modal、设置与宿主生命周期留在 bundle 边界之外；LLM、Web、Provider、凭据与传输由 DSH 所有。
 
@@ -130,4 +130,4 @@ Overlay lazy 读取 base document，保留原 revision/content digest；每个 m
 - 安全性：aggregate `WorkspaceMutationPlan/v1`、typed lineage、virtual read/list、revision conflict、approval 前不写盘、duplicate Mermaid error basename collision、virtual create/delete no-op、UTF-8 file/byte budget，以及每次 LLM request 前的 completion guard。
 - 兼容性：job 使用 `one-click-extract-v1`，record 保留 `workflowId`、`workflowVersion`、`definitionDigest`，保持现有 FileJobStore contract 并对 definition drift fail closed。
 - focused regression 已覆盖 source-faithful planner、overlay、accumulator、definition、Tool/job、lineage、approval，以及本轮新增的 duplicate destination、virtual create/delete 和 completion guard。
-- 剩余 release gate：完整 typecheck、lint、test、coverage、build、pack/verify、clean DSH acceptance、`git diff --check`，随后提交并非强制 push `main`。Drawnix WIP、native binary renderer 与 source diagram normalization drift 仍排除。
+- Release evidence：新鲜 typecheck、lint、`62` 个 Vitest 文件 / `238` 个测试、coverage（Statements `77.70%`、Branches `73.85%`、Functions `85.65%`）、build、pack/verify、clean DSH acceptance 与 `git diff --check` 全部通过；实现提交 `93d1755` 已非强制推送，local/remote SHA parity 已验证。Drawnix WIP、native binary renderer 与 source diagram normalization drift 仍排除。

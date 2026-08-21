@@ -2,7 +2,7 @@
 
 > Chinese version: 2026-08-21-dsh-notemd-composite-workflow-architecture.zh-CN.md
 
-**Decision status:** Architecture is implemented for `one-click-extract@1`; the release gate is the remaining publication boundary.
+**Decision status:** Architecture and runtime implementation for `one-click-extract@1` are complete; release gate and `origin/main` parity are verified.
 
 **Scope lock:** The target is the standalone DeepSeek Harness bundle. Obsidian UI, editor, command, modal, settings, and host lifecycle behavior remain outside the bundle. DSH owns LLM, Web, provider selection, credentials, and transport.
 
@@ -234,4 +234,4 @@ The README homepage is not changed to contain the implementation plan. The prece
 - Safety behavior: one aggregate `WorkspaceMutationPlan/v1`, optional typed lineage, virtual read/list and revision checks, no physical writes before approval, collision diagnostics including duplicate Mermaid error basenames, virtual create/delete net no-op detection, UTF-8 file/byte limits, and a completion-input guard before each LLM request.
 - Compatibility decision: durable jobs use the existing lowercase kebab executor key `one-click-extract-v1`; persisted input separately records `workflowId`, `workflowVersion`, and `definitionDigest`. This preserves the current `FileJobStore` contract while still failing closed on definition drift.
 - Focused regression evidence: source-faithful planner, overlay, accumulator, definition, Tool/job, lineage, and approval suites pass; the newly added robustness cases cover duplicate error destinations, virtual create/delete no-op, and completion-guard injection.
-- Remaining release gate: run the full typecheck, lint, test, coverage, build, bundle pack/verify, clean DSH acceptance, `git diff --check`, then commit and push `main` non-force. Drawnix WIP, native binary renderers, and source diagram normalization drift remain explicitly out of scope.
+- Release evidence: fresh typecheck, lint, `62` Vitest files / `238` tests, coverage (Statements `77.70%`, Branches `73.85%`, Functions `85.65%`), build, bundle pack/verify, clean DSH acceptance, and `git diff --check` passed; implementation commit `93d1755` is pushed non-force and local/remote SHA parity is verified. Drawnix WIP, native binary renderers, and source diagram normalization drift remain explicitly out of scope.

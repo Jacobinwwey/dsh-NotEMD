@@ -488,13 +488,13 @@ Run: rtk pnpm typecheck; rtk pnpm lint; rtk pnpm test; rtk pnpm test:coverage; r
 
 Expected: every command exits zero. Optional native capability reports may remain unavailable and must remain truthful.
 
-- [ ] **Step 4: Inspect the staged diff and commit**
+- [x] **Step 4: Inspect the staged diff and commit**
 
 Run: rtk git status --short; rtk git diff --stat; rtk git add docs packages fixtures scripts pnpm-workspace.yaml tsconfig.json; rtk git commit -m "feat: add Cordis composite workflow architecture"
 
 Expected: only scoped implementation, fixture, and bilingual documentation files are staged.
 
-- [ ] **Step 5: Push main and verify remote parity**
+- [x] **Step 5: Push main and verify remote parity**
 
 Run: rtk proxy git -c core.sshCommand="ssh -o ControlMaster=no -o ControlPath=none" push origin main; rtk git fetch origin main; rtk git status --short --branch; rtk git log -1 --oneline; rtk gh api repos/Jacobinwwey/dsh-NotEMD/commits/main --jq .sha
 
@@ -512,4 +512,4 @@ The implementation phase may claim completion only when all of the following are
 - Named plan/job Tools pass closed schema and durable-resume tests.
 - Clean DSH profile acceptance passes from the packed tarball.
 - Full typecheck, lint, test, coverage, build, bundle verification, and git diff gates pass.
-- main is pushed non-force and the worktree is clean.\n
+- main is pushed non-force and the worktree is clean.

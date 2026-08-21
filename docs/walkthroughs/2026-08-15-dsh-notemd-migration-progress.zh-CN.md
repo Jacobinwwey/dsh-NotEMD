@@ -335,7 +335,7 @@
 - Mutation 兼容：只有存在 composite lineage 时才写入 lineage；旧 `WorkspaceMutationPlan/v1` digest 行为保持不变。virtual create/delete 会收敛为净 no-op，重复 Mermaid error basename 在 aggregate 前 fail closed。
 - Cordis/DSH 边界：`NotemdCompositeWorkflowService` 只注入 `notemdVault` 与 `notemdWorkflows`；通过 scoped planner guard 在每次 LLM request 前检查 completion input budget。
 - Approval/job 证据：一个 aggregate plan、一份 approval receipt、一份 committed mutation receipt；stale virtual revision、重复 receipt、cancel 与 missing-document closed outcome 均有覆盖。durable job 使用 `one-click-extract-v1`，并持久化 workflow identity 与 definition digest。
-- 新鲜 release-gate 证据：root typecheck、lint、`62` 个 Vitest 文件 / `238` 个测试、coverage（Statements `77.70%`、Branches `73.85%`、Functions `85.65%`）、build、`pack:bundle`、`verify:bundle`、clean DSH profile acceptance 与 `git diff --check` 全部通过。剩余动作只有 commit、非强制 push 与远端 parity 验证。
+- 新鲜 release-gate 证据：root typecheck、lint、`62` 个 Vitest 文件 / `238` 个测试、coverage（Statements `77.70%`、Branches `73.85%`、Functions `85.65%`）、build、`pack:bundle`、`verify:bundle`、clean DSH profile acceptance 与 `git diff --check` 全部通过。实现提交 `93d1755` 已非强制推送至 `origin/main`；本地与远端均解析为 `93d1755026bb44eb259298e07de268a74fbbd1ae`，工作区 clean。
 
 ### 被拒方案
 

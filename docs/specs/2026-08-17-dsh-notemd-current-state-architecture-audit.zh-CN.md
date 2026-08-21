@@ -190,4 +190,4 @@ Architecture 是决策日志，plan 是可执行工作，progress walkthrough �
 - 执行计划：docs/superpowers/plans/2026-08-21-dsh-notemd-composite-workflow.md，共八个任务，覆盖 source fixture、mutation lineage、overlay、atomic planner、Cordis integration、具名 Tool/job、acceptance 与 release evidence。
 - 设计锁点的阶段状态是“仅计划”。当前证据：`@notemd-harness/composites`、具名 plan/job Tool、Cordis patch row、`one-click-extract-v1` durable executor entry、aggregate approval path 与 clean-profile acceptance 已在工作区实现。
 - robustness 证据包括重复 Mermaid error destination rejection、virtual create/delete 净 no-op，以及每次 LLM request 前的 completion-input budget guard。无 lineage 时旧 Plan v1 digest 仍兼容。
-- 下一道 gate：执行新鲜完整 typecheck/lint/test/coverage/build/pack/verify/acceptance release gate，随后非强制发布 `main` 并验证远端 parity。Drawnix WIP 与 source diagram drift 继续留在 audit-only lane。
+- Phase 19 release gate 已完成：新鲜 typecheck/lint/test/coverage/build/pack/verify/acceptance 通过，`main` 已非强制发布，本地/远端 parity 已在 `93d1755026bb44eb259298e07de268a74fbbd1ae` 验证。Drawnix WIP 与 source diagram drift 继续留在 audit-only lane。
