@@ -4,18 +4,18 @@ Portable, approval-gated NoteMD workflow providers for DeepSeek Harness. This
 package is the installable bundle described by the repository [README](https://github.com/Jacobinwwey/dsh-NotEMD/blob/main/README.md)
 and its [Chinese edition](https://github.com/Jacobinwwey/dsh-NotEMD/blob/main/README.zh-CN.md).
 
-Short display name: [dsh-notemd](https://www.npmjs.com/package/@jacobinwwey/dsh-notemd). The canonical npm install spec remains `@jacobinwwey/dsh-notemd`.
+Published package: [dsh-notemd](https://www.npmjs.com/package/dsh-notemd). The canonical npm install spec is `dsh-notemd@0.1.0`.
 
 ## Install
 
 Install the published package into a Node workspace, then add the same version to a DSH profile:
 
 ```powershell
-npm install --save-exact @jacobinwwey/dsh-notemd@0.1.0
-dsh plugin --profile notes add @jacobinwwey/dsh-notemd@0.1.0
+npm install --save-exact dsh-notemd@0.1.0
+dsh plugin --profile notes add dsh-notemd@0.1.0
 ```
 
-The package is public-scoped and declares its registry in `publishConfig`. npm 2FA is only relevant to maintainers publishing a release; consumers do not need the publisher's login or OTP.
+The package is unscoped and public by npm policy. It declares the npm registry in `publishConfig`; npm 2FA is only relevant to maintainers publishing a release, and consumers do not need the publisher's login or OTP.
 
 For offline or unreleased builds, use the tarball path below.
 
@@ -25,7 +25,7 @@ Build the tarball from the repository root, then add it to a DSH profile:
 pnpm install --frozen-lockfile
 pnpm build
 pnpm pack:bundle
-dsh plugin --profile notes add .\artifacts\jacobinwwey-dsh-notemd-0.1.0.tgz
+dsh plugin --profile notes add .\artifacts\dsh-notemd-0.1.0.tgz
 ```
 
 The package embeds the unpublished `@notemd-harness/*` implementation packages

@@ -164,7 +164,7 @@ test('recovers interrupted work and executes only targets without checkpoints', 
 
 运行：`rtk proxy pnpm.cmd --filter @notemd-harness/tools test -- tools.contract.test.ts`
 
-运行：`rtk proxy pnpm.cmd --filter @jacobinwwey/dsh-notemd test -- patch.contract.test.ts`
+运行：`rtk proxy pnpm.cmd --filter dsh-notemd test -- patch.contract.test.ts`
 
 预期：因具名作业和 workspace changes 未注入或注册而失败。
 
@@ -180,7 +180,7 @@ test('recovers interrupted work and executes only targets without checkpoints', 
 
 运行：`rtk proxy pnpm.cmd --filter @notemd-harness/tools test`
 
-运行：`rtk proxy pnpm.cmd --filter @jacobinwwey/dsh-notemd test`
+运行：`rtk proxy pnpm.cmd --filter dsh-notemd test`
 
 运行：`rtk tsc`
 

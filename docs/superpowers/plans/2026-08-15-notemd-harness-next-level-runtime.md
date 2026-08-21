@@ -242,7 +242,7 @@ await expect(applyTool.execute({ approvalId, plan })).resolves.toMatchObject({
 
 Run: `rtk proxy pnpm.cmd --filter @notemd-harness/tools test -- tools.contract.test.ts`
 
-Run: `rtk proxy pnpm.cmd --filter @jacobinwwey/dsh-notemd test -- patch.contract.test.ts`
+Run: `rtk proxy pnpm.cmd --filter dsh-notemd test -- patch.contract.test.ts`
 
 Expected: FAIL because named jobs and workspace changes are not injected or registered.
 
@@ -258,7 +258,7 @@ The workspace change service captures its baseline snapshot during init. Knowled
 
 Run: `rtk proxy pnpm.cmd --filter @notemd-harness/tools test`
 
-Run: `rtk proxy pnpm.cmd --filter @jacobinwwey/dsh-notemd test`
+Run: `rtk proxy pnpm.cmd --filter dsh-notemd test`
 
 Run: `rtk tsc`
 

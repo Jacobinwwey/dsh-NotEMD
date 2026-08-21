@@ -10,6 +10,6 @@ export function workspacePackageNames(): readonly string[] {
     '@notemd-harness/artifacts',
     '@notemd-harness/llm-openai-compatible',
     '@notemd-harness/tools',
-    '@jacobinwwey/dsh-notemd',
+    'dsh-notemd',
   ]
 }

@@ -18,7 +18,7 @@
 - 规划、审批、应用必须是分离的具名操作；禁止 `dryRun` flag 和 `notemd_run(type, options)`。
 - 外部进程必须在 staging 以 allowlisted executable 和 argument vector 运行，禁止 shell，禁止直接写工作区。
 - 每个任务后根据实测证据更新中英文进度文档。
-- 每次提交前保持 worktree clean。远程为 `git@github.com:Jacobinwwey/dsh-NotEMD.git`；公开 npm 标识为 `@jacobinwwey/dsh-notemd`（npm 包名必须使用小写）。
+- 每次提交前保持 worktree clean。远程为 `git@github.com:Jacobinwwey/dsh-NotEMD.git`；公开 npm 标识为 `dsh-notemd`（npm 包名必须使用小写）。
 
 ## 目标包图
 

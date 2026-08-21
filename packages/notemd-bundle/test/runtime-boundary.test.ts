@@ -42,5 +42,5 @@ test('preserves complete replacement configuration and lifecycle disposal seams'
   const packageManifest = JSON.parse(readFileSync(join(repositoryRoot, 'packages', 'notemd-bundle', 'package.json'), 'utf8')) as {
     name?: string
   }
-  expect(packageManifest.name).toBe('@jacobinwwey/dsh-notemd')
+  expect(packageManifest.name).toBe('dsh-notemd')
 })

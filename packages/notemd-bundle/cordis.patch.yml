@@ -2,34 +2,34 @@
 # profile patch replaces a row's whole config and must restate its fields.
 - insert:
     - id: notemd-vault
-      name: '@jacobinwwey/dsh-notemd/vault-local'
+      name: 'dsh-notemd/vault-local'
       config:
         workspaceRoot: !!js process.cwd()
 
     - id: notemd-approval
-      name: '@jacobinwwey/dsh-notemd/approval'
+      name: 'dsh-notemd/approval'
       config:
         workspaceRoot: !!js process.cwd()
         approvalTtlMs: 300000
 
     - id: notemd-workspace-changes
-      name: '@jacobinwwey/dsh-notemd/workspace-changes'
+      name: 'dsh-notemd/workspace-changes'
       inject: [notemdVault]
       config:
         scanIntervalMs: 5000
 
     - id: notemd-knowledge
-      name: '@jacobinwwey/dsh-notemd/knowledge'
+      name: 'dsh-notemd/knowledge'
       inject: [notemdVault, notemdWorkspaceChanges]
 
     - id: notemd-artifacts
-      name: '@jacobinwwey/dsh-notemd/artifacts'
+      name: 'dsh-notemd/artifacts'
       inject: [notemdVault, subprocess]
       config:
         workspaceRoot: !!js process.cwd()
 
     - id: notemd-llm
-      name: '@jacobinwwey/dsh-notemd/llm'
+      name: 'dsh-notemd/llm'
       inject: [llm]
       config:
         provider: deepseek
@@ -38,23 +38,23 @@
         promptPolicyId: notemd.default.v1
 
     - id: notemd-research
-      name: '@jacobinwwey/dsh-notemd/research'
+      name: 'dsh-notemd/research'
       inject: [web]
       config:
         workspaceRoot: !!js process.cwd()
 
     - id: notemd-workflows
-      name: '@jacobinwwey/dsh-notemd/workflows'
+      name: 'dsh-notemd/workflows'
       inject: [notemdVault, notemdTextTransformer]
 
     - id: notemd-jobs
-      name: '@jacobinwwey/dsh-notemd/jobs'
+      name: 'dsh-notemd/jobs'
       inject: [notemdWorkflows, notemdResearch]
       config:
         workspaceRoot: !!js process.cwd()
         concurrency: 2
 
     - id: notemd-tools
-      name: '@jacobinwwey/dsh-notemd/tools'
+      name: 'dsh-notemd/tools'
       inject:
         [tools, notemdVault, notemdJobs, notemdWorkspaceChanges, notemdKnowledge, notemdTextTransformer, notemdWorkflows, notemdResearch, notemdArtifacts, notemdApprovalLedger, notemdApprovalGate]

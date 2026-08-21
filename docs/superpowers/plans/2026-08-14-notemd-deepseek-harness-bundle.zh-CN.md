@@ -34,7 +34,7 @@
 | `@notemd-harness/artifacts` | DiagramSpec 与受 manifest 约束的源产物 |
 | `@notemd-harness/llm-openai-compatible` | fetch、SSE、缓存、诊断和稳定 LLM 错误 |
 | `@notemd-harness/tools` | Cordis 服务适配和 DSH Tool 注册 |
-| `@jacobinwwey/dsh-notemd` | 可发布 bundle、patch、profile 示例与运行时 glue |
+| `dsh-notemd` | 可发布 bundle、patch、profile 示例与运行时 glue |
 
 ---
 

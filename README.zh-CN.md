@@ -8,15 +8,15 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-已发布包的短显示名为 [dsh-notemd](https://www.npmjs.com/package/@jacobinwwey/dsh-notemd)。npm 安装标识为 `@jacobinwwey/dsh-notemd`；scope 属于规范包 identity，`dsh-notemd` 是短显示名。
+已发布包为 [dsh-notemd](https://www.npmjs.com/package/dsh-notemd)。规范 npm 安装标识为 `dsh-notemd@0.1.0`。
 
 ## 30 秒安装
 
 当前交付单元同时支持 npm registry package 与 DSH bundle。普通安装使用 registry：
 
 ```powershell
-npm install --save-exact @jacobinwwey/dsh-notemd@0.1.0
-dsh plugin --profile notes add @jacobinwwey/dsh-notemd@0.1.0
+npm install --save-exact dsh-notemd@0.1.0
+dsh plugin --profile notes add dsh-notemd@0.1.0
 ```
 
 `dsh` 命令会把包安装到指定 profile；当 bundle 被其他 Node workspace 消费时才需要单独执行 `npm install`，它不能替代加入 DSH profile。
@@ -40,7 +40,7 @@ cd dsh-NotEMD
 pnpm install --frozen-lockfile
 pnpm build
 pnpm pack:bundle
-dsh plugin --profile notes add .\artifacts\jacobinwwey-dsh-notemd-0.1.0.tgz
+dsh plugin --profile notes add .\artifacts\dsh-notemd-0.1.0.tgz
 ```
 
 `pnpm pack:bundle` 会内嵌所有尚未发布的 `@notemd-harness/*` workspace 包。`minisearch` 保持普通 runtime dependency，由 profile 包管理器解析。`verify:bundle` 要求 `artifacts/` 下恰好存在一个 `.tgz`；本地反复打包时应先处理旧 tarball。
@@ -122,7 +122,7 @@ bundle patch 默认把有状态 provider 指向 `process.cwd()`。部署 profile
 
 默认 `notemd-llm` provider 注入 DSH `llm`。其封闭 route policy 只接受 `provider`、`model`、`maxTokens`、`promptPolicyId`。endpoint、key、header、transport retry 与 model discovery 会被拒绝，不会被忽略。凭据、adapter 与 provider 选择由 DSH 配置；NoteMD 不会读取或持久化它们。
 
-显式的 `@jacobinwwey/dsh-notemd/llm-openai-compatible-legacy` entry 仅供迁移期使用，为尚不能使用 DSH routing 的部署提供旧 OpenAI-compatible diagnostic 与 model-discovery 工具。使用时必须替换默认 `notemd-llm` row，不能同时加载，因为两者都提供 `notemdTextTransformer`。
+显式的 `dsh-notemd/llm-openai-compatible-legacy` entry 仅供迁移期使用，为尚不能使用 DSH routing 的部署提供旧 OpenAI-compatible diagnostic 与 model-discovery 工具。使用时必须替换默认 `notemd-llm` row，不能同时加载，因为两者都提供 `notemdTextTransformer`。
 
 ## 图表与导出策略
 
@@ -196,9 +196,9 @@ git diff --check
 4. 在 clean worktree 上运行开发门禁中的全部命令。
 5. 确认 tarball 包含 `dsh.bundle.patch`、编译产物、所有 bundled internal package 与两份语言 README；`pnpm verify:bundle` 负责校验发行契约。
 6. 将同一个 tarball 安装到干净 DSH profile，发布或分享前执行 `dsh --profile <name> --dump-config` 检查最终配置。
-7. 使用 `npm publish .\\artifacts\\jacobinwwey-dsh-notemd-0.1.0.tgz --access public --registry=https://registry.npmjs.org/` 发布同一个已验证 tarball；npm 账号启用 2FA 时，此命令可能要求一次性验证码。
+7. 使用 `npm publish .\\artifacts\\dsh-notemd-0.1.0.tgz --access public --registry=https://registry.npmjs.org/` 发布同一个已验证 tarball；npm 账号启用 2FA 时，此命令可能要求一次性验证码。
 
-当前支持的发布路径是 npm registry package 或把 tarball 添加到 DSH profile。公共包显示为 `dsh-notemd`，规范 npm identity 与安装标识为 `@jacobinwwey/dsh-notemd`；tarball 仍是可复现的离线回退方案。
+当前支持的发布路径是 npm registry package 或把 tarball 添加到 DSH profile。该包为无 scope 的 public package；规范 npm identity 与安装标识为 `dsh-notemd`，tarball 仍是可复现的离线回退方案。
 
 ## 文档索引
 

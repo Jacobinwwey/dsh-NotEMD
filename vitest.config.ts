@@ -58,7 +58,7 @@ export default defineConfig({
       '@notemd-harness/workflows': fileURLToPath(
         new URL('./packages/notemd-workflows/src/index.ts', import.meta.url),
       ),
-      '@jacobinwwey/dsh-notemd': fileURLToPath(
+      'dsh-notemd': fileURLToPath(
         new URL('./packages/notemd-bundle/src/index.ts', import.meta.url),
       ),
     },

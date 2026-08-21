@@ -8,15 +8,15 @@ Portable, approval-gated NoteMD workflows for [DeepSeek Harness](https://github.
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-Published package: [dsh-notemd](https://www.npmjs.com/package/@jacobinwwey/dsh-notemd). The npm install spec is `@jacobinwwey/dsh-notemd`; the scope is part of the canonical package identity, while `dsh-notemd` is the short display name.
+Published package: [dsh-notemd](https://www.npmjs.com/package/dsh-notemd). The canonical npm install spec is `dsh-notemd@0.1.0`.
 
 ## Install in 30 seconds
 
 The published delivery unit is an npm package and a DSH bundle. Use the registry path for normal installation:
 
 ```powershell
-npm install --save-exact @jacobinwwey/dsh-notemd@0.1.0
-dsh plugin --profile notes add @jacobinwwey/dsh-notemd@0.1.0
+npm install --save-exact dsh-notemd@0.1.0
+dsh plugin --profile notes add dsh-notemd@0.1.0
 ```
 
 The DSH command installs the package into the selected profile. `npm install` is useful when the bundle is consumed from another Node workspace; it is not a substitute for adding the package to a DSH profile.
@@ -40,7 +40,7 @@ cd dsh-NotEMD
 pnpm install --frozen-lockfile
 pnpm build
 pnpm pack:bundle
-dsh plugin --profile notes add .\artifacts\jacobinwwey-dsh-notemd-0.1.0.tgz
+dsh plugin --profile notes add .\artifacts\dsh-notemd-0.1.0.tgz
 ```
 
 `pnpm pack:bundle` embeds every unpublished `@notemd-harness/*` workspace package. `minisearch` remains a normal runtime dependency and is resolved by the profile package manager. `verify:bundle` expects exactly one `.tgz` under `artifacts/`; remove stale tarballs before repacking during local iteration.
@@ -123,7 +123,7 @@ The bundle patch defaults stateful providers to `process.cwd()`. A deployment pr
 
 The default `notemd-llm` provider injects DSH `llm`. Its closed route policy accepts only `provider`, `model`, `maxTokens`, and `promptPolicyId`. Endpoints, keys, headers, transport retries, and model discovery are rejected rather than ignored. Configure credentials, adapters, and provider selection in DSH; NoteMD never reads or persists them.
 
-The explicit `@jacobinwwey/dsh-notemd/llm-openai-compatible-legacy` entry is migration-only. It provides the former OpenAI-compatible diagnostic and model-discovery tools for deployments that cannot yet use DSH routing. Replace the default `notemd-llm` row when using it; never load both because both provide `notemdTextTransformer`.
+The explicit `dsh-notemd/llm-openai-compatible-legacy` entry is migration-only. It provides the former OpenAI-compatible diagnostic and model-discovery tools for deployments that cannot yet use DSH routing. Replace the default `notemd-llm` row when using it; never load both because both provide `notemdTextTransformer`.
 
 ## Diagrams and export policy
 
@@ -197,9 +197,9 @@ When adding a capability, define the service contract, provider and consumer tog
 4. Run all commands in the development gate block on a clean worktree.
 5. Confirm the packed tarball contains `dsh.bundle.patch`, compiled entries, all bundled internal packages, and both language README files; `pnpm verify:bundle` checks the distribution contract.
 6. Install that exact tarball into a clean DSH profile and inspect `dsh --profile <name> --dump-config` before publishing or sharing it.
-7. Publish the exact verified tarball with `npm publish .\\artifacts\\jacobinwwey-dsh-notemd-0.1.0.tgz --access public --registry=https://registry.npmjs.org/`; npm account 2FA may request a one-time password during this command.
+7. Publish the exact verified tarball with `npm publish .\\artifacts\\dsh-notemd-0.1.0.tgz --access public --registry=https://registry.npmjs.org/`; npm account 2FA may request a one-time password during this command.
 
-The supported release paths are the npm registry package and the tarball added to a DSH profile. The public package is displayed as `dsh-notemd`, while its canonical npm identity and install spec are `@jacobinwwey/dsh-notemd`; the tarball remains the reproducible offline fallback.
+The supported release paths are the npm registry package and the tarball added to a DSH profile. The package is unscoped and public by npm policy; its canonical identity and install spec are `dsh-notemd`, while the tarball remains the reproducible offline fallback.
 
 ## Documentation map
 

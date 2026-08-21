@@ -36,6 +36,7 @@ const bundledInternalPackages = [
 ] as const
 
 interface BundleManifest {
+  readonly name?: string
   readonly dsh?: { readonly bundle?: { readonly patch?: string } }
   readonly bundledDependencies?: readonly string[]
   readonly dependencies?: Readonly<Record<string, string>>
@@ -159,6 +160,9 @@ async function readManifest(path: string): Promise<BundleManifest> {
 }
 
 function assertManifest(manifest: BundleManifest): void {
+  if (manifest.name !== 'dsh-notemd') {
+    throw new Error(`Bundle package.json must publish as dsh-notemd, received ${JSON.stringify(manifest.name)}.`)
+  }
   if (manifest.dsh?.bundle?.patch !== './cordis.patch.yml') {
     throw new Error('Bundle package.json does not declare dsh.bundle.patch.')
   }

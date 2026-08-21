@@ -10,7 +10,7 @@ Treat NoteMD as an auditable document-transformation system, not as an Obsidian 
 
 Full migration means behavior-contract parity for every non-Obsidian-host capability in source commit `4168a51cd19ad8c3d1e05f604b50936255461a31`. It does not mean copying Obsidian UI, active-editor state, provider settings, provider secrets, or the source worktree's uncommitted Drawnix changes.
 
-The original implementation target baseline was `6672f54def2b05e1628786ace97ab73649edab74`; this record retains that historical design baseline. The release then advanced through the conformance commit `73480df` and the publication record `488378fb6a1429683bf1789f418abca8992bd3a2`. The canonical repository/display name is `dsh-NotEMD`; the npm identity is the lowercase-compatible `@jacobinwwey/dsh-notemd`.
+The original implementation target baseline was `6672f54def2b05e1628786ace97ab73649edab74`; this record retains that historical design baseline. The release then advanced through the conformance commit `73480df` and the publication record `488378fb6a1429683bf1789f418abca8992bd3a2`. The canonical repository/display name is `dsh-NotEMD`; the npm identity is the lowercase-compatible `dsh-notemd`.
 
 ## 2. Verified Current State
 

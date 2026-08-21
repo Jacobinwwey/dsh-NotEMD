@@ -5,7 +5,7 @@
     "profile": {
       "bundles": [
         "@deepseek-ai/dsh-base",
-        "@jacobinwwey/dsh-notemd"
+        "dsh-notemd"
       ]
     }
   }

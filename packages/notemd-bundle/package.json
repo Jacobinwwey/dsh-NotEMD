@@ -1,5 +1,5 @@
 {
-  "name": "@jacobinwwey/dsh-notemd",
+  "name": "dsh-notemd",
   "version": "0.1.0",
   "description": "Portable NoteMD workflow bundle for DeepSeek Harness",
   "type": "module",
