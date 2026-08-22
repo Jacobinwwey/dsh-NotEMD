@@ -41,6 +41,9 @@ export default defineConfig({
       '@notemd-harness/documents': fileURLToPath(
         new URL('./packages/notemd-documents/src/index.ts', import.meta.url),
       ),
+      '@notemd-harness/mermaid': fileURLToPath(
+        new URL('./packages/notemd-mermaid/src/index.ts', import.meta.url),
+      ),
       '@notemd-harness/knowledge': fileURLToPath(
         new URL('./packages/notemd-knowledge/src/index.ts', import.meta.url),
       ),

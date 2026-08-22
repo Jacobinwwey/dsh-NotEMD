@@ -1,6 +1,6 @@
 # NoteMD Harness Next-Level Runtime Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Make the NoteMD DeepSeek Harness bundle operationally reliable without weakening its approval-gated write boundary.
 
@@ -54,7 +54,7 @@ export class WorkspaceChangeCoordinator implements WorkspaceChangeSource {
 }
 ```
 
-- [ ] **Step 1: Write the failing event and index synchronization tests**
+- [x] **Step 1: Write the failing event and index synchronization tests**
 
 ```ts
 test('publishes only successful approved writes with plan causation', async () => {
@@ -73,7 +73,7 @@ test('incrementally replaces an indexed document after a workspace change', asyn
 })
 ```
 
-- [ ] **Step 2: Run focused tests and observe missing-module failures**
+- [x] **Step 2: Run focused tests and observe missing-module failures**
 
 Run: `rtk proxy pnpm.cmd --filter @notemd-harness/workspace-events test -- workspace-change-coordinator.test.ts`
 
@@ -81,7 +81,7 @@ Run: `rtk proxy pnpm.cmd --filter @notemd-harness/knowledge test -- knowledge-in
 
 Expected: tests fail because event and synchronizer modules do not exist.
 
-- [ ] **Step 3: Implement the coordinator and in-memory subscription boundary**
+- [x] **Step 3: Implement the coordinator and in-memory subscription boundary**
 
 ```ts
 async recordApprovedPlan(plan: WritePlan, results: readonly WriteResult[]) {
@@ -94,7 +94,7 @@ async recordApprovedPlan(plan: WritePlan, results: readonly WriteResult[]) {
 
 Serialize `captureSnapshot`, `recordApprovedPlan`, and `scan` behind one promise tail. `scan` compares fresh `{ path, revision }` values with the last snapshot and emits created, updated, and deleted changes under one generated scan id.
 
-- [ ] **Step 4: Implement the knowledge subscription**
+- [x] **Step 4: Implement the knowledge subscription**
 
 ```ts
 source.subscribe((event) => this.enqueue(async () => {
@@ -107,7 +107,7 @@ source.subscribe((event) => this.enqueue(async () => {
 
 The synchronizer catches only `VAULT_NOT_FOUND` as a remove condition. It exposes `dispose()` and `whenIdle()` for service lifecycle and tests.
 
-- [ ] **Step 5: Run focused package tests and typecheck**
+- [x] **Step 5: Run focused package tests and typecheck**
 
 Run: `rtk proxy pnpm.cmd --filter @notemd-harness/workspace-events test`
 
@@ -142,7 +142,7 @@ export class DurableWorkflowRunner<I extends JsonValue> {
 }
 ```
 
-- [ ] **Step 1: Write failing recovery and checkpoint tests**
+- [x] **Step 1: Write failing recovery and checkpoint tests**
 
 ```ts
 test('recovers interrupted work and executes only targets without checkpoints', async () => {
@@ -163,17 +163,17 @@ test('turns a cancellation request into a terminal cancelled record after active
 })
 ```
 
-- [ ] **Step 2: Run the new focused test and observe the missing-method failure**
+- [x] **Step 2: Run the new focused test and observe the missing-method failure**
 
 Run: `rtk proxy pnpm.cmd --filter @notemd-harness/jobs test -- durable-workflow-runner.test.ts`
 
 Expected: FAIL because checkpoint, recovery, and durable runner APIs do not exist.
 
-- [ ] **Step 3: Extend the persisted state machine without generic updates**
+- [x] **Step 3: Extend the persisted state machine without generic updates**
 
 Add named operations `recordTargetCheckpoint`, `recoverInterrupted`, `beginExecution`, and `finishExecution`. Validate `workflow` once at `start`, clone checkpoints as JSON at the edge, and write every checkpoint atomically. A `running` record recovers to `queued`; a `cancelling` record recovers to `cancelled`; terminal records remain immutable.
 
-- [ ] **Step 4: Implement durable execution with bounded result observation**
+- [x] **Step 4: Implement durable execution with bounded result observation**
 
 ```ts
 await runner.runWithObserver(pendingTargets, execute, async (result) => {
@@ -184,7 +184,7 @@ return store.finishExecution(id)
 
 `BoundedJobRunner.run()` remains available and delegates to `runWithObserver()`. The observer is awaited before a worker acquires another target, making persistence a completion checkpoint rather than a trailing summary.
 
-- [ ] **Step 5: Run jobs tests and typecheck**
+- [x] **Step 5: Run jobs tests and typecheck**
 
 Run: `rtk proxy pnpm.cmd --filter @notemd-harness/jobs test`
 
@@ -226,7 +226,7 @@ export interface NotemdJobs {
 }
 ```
 
-- [ ] **Step 1: Write failing bundle Tool tests**
+- [x] **Step 1: Write failing bundle Tool tests**
 
 ```ts
 expect(toolNames).toContain('notemd_job_start_formula_repair')
@@ -238,7 +238,7 @@ await expect(applyTool.execute({ approvalId, plan })).resolves.toMatchObject({
 })
 ```
 
-- [ ] **Step 2: Run focused Tool and bundle tests red**
+- [x] **Step 2: Run focused Tool and bundle tests red**
 
 Run: `rtk proxy pnpm.cmd --filter @notemd-harness/tools test -- tools.contract.test.ts`
 
@@ -246,15 +246,15 @@ Run: `rtk proxy pnpm.cmd --filter dsh-notemd test -- patch.contract.test.ts`
 
 Expected: FAIL because named jobs and workspace changes are not injected or registered.
 
-- [ ] **Step 3: Implement plan-only executor strategies and explicit Tools**
+- [x] **Step 3: Implement plan-only executor strategies and explicit Tools**
 
 Each bundle method constructs its own validated input and invokes one matching `WorkflowPlanner` method. The background result checkpoint contains `{ plan }` only on successful planning. `resume(id)` resolves a persisted workflow name through a private executor map; unrecognized names return a stable job-store error. Start Tools return promptly with a durable record; resume starts only on explicit request.
 
-- [ ] **Step 4: Implement lifecycle-aware change services**
+- [x] **Step 4: Implement lifecycle-aware change services**
 
 The workspace change service captures its baseline snapshot during init. Knowledge rebuilds, subscribes, and then starts the periodic scan. The write Tool calls `recordApprovedPlan()` only after Vault results are returned and includes only returned metadata in its response.
 
-- [ ] **Step 5: Run service and Tool verification**
+- [x] **Step 5: Run service and Tool verification**
 
 Run: `rtk proxy pnpm.cmd --filter @notemd-harness/tools test`
 
@@ -292,7 +292,7 @@ export type ModelDiscoveryResult =
 export interface ArtifactCapability { capability: 'diagram-rendering' | 'document-export'; status: 'unavailable'; reason: string }
 ```
 
-- [ ] **Step 1: Write failing observability and capability tests**
+- [x] **Step 1: Write failing observability and capability tests**
 
 ```ts
 await expect(adapter.diagnoseProvider(diagnosticRequest)).resolves.toMatchObject({
@@ -305,7 +305,7 @@ expect(JSON.stringify(unavailableDiagnostic)).not.toContain('secret-token')
 expect(artifacts.diagramRenderingCapability()).toMatchObject({ status: 'unavailable' })
 ```
 
-- [ ] **Step 2: Run focused tests red**
+- [x] **Step 2: Run focused tests red**
 
 Run: `rtk proxy pnpm.cmd --filter @notemd-harness/llm-openai-compatible test -- provider-observability.test.ts`
 
@@ -313,15 +313,15 @@ Run: `rtk proxy pnpm.cmd --filter @notemd-harness/artifacts test -- artifact-man
 
 Expected: FAIL because diagnostics, discovery, and capability methods do not exist.
 
-- [ ] **Step 3: Implement redacted provider operations**
+- [x] **Step 3: Implement redacted provider operations**
 
 Use the existing timeout/cancellation path. Sanitize reported endpoints by stripping credentials, query, and fragment. Do not include HTTP response bodies in `LlmError`; report status code only. Derive `/models` only from a completion path ending in `/chat/completions`, or honor an explicit `modelsEndpoint`. Parse only string model ids and optional string `owned_by` values.
 
-- [ ] **Step 4: Expose separate provider and capability Tools**
+- [x] **Step 4: Expose separate provider and capability Tools**
 
 Register `notemd_provider_diagnostic`, `notemd_provider_models`, `notemd_artifact_render_status`, and `notemd_artifact_export_status`. They have no behavior-selecting transport or renderer parameters and return structured data only.
 
-- [ ] **Step 5: Run package suites**
+- [x] **Step 5: Run package suites**
 
 Run: `rtk proxy pnpm.cmd --filter @notemd-harness/llm-openai-compatible test`
 
@@ -340,7 +340,7 @@ Expected: errors are redacted, discovery failures are truthful `unavailable` res
 - Modify: `README.zh-CN.md`
 - Modify: `scripts/accept-dsh-profile.ts`
 
-- [ ] **Step 1: Extend clean-profile acceptance coverage**
+- [x] **Step 1: Extend clean-profile acceptance coverage**
 
 ```ts
 expect(resolvedConfig).toContain('notemd-workspace-changes')
@@ -348,17 +348,17 @@ expect(resolvedConfig).toContain('notemd_provider_diagnostic')
 expect(resolvedConfig).toContain('notemd_job_start_formula_repair')
 ```
 
-- [ ] **Step 2: Run acceptance focused test**
+- [x] **Step 2: Run acceptance focused test**
 
 Run: `rtk proxy pnpm.cmd accept:dsh`
 
 Expected: the packed tarball resolves the workspace-change, jobs, knowledge, LLM, and Tool services in an isolated DSH profile.
 
-- [ ] **Step 3: Record operations and known exclusions in both walkthroughs**
+- [x] **Step 3: Record operations and known exclusions in both walkthroughs**
 
 Document the explicit-resume workflow, scan interval cost, model-discovery advisory semantics, approval boundary, single-process workspace limitation, and structured unavailable renderer/export results. Do not document unsupported renderer installation as available behavior.
 
-- [ ] **Step 4: Run full release gates**
+- [x] **Step 4: Run full release gates**
 
 Run: `rtk tsc`
 
@@ -380,7 +380,7 @@ Run: `rtk proxy git diff --check`
 
 Expected: each command exits zero, bundle contents remain self-contained, and the clean profile accepts the packed bundle.
 
-- [ ] **Step 5: Commit and push the verified main branch**
+- [x] **Step 5: Commit and push the verified main branch**
 
 Run: `rtk proxy git add packages docs README.md README.zh-CN.md scripts pnpm-lock.yaml`
 
@@ -399,3 +399,10 @@ Expected: a non-force push fast-forwards remote `main` after all verification ga
 - Reliability tradeoff: the scanner favors dependable reconciliation over low-latency platform-specific watcher behavior; it is bounded by configuration and never emits content.
 - Compatibility: provider discovery is optional and advisory, matching OpenAI-compatible deployments that omit `/models`.
 - Explicit risk: shared-workspace multi-process job execution is intentionally unsupported pending a real cross-process lease backend.
+
+## Measured Closure (2026-08-22)
+
+- Tasks 1-4 are implemented in commit `6672f54`: workspace change coordination and incremental knowledge synchronization, durable checkpointed jobs, bundle lifecycle wiring, and redacted provider observability/optional capability boundaries.
+- Focused re-verification passed 8 files / 48 tests across workspace-events, knowledge, jobs, provider observability, artifacts, tools, and bundle patch/runtime boundaries.
+- Parallel full-suite attempts exposed only test-resource contention: `migration-conformance` and composite approval tests can exceed the default 10s timeout when all package suites run concurrently, and one run left a temporary `.notemd/mutations` directory busy. The same focused contracts pass serially; release verification must use the repository's root command with the configured timeout and no parallel package fan-out.
+- The next parity phase is deterministic Mermaid normalization plus a versioned semantic/render/export diagram catalog; Drawnix, provider cache policy, and Obsidian host gallery remain excluded.

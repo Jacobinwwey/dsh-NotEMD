@@ -190,4 +190,13 @@ Architecture 是决策日志，plan 是可执行工作，progress walkthrough �
 - 执行计划：docs/superpowers/plans/2026-08-21-dsh-notemd-composite-workflow.md，共八个任务，覆盖 source fixture、mutation lineage、overlay、atomic planner、Cordis integration、具名 Tool/job、acceptance 与 release evidence。
 - 设计锁点的阶段状态是“仅计划”。当前证据：`@notemd-harness/composites`、具名 plan/job Tool、Cordis patch row、`one-click-extract-v1` durable executor entry、aggregate approval path 与 clean-profile acceptance 已在工作区实现。
 - robustness 证据包括重复 Mermaid error destination rejection、virtual create/delete 净 no-op，以及每次 LLM request 前的 completion-input budget guard。无 lineage 时旧 Plan v1 digest 仍兼容。
-- Phase 19 release gate 已完成：新鲜 typecheck/lint/test/coverage/build/pack/verify/acceptance 通过，`main` 已非强制发布，本地/远端 parity 已在 `93d1755026bb44eb259298e07de268a74fbbd1ae` 验证。Drawnix WIP 与 source diagram drift 继续留在 audit-only lane。
+- Phase 19 release gate 已完成：新鲜 typecheck/lint/test/coverage/build/pack/verify/acceptance 通过，`main` 已非强制发布，本地/远端 parity 已在 `71910306e34c02f27a3b166e01333c272c5f60d6` 验证。Drawnix WIP 与 source diagram drift 继续留在 audit-only lane。
+
+## 9. Phase 20 Mermaid normalization 与 semantic diagram contract（2026-08-22）
+
+- 源锁：`ref/obsidian-NotEMD@07c629c6f99a1171a6a63eaf50ddb0dce0f5fed5`；接受 Mermaid normalization、validator、diagram catalog 与 timeline/swimlane/quadrant adapter 等可迁移路径。
+- 已实现 `packages/notemd-mermaid`：BOM/换行规范化、closed-fence extraction、family detection、显式 unclosed-fence diagnostic、ER brace-less entity/cardinality repair，以及 validated timeline/swimlane/quadrant intent 的确定性 source rendering。
+- 已实现 `packages/notemd-artifacts/src/diagram-catalog.ts`：`diagram-catalog@1` 与 `diagram-intent@1`；semantic type、render target、export format 保持独立且 closed。
+- `packages/notemd-workflows` 在 LLM Mermaid repair 前运行 deterministic normalizer，并对确定性写入记录 `mermaid.normalize` provenance。
+- SVG 仅是显式 `svg-preview` derivative；Drawnix、Provider response cache、Obsidian gallery/preview 与 Mermaid runtime initialization 仍排除。
+- focused evidence：normalization、catalog、artifact、workflow、source-faithful planner 共 34 个测试通过；package typecheck/build 通过。新鲜 root evidence 为 64 个 Vitest 文件 / 250 个测试，coverage Statements 77.99%、Branches 74.01%、Functions 85.95%，typecheck、lint、build、pack/verify、clean DSH acceptance 与 diff check 通过。出口仍要求非强制 push 与 clean remote parity。

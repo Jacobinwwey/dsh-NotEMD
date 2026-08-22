@@ -74,6 +74,9 @@ importers:
       '@notemd-harness/llm-openai-compatible':
         specifier: workspace:*
         version: link:../notemd-llm-openai-compatible
+      '@notemd-harness/mermaid':
+        specifier: workspace:*
+        version: link:../notemd-mermaid
       '@notemd-harness/mutation':
         specifier: workspace:*
         version: link:../notemd-mutation
@@ -233,6 +236,12 @@ importers:
 
   packages/notemd-llm-openai-compatible: {}
 
+  packages/notemd-mermaid:
+    dependencies:
+      '@notemd-harness/artifacts':
+        specifier: workspace:*
+        version: link:../notemd-artifacts
+
   packages/notemd-mutation: {}
 
   packages/notemd-process: {}
@@ -348,6 +357,9 @@ importers:
       '@notemd-harness/documents':
         specifier: workspace:*
         version: link:../notemd-documents
+      '@notemd-harness/mermaid':
+        specifier: workspace:*
+        version: link:../notemd-mermaid
       '@notemd-harness/mutation':
         specifier: workspace:*
         version: link:../notemd-mutation

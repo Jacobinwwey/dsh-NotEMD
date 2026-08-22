@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "sourceObservation": {
+    "repository": "E:\\convert\\undo\\obsidian-NoteMD_new",
+    "commit": "07c629c6f99a1171a6a63eaf50ddb0dce0f5fed5",
+    "paths": [
+      "src/diagram/adapters/mermaid/normalize.ts",
+      "src/diagram/adapters/mermaid/validator.ts"
+    ]
+  },
+  "disposition": "portable-deterministic-follow-up",
+  "excluded": [
+    "src/diagram/adapters/mermaid/runtime.ts",
+    "src/mermaidProcessor.ts legacy LLM/debug stages"
+  ],
+  "fixture": "fixtures/migration/mermaid-normalization/er-braceless.md",
+  "acceptedSemantics": [
+    "line-ending-and-bom-normalization",
+    "closed-fence-extraction",
+    "family-detection",
+    "er-brace-less-entity-repair",
+    "er-cardinality-repair",
+    "explicit-unclosed-fence-diagnostic"
+  ]
+}

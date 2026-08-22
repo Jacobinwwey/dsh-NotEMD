@@ -179,15 +179,15 @@ Every continuation phase must update the paired English/Chinese progress files w
 The architecture record is a decision log; the plan is executable work; the progress walkthrough is evidence. They must not be collapsed into one document or updated with forecasts presented as facts.
 ## 8. Phase 19 Composite workflow architecture review (2026-08-21)
 
-- Current target lock: dsh-NotEMD main 3169964, npm dsh-notemd@0.1.1; source observation ref/obsidian-NotEMD@07c629c6f99a1171a6a63eaf50ddb0dce0f5fed5; historical oracle obsidian-NoteMD_new@4168a51cd19ad8c3d1e05f604b50936255461a31.
-- Existing mutation, approval, journal, DSH LLM/Web, artifact, and single-process job foundations are reusable. The design-lock snapshot had no runtime composite implementation; the current working tree now contains the planned runtime.
-- Source workflowButtons.ts defines the three-step default chain, while NotemdSidebarView.ts:927-1160 carries hidden folder context. The DSH bundle has no named composite definition or explicit path request.
-- Source batch title generation moves generated files to a complete folder, but planTitlesInFolder replaces files in place. Source Mermaid validation, report, and error-folder behavior is also absent from planMermaidRepairsInFolder.
-- Current planners read the physical vault only. A virtual overlay, virtual revision validation, deterministic net-transition accumulator, and aggregate digest are required before a Tool or job surface is exposed.
-- migration-fixture-adapters.ts still uses a synthetic DiagramSpec for diagram-source. This phase does not claim Markdown-to-intent inference or current remote-main diagram normalization parity.
-- Decision: add pure @notemd-harness/composites, one-click-extract@1, fixed fail-fast semantics, optional mutation lineage, and a thin NotemdCompositeWorkflowService with static injection of notemdVault and notemdWorkflows. Reuse the existing approval receipt, FileJobStore, DurableWorkflowRunner, and journaled executor.
-- Rejected: raw custom-workflow DSL, generic dispatcher, public continueOnError, immediate per-step apply, temporary workspace writes, and universal SVG parity.
-- Execution plan: docs/superpowers/plans/2026-08-21-dsh-notemd-composite-workflow.md, eight tasks covering source fixtures, mutation lineage, overlay, atomic planners, Cordis integration, named Tools/jobs, acceptance, and release evidence.
-- Phase status at the design lock was planning-only. Current evidence: `@notemd-harness/composites`, the named plan/job Tools, Cordis patch row, durable `one-click-extract-v1` executor entry, aggregate approval path, and clean-profile acceptance are implemented in the working tree.
-- Robustness evidence includes duplicate Mermaid error-destination collision rejection, virtual create/delete net no-op handling, and a completion-input budget guard before every LLM request. Legacy Plan v1 digests remain compatible when lineage is absent.
-- Phase 19 release gate is complete: fresh typecheck/lint/test/coverage/build/pack/verify/acceptance passed, `main` was pushed non-force, and local/remote parity is verified at `93d1755026bb44eb259298e07de268a74fbbd1ae`. Keep Drawnix WIP and source diagram drift in audit-only lanes.
+The design-lock snapshot had no runtime composite implementation. The current tree now contains `@notemd-harness/composites`, the named plan/job Tools, Cordis patch row, durable `one-click-extract-v1` executor, aggregate approval path, and clean-profile acceptance. Optional lineage preserves legacy Plan v1 digests; duplicate Mermaid error destinations, virtual create/delete no-op, and completion-input budgets fail closed.
+
+Fresh Phase 19 evidence was recorded at commit `7191030`; local and remote `main` matched after the release gate. Drawnix WIP and source diagram drift remained audit-only.
+
+## 9. Phase 20 Mermaid normalization and semantic diagram contract (2026-08-22)
+
+- Source lock: `ref/obsidian-NotEMD@07c629c6f99a1171a6a63eaf50ddb0dce0f5fed5`; accepted portable source paths are Mermaid normalization, validator, diagram catalog, and timeline/swimlane/quadrant adapters.
+- Implemented `packages/notemd-mermaid`: BOM/line-ending normalization, closed-fence extraction, family detection, explicit unclosed-fence diagnostics, ER brace-less entity/cardinality repair, and deterministic source rendering for validated timeline/swimlane/quadrant intents.
+- Implemented `packages/notemd-artifacts/src/diagram-catalog.ts`: `diagram-catalog@1` and `diagram-intent@1`; semantic type, render target, and export format remain independent and closed.
+- `packages/notemd-workflows` runs the deterministic normalizer before LLM Mermaid repair and records `mermaid.normalize` provenance for deterministic writes.
+- SVG is only an explicit `svg-preview` derivative. Drawnix, provider response cache, Obsidian gallery/preview, and Mermaid runtime initialization remain excluded.
+- Focused evidence: 34 tests across normalization, catalog, artifact, workflow, and source-faithful planner suites passed; package typecheck/build passed. Fresh root evidence is 64 Vitest files / 250 tests, coverage Statements 77.99%, Branches 74.01%, Functions 85.95%, typecheck, lint, build, pack/verify, clean DSH acceptance, and diff check. Exit requires non-force push and clean remote parity.

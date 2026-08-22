@@ -18,6 +18,7 @@ const bundledInternalPackages = [
   '@notemd-harness/knowledge',
   '@notemd-harness/llm-dsh',
   '@notemd-harness/llm-openai-compatible',
+  '@notemd-harness/mermaid',
   '@notemd-harness/mutation',
   '@notemd-harness/process',
   '@notemd-harness/research',
@@ -73,6 +74,12 @@ interface PackagedArtifactSchemaRegistry {
     readonly ok: boolean
     readonly diagnostic?: { readonly code?: string }
   }
+  readonly diagramCatalog?: {
+    readonly schemaFamily: string
+    readonly version: number
+    readonly entries: readonly unknown[]
+  }
+  readonly validateDiagramIntent?: (candidate: unknown) => unknown
 }
 
 async function verifyPackagedArtifactSchemaRegistry(packageRoot: string): Promise<void> {
@@ -94,6 +101,20 @@ async function verifyPackagedArtifactSchemaRegistry(packageRoot: string): Promis
   if (invalidInspection.ok || invalidInspection.diagnostic?.code !== 'invalid-combination') {
     throw new Error('Packed artifact schema registry did not reject the invalid diagram-spec@3 combination with a structured diagnostic.')
   }
+  if (registry.diagramCatalog?.schemaFamily !== 'diagram-catalog' || registry.diagramCatalog.version !== 1) {
+    throw new Error('Packed artifact schema registry did not expose diagram-catalog@1.')
+  }
+  if (typeof registry.validateDiagramIntent !== 'function') {
+    throw new Error('Packed artifact schema registry did not expose diagram-intent@1 validation.')
+  }
+  registry.validateDiagramIntent({
+    schemaFamily: 'diagram-intent',
+    version: 1,
+    semanticType: 'timeline',
+    renderTarget: 'mermaid',
+    exportFormat: 'svg-preview',
+    payload: { events: [{ id: 'release', date: '2026-08', label: 'Release' }] },
+  })
 }
 
 async function assertCanonicalReadmes(packageRoot: string, rootDirectory: string): Promise<void> {

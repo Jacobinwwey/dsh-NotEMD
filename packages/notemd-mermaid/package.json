@@ -1,15 +1,11 @@
 {
-  "name": "@notemd-harness/workflows",
+  "name": "@notemd-harness/mermaid",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "files": ["lib/**/*.js", "lib/**/*.d.ts"],
   "dependencies": {
-    "@notemd-harness/documents": "workspace:*",
-    "@notemd-harness/mermaid": "workspace:*",
-    "@notemd-harness/mutation": "workspace:*",
-    "@notemd-harness/research": "workspace:*",
-    "@notemd-harness/vault": "workspace:*"
+    "@notemd-harness/artifacts": "workspace:*"
   },
   "exports": {
     ".": {

@@ -16,6 +16,7 @@ import {
 } from '@notemd-harness/documents'
 import type { ResearchEvidence } from '@notemd-harness/research'
 import type { NotemdVault, VaultDocument } from '@notemd-harness/vault'
+import { normalizeMermaidDefinition, normalizeMermaidMarkdown } from '@notemd-harness/mermaid'
 
 import { conceptNoteContent, parseExtractedConcepts } from './concepts.js'
 import { replaceMermaidFenceBodies, normalizeFormulaDelimiters } from './markdown-transforms.js'
@@ -221,9 +222,12 @@ export class NotemdWorkflowPlanner implements WorkflowPlanner {
 
   async planMermaidRepair(path: string, signal?: AbortSignal): Promise<WorkspaceMutationPlan> {
     const document = await this.vault.read(path, signal)
-    const content = await replaceMermaidFenceBodies(document.content, async (body) =>
-      this.complete(mermaidRepairSystemPrompt, body, signal),
-    )
+    const normalized = normalizeMermaidMarkdown(document.content)
+    const content = isMermaidDocumentValid(normalized.content)
+      ? normalized.content
+      : await replaceMermaidFenceBodies(normalized.content, async (body) =>
+        this.complete(mermaidRepairSystemPrompt, body, signal),
+      )
     return replaceDocumentPlan(document, content, {
       operationId: 'mermaid.batch-fix',
       sourceRefs: [document.path],
@@ -427,11 +431,28 @@ export class NotemdWorkflowPlanner implements WorkflowPlanner {
     for (const path of paths) {
       const document = await this.vault.read(path, signal)
       sourceRefs.push(document.path)
-      if (isMermaidDocumentValid(document.content)) {
+      const normalized = normalizeMermaidMarkdown(document.content)
+      if (isMermaidDocumentValid(normalized.content)) {
+        if (normalized.content !== document.content) {
+          mutations.push({
+            kind: 'write-text',
+            destination: document.path,
+            expectedRevision: document.revision,
+            provenance: {
+              operationId: 'mermaid.normalize',
+              sourceRefs: [document.path],
+              evidenceRefs: [],
+            },
+            conflictPolicy: 'reject',
+            mediaType: 'text/markdown',
+            content: normalized.content,
+            contentSha256: createContentSha256(normalized.content),
+          })
+        }
         continue
       }
 
-      const repaired = await replaceMermaidFenceBodies(document.content, async (body) =>
+      const repaired = await replaceMermaidFenceBodies(normalized.content, async (body) =>
         this.complete(mermaidRepairSystemPrompt, body, signal))
       const finalContent = repaired.trim() + '\n'
       if (isMermaidDocumentValid(finalContent)) {
@@ -817,18 +838,28 @@ function assertGeneratedMarkdown(content: string, sourcePath: string): void {
 }
 
 function isMermaidDocumentValid(content: string): boolean {
-  const fencePattern = /(?<fence>[\x60]{3,}|~{3,})mermaid[^\n]*\n(?<body>[\s\S]*?)\n\k<fence>(?=\n|$)/gu
-  const matches = [...content.matchAll(fencePattern)]
-  if (matches.length === 0) {
+  const normalized = normalizeMermaidMarkdown(content)
+  if (normalized.diagnostics.some((diagnostic) => diagnostic.code === 'mermaid-unclosed-fence')) {
+    return false
+  }
+  if (normalized.blocks.length === 0) {
     return true
   }
-  return matches.every((match) => {
-    const body = match.groups?.body?.trim() ?? ''
-    if (body.length === 0 || /\s--\s/u.test(body)) {
+  return normalized.blocks.every((block) => {
+    const body = normalizeMermaidDefinition(block.content)
+    if (body.length === 0 || block.family === 'unknown' || /\s--\s/u.test(body)) {
       return false
     }
-    return /^(?:flowchart|graph|sequenceDiagram|classDiagram|erDiagram|stateDiagram(?:-v2)?|mindmap|timeline|quadrantChart|gantt|journey|pie)\b/mu.test(body)
-      && /(?:-->|---|-.->|==>)/u.test(body)
+    if (block.family === 'erDiagram') {
+      return /(?:--|\.\.)/u.test(body)
+    }
+    if (block.family === 'pie') {
+      return /\bdatas?et\b|:\s*\d/iu.test(body)
+    }
+    if (block.family === 'gantt' || block.family === 'timeline' || block.family === 'quadrantChart') {
+      return body.split('\n').some((line) => line.trim().length > 0 && !/^(?:gantt|timeline|quadrantChart)\b/iu.test(line.trim()))
+    }
+    return /(?:-->|---|-.->|==>)/u.test(body)
   })
 }
 

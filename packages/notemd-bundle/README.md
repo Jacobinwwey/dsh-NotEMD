@@ -85,6 +85,18 @@ Only a matching `committed` receipt produces a workspace change event. `conflict
 
 There is intentionally no generic renderer or export selector. Target fidelity, process allowlists, staging, and failure semantics differ enough that one polymorphic switch would hide important contracts.
 
+## Composite workflow
+
+`one-click-extract@1` is the named composite workflow for the source plugin's One-Click Extract behavior:
+
+~~~text
+add-links -> generate-complete -> repair-mermaid
+~~~
+
+Use `notemd_plan_one_click_extract` when one aggregate immutable plan and one approval receipt are required. Supply explicit `sourcePath`, `conceptFolderPath`, `completedFolderPath`, `mermaidFolderPath`, and optional `mermaidErrorFolderPath`; the standalone bundle does not infer Obsidian active-file or UI folder state. Use `notemd_job_start_one_click_extract` for a durable plan-only job; its executor key is `one-click-extract-v1`, while the persisted record retains workflow version and definition digest for drift detection.
+
+The composite uses a virtual workspace overlay. Later steps can read earlier planned Markdown writes, but no physical workspace write occurs before approval. Collisions, stale virtual revisions, binary dependencies, budget overflow, and net no-op results fail closed.
+
 ## Profile configuration
 
 The bundle patch defaults stateful providers to `process.cwd()`. A deployment profile must replace the whole `config` object for every row it overrides; DSH patches do not deep-merge rows. Keep the complete field set:
@@ -133,6 +145,7 @@ The explicit `dsh-notemd/llm-openai-compatible-legacy` entry is migration-only. 
 DSH has no Obsidian preview host, so SVG is the default preview derivative. This is a preview policy, not a claim that every target has an equivalent SVG export:
 
 - Mermaid, Vega-Lite, JSON Canvas, HTML, and editable SVG keep their canonical source and produce a labelled SVG preview.
+- Mermaid normalization runs deterministically before LLM repair. The versioned semantic/render/export catalog keeps `timeline`, `swimlane`, and `quadrant` payloads typed; `svg-preview` is an explicit derivative, not native target parity.
 - Draw.io, Drawnix, and Circuitikz keep their canonical source; native SVG or PDF is exposed only when the controlled executable or adapter is available.
 - Slidev source preparation is deterministic and offline-font safe. HTML, PDF, PNG, PPTX, and MP4 are separate providers behind the same approval-gated planner.
 - External processes run in a request-scoped staging directory and return digest-verified staged assets. They never write the workspace directly.

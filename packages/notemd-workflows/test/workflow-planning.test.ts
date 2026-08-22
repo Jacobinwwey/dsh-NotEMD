@@ -56,6 +56,28 @@ test('plans Mermaid replacement only inside a mermaid fence', async () => {
   expect(transformer.requests[0]?.prompt).toBe('broken diagram')
 })
 
+test('normalizes a structurally valid ER Mermaid block before the LLM repair path', async () => {
+  await writeFile(
+    join(workspaceRoot, 'notes', 'er.md'),
+    [
+      '```mermaid',
+      'erDiagram',
+      '  USER',
+      '    string id',
+      '  USER ||--o ACCOUNT : owns',
+      '```',
+    ].join('\n'),
+  )
+  const transformer = new ScriptedTransformer([])
+  const workflows = new NotemdWorkflowPlanner(await LocalVault.open(workspaceRoot), transformer)
+
+  const plan = await workflows.planMermaidRepair('notes/er.md')
+
+  expect(transformer.requests).toHaveLength(0)
+  expect(plan.mutations[0]).toMatchObject({ kind: 'write-text', destination: 'notes/er.md' })
+  expect(plan.mutations[0]?.kind === 'write-text' ? plan.mutations[0].content : '').toContain('USER ||--o{ ACCOUNT : owns')
+})
+
 test('supplies shared section anchors to link and concept transformations', async () => {
   await writeFile(join(workspaceRoot, 'notes', 'architecture.md'), [
     '# Architecture',

@@ -84,6 +84,18 @@ read -> immutable WorkspaceMutationPlan -> approval -> apply -> committed receip
 
 刻意不存在 generic renderer 或 export selector。不同 target 的保真、进程 allowlist、staging 与失败语义不同，单一多态开关会隐藏关键契约。
 
+## Composite workflow
+
+`one-click-extract@1` 是源插件 One-Click Extract 行为的具名 composite workflow：
+
+~~~text
+add-links -> generate-complete -> repair-mermaid
+~~~
+
+需要一个 aggregate immutable plan 与一份 approval receipt 时，调用 `notemd_plan_one_click_extract`。必须显式提供 `sourcePath`、`conceptFolderPath`、`completedFolderPath`、`mermaidFolderPath`，以及可选的 `mermaidErrorFolderPath`；独立 bundle 不推断 Obsidian active-file 或 UI folder state。需要持久化、只规划的作业时调用 `notemd_job_start_one_click_extract`；executor key 为 `one-click-extract-v1`，持久化 record 仍保留 workflow version 与 definition digest 用于 drift 检测。
+
+Composite 使用 virtual workspace overlay。后续步骤可以读取前一步规划出的 Markdown write，但 approval 前不会写物理工作区。collision、stale virtual revision、binary dependency、budget overflow 与 net no-op 都会 fail closed。
+
 ## Profile 配置
 
 bundle patch 默认把有状态 provider 指向 `process.cwd()`。部署 profile 覆盖某一行时必须替换完整 `config` 对象；DSH patch 不会深度合并。请保留完整字段集：
@@ -132,6 +144,7 @@ bundle patch 默认把有状态 provider 指向 `process.cwd()`。部署 profile
 由于 DSH 没有 Obsidian preview host，SVG 是默认 preview derivative。这是预览策略，不代表每个 target 都有等价的 SVG export：
 
 - Mermaid、Vega-Lite、JSON Canvas、HTML、editable SVG 保留 canonical source，并生成带标签的 SVG preview。
+- Mermaid repair 前先运行 deterministic normalization。versioned semantic/render/export catalog 对 `timeline`、`swimlane`、`quadrant` payload 做类型化约束；`svg-preview` 是显式 derivative，不代表 native target parity。
 - Draw.io、Drawnix、Circuitikz 保留 canonical source；只有受控 executable 或 adapter 可用时才暴露 native SVG 或 PDF。
 - Slidev source preparation 是确定性的，并强制 offline fonts。HTML、PDF、PNG、PPTX、MP4 是 approval-gated planner 后的独立 provider。
 - 外部进程在 request-scoped staging 目录执行，返回 digest-verified staged asset，绝不直接写工作区。

@@ -135,3 +135,30 @@ test('rejects duplicate Mermaid error destinations before aggregating mutations'
     code: 'WORKFLOW_DESTINATION_COLLISION',
   })
 })
+
+test('applies deterministic Mermaid normalization before invoking the LLM repair path', async () => {
+  await writeFile(join(workspaceRoot, 'mermaid', 'er.md'), [
+    '# ER fixture',
+    '',
+    '```mermaid',
+    'erDiagram',
+    '  USER',
+    '    string id',
+    '    string name',
+    '  USER ||--o ACCOUNT : owns',
+    '```',
+  ].join('\n'))
+  const planner = new NotemdWorkflowPlanner(
+    await LocalVault.open(workspaceRoot),
+    new ScriptedTransformer([]),
+  )
+
+  const plan = await planner.planBatchMermaidRepair('mermaid')
+
+  expect(plan?.mutations).toHaveLength(1)
+  expect(plan?.mutations[0]).toMatchObject({
+    kind: 'write-text',
+    destination: 'mermaid/er.md',
+  })
+  expect(plan?.mutations[0]?.kind === 'write-text' ? plan.mutations[0].content : '').toContain('USER ||--o{ ACCOUNT : owns')
+})

@@ -301,52 +301,32 @@
 - 原 scoped package 已删除，本次迁移后的无 scope 名称可首次发布。真实发布前必须先通过 npm dry-run；仓库不会保存凭据，也不会在聊天中索取 OTP。完成 npm 2FA 后执行：`npm publish .\\artifacts\\dsh-notemd-0.1.0.tgz --access public --registry=https://registry.npmjs.org/`。
 ## 19. Phase 19 Composite workflow 实现证据（2026-08-21 至 2026-08-22）
 
-**阶段状态：** 运行时实现已在工作区完成；剩余是最终 release gate 与远端发布。
+**阶段状态：** runtime composite 已实现并完成上一阶段 release gate；本阶段记录仍以当前代码与新鲜命令证据为准。
 
-**证据锁：** 目标 dsh-NotEMD main 3169964，npm dsh-notemd@0.1.1；当前源观察点 ref/obsidian-NotEMD main 07c629c6f99a1171a6a63eaf50ddb0dce0f5fed5；历史 oracle obsidian-NoteMD_new 4168a51cd19ad8c3d1e05f604b50936255461a31。没有复制或接受任何 Drawnix WIP。
+**证据锁：** 目标 dsh-NotEMD 设计锁点 `3169964`，npm `dsh-notemd@0.1.1`；源观察点 `ref/obsidian-NotEMD@07c629c6f99a1171a6a63eaf50ddb0dce0f5fed5`；历史 oracle `obsidian-NoteMD_new@4168a51cd19ad8c3d1e05f604b50936255461a31`；Drawnix WIP 未复制、未接受。
 
-### 设计锁点比对
+### 已验证事实
 
-| 要求 | 当前证据 | 诊断 |
-| --- | --- | --- |
-| 默认 One-Click Extract 串联 add-links、title generation、Mermaid repair 并传递 folder context | source workflowButtons.ts 与 NotemdSidebarView.ts:927-1160 | 没有具名 DSH composite definition、显式 path request 或 aggregate plan。 |
-| title batch 将生成文件物化到 complete folder | source fileUtils.ts:1262 与 main.ts:2688 | planTitlesInFolder 是原地替换；直接复用会固化错误语义。 |
-| Mermaid batch 校验、修复、写 report，并可移动 unresolved file | source fileUtils.ts:1521 | planMermaidRepairsInFolder 只替换 fenced Markdown。 |
-| 后续步骤读取前一步的规划输出 | 当前 planner 只读物理 vault | 必须增加 virtual overlay 与 virtual revision 校验。 |
-| 一个 approval 覆盖整个 workflow | 现有 approval/executor 按 plan 作用 | composite 必须 finalize 一个 WorkspaceMutationPlan 与一份 receipt。 |
-| Diagram Markdown 到 intent 推断 | source registry/types 支持；migration-fixture-adapters.ts 使用 synthetic mermaidSpec(source) | 仍是独立 parity gap，本阶段不偷换为已完成。 |
+- `packages/notemd-composites` 提供 virtual overlay、net mutation accumulator、closed diagnostics、source-faithful planner 与稳定 definition digest `66f0e111d94d98cec3bab1b00f7c8f72ab096c0a0a69d94061e2ac88c6e7ac4c`。
+- `one-click-extract@1` 固定为 `add-links -> generate-complete -> repair-mermaid`、`fail-fast`；durable executor 使用兼容 FileJobStore 的 `one-click-extract-v1`，record 另存 workflow identity 与 definition digest。
+- aggregate approval、一次性 receipt、stale revision、duplicate receipt、cancel、collision、budget、virtual create/delete no-op 均有测试覆盖。
+- 上一阶段新鲜 release gate：62 个 Vitest 文件 / 238 个测试，coverage Statements 77.70%、Branches 73.85%、Functions 85.65%，typecheck、lint、build、pack/verify、clean DSH acceptance 与 diff check 通过；提交 `7191030` 已同步 main。
 
-现有 planExtractAndGenerate 同样不足：它只生成第一个 concept，并使用硬编码 concepts/、generated/ 目标。
+## 20. Phase 20 Mermaid normalization 与 semantic diagram contract（2026-08-22）
 
-### 已落盘架构
+**阶段状态：** runtime implementation 已完成于工作区；剩余是新鲜完整 release gate 与 mainline 发布。
 
-- 纯包 packages/notemd-composites。
-- 具名 definition one-click-extract@1，严格为 add-links -> generate-complete -> repair-mermaid，固定 fail-fast。
-- 显式 request path：sourcePath、conceptFolderPath、completedFolderPath、mermaidFolderPath，以及可选 mermaidErrorFolderPath。
-- CompositeWorkspaceView 读写 virtual overlay、校验 virtual revision、限制 file/byte budget，并为每个 destination finalize 一个净 mutation。
-- 可选类型化 mutation lineage 记录 workflow id/version、definition digest、step id、ordinal，旧 plan digest 不变。
-- NotemdCompositeWorkflowService 使用 Cordis static injection 注入 notemdVault 与 notemdWorkflows。现有 approval ledger、FileJobStore、DurableWorkflowRunner 与 journaled executor 继续是唯一 authority。
-- Tool 已实现：`notemd_plan_one_click_extract` 与 `notemd_job_start_one_click_extract`；resume/status/cancel 继续复用既有生命周期 surface。
+**源锁：** `ref/obsidian-NotEMD@07c629c6f99a1171a6a63eaf50ddb0dce0f5fed5`；接受 Mermaid normalization、validator、diagram catalog、timeline/swimlane/quadrant adapter 等可迁移路径。Drawnix、host gallery/preview、Provider cache 与 Mermaid runtime initialization 继续排除。
 
-### 运行时证据
+### 已实现边界
 
-- 源锁与确定性 fixture：`fixtures/migration/composite-source-lock.json` 及 `fixtures/migration/one-click-extract/`；源链固定为 `process-current-add-links -> batch-generate-from-titles -> batch-mermaid-fix`。
-- 纯实现：`packages/notemd-composites` 提供 `CompositeWorkspaceView`、`MutationAccumulator`、closed diagnostics、source-faithful planner，以及稳定 definition digest `66f0e111d94d98cec3bab1b00f7c8f72ab096c0a0a69d94061e2ac88c6e7ac4c`。
-- Mutation 兼容：只有存在 composite lineage 时才写入 lineage；旧 `WorkspaceMutationPlan/v1` digest 行为保持不变。virtual create/delete 会收敛为净 no-op，重复 Mermaid error basename 在 aggregate 前 fail closed。
-- Cordis/DSH 边界：`NotemdCompositeWorkflowService` 只注入 `notemdVault` 与 `notemdWorkflows`；通过 scoped planner guard 在每次 LLM request 前检查 completion input budget。
-- Approval/job 证据：一个 aggregate plan、一份 approval receipt、一份 committed mutation receipt；stale virtual revision、重复 receipt、cancel 与 missing-document closed outcome 均有覆盖。durable job 使用 `one-click-extract-v1`，并持久化 workflow identity 与 definition digest。
-- 新鲜 release-gate 证据：root typecheck、lint、`62` 个 Vitest 文件 / `238` 个测试、coverage（Statements `77.70%`、Branches `73.85%`、Functions `85.65%`）、build、`pack:bundle`、`verify:bundle`、clean DSH profile acceptance 与 `git diff --check` 全部通过。实现提交 `93d1755` 已非强制推送至 `origin/main`；本地与远端均解析为 `93d1755026bb44eb259298e07de268a74fbbd1ae`，工作区 clean。
+- `packages/notemd-mermaid` 负责 BOM/换行规范化、closed-fence extraction、family detection、显式 unclosed-fence diagnostic、ER brace-less entity/cardinality repair，以及 timeline/swimlane/quadrant 的确定性 `renderMermaidIntent`。
+- `packages/notemd-artifacts/src/diagram-catalog.ts` 增加 `diagram-catalog@1` 与 `diagram-intent@1`；semantic type、render target、export format 保持独立且严格校验。
+- `packages/notemd-workflows` 在 LLM Mermaid repair 前执行 deterministic normalization，确定性写入使用 `mermaid.normalize` provenance。
+- `svg-preview` 只是显式标注的 derivative，不代表 native Drawio/Drawnix/Circuitikz/PPTX/MP4 parity。
 
-### 被拒方案
+### 证据
 
-raw custom-workflow DSL 与 generic dispatch 会产生无界 Tool surface，拒绝。public continueOnError 会用一个参数改变 transaction 语义，拒绝；best-effort 必须是独立 definition 与 receipt contract。逐 step apply 与临时 overlay 文件会产生 partial 或未审批工作区状态，拒绝。SVG 仍只是 target-specific derivative，不是通用 export parity。
-
-### 计划与出口证据
-
-双语八任务计划位于 docs/superpowers/plans/2026-08-21-dsh-notemd-composite-workflow.md，覆盖 source fixture、mutation lineage、overlay aggregation、source-faithful atomic planner、Cordis integration、具名 Tool/job、aggregate approval acceptance 与 release evidence。
-
-Phase 19 只有在 deterministic source/overlay test、definition digest/collision test、一个 aggregate approval receipt、stale-revision/cancel test、clean DSH acceptance，以及完整 typecheck/lint/test/coverage/build/pack/verify gate 通过后才退出。实现已到达该边界，剩余是新鲜 release gate 与远端 parity 检查。
-
-### 后续方向
-
-执行新鲜完整 release gate，非强制发布 `main`，并记录本地/远端精确 parity。当前 source remote-main 的 diagram/normalization drift 与全部 Drawnix WIP 继续留在 audit-only lane。
+- Fixture：`fixtures/migration/mermaid-normalization-lock.json` 与 `fixtures/migration/mermaid-normalization/er-braceless.md`。
+- focused gate：normalization、catalog、artifact、workflow、source-faithful planner 共 34 个测试通过；package typecheck/build 通过。
+- 新鲜 root gate：64 个 Vitest 文件 / 250 个测试，coverage Statements 77.99%、Branches 74.01%、Functions 85.95%，root typecheck、lint、build、pack/verify、clean DSH acceptance 与 diff check 通过。剩余动作是 commit、push 与 local/remote parity。

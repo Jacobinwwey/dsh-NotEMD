@@ -2,7 +2,7 @@
 
 > Chinese version: [2026-08-15-dsh-notemd-migration-progress.zh-CN.md](2026-08-15-dsh-notemd-migration-progress.zh-CN.md)
 
-**Status:** Phases 12-18 of the standalone migration are implemented and the current release is synchronized with `origin/main`. Phase 19 records the Cordis composite-workflow architecture and executable plan; runtime composite implementation has not started in this phase. Slidev export remains pinned to the `Jacobinwwey/slidev` fork, never upstream Slidev.
+**Status:** Phases 12-19 of the standalone migration are implemented; Phase 20 closes the deterministic Mermaid and semantic diagram contract gap. Slidev export remains pinned to the `Jacobinwwey/slidev` fork, never upstream Slidev.
 
 ## 1. Scope Baseline
 
@@ -350,4 +350,23 @@ Phase 19 exits only after deterministic source and overlay tests, definition dig
 
 ### Next direction
 
-Run the fresh full release gate, publish `main` non-force, and record exact local/remote parity. Keep current source remote-main diagram/normalization drift and all Drawnix WIP in audit-only lanes.
+Complete the Phase 20 release gate, then keep Drawnix, provider response cache, and Obsidian gallery/preview in audit-only lanes.
+
+## 20. Phase 20 Mermaid normalization and semantic diagram contract (2026-08-22)
+
+**Phase status:** Runtime implementation is complete in the working tree; fresh full release verification and mainline publication remain.
+
+**Source lock:** `ref/obsidian-NotEMD@07c629c6f99a1171a6a63eaf50ddb0dce0f5fed5`; accepted portable paths are Mermaid normalization, validator, diagram catalog, and timeline/swimlane/quadrant adapters. Drawnix, host gallery/preview, provider cache, and Mermaid runtime initialization remain excluded.
+
+### Implemented boundaries
+
+- `packages/notemd-mermaid` owns BOM/line-ending normalization, closed-fence extraction, family detection, explicit unclosed-fence diagnostics, ER brace-less entity/cardinality repair, and deterministic `renderMermaidIntent` for timeline/swimlane/quadrant.
+- `packages/notemd-artifacts/src/diagram-catalog.ts` adds `diagram-catalog@1` and `diagram-intent@1`; semantic type, render target, and export format remain separate validated fields.
+- `packages/notemd-workflows` runs deterministic normalization before LLM Mermaid repair and emits `mermaid.normalize` provenance for deterministic writes.
+- `svg-preview` is an explicitly labelled derivative. It is not native Drawio/Drawnix/Circuitikz/PPTX/MP4 parity.
+
+### Evidence
+
+- Fixtures: `fixtures/migration/mermaid-normalization-lock.json` and `fixtures/migration/mermaid-normalization/er-braceless.md`.
+- Focused gate: `34` tests across normalization, catalog, artifact, workflow, and source-faithful planner suites passed; package typecheck/build passed.
+- Fresh root gate: `64` Vitest files / `250` tests, coverage Statements `77.99%`, Branches `74.01%`, Functions `85.95%`, root typecheck, lint, build, pack/verify, clean DSH acceptance, and diff check passed. Remaining action is commit, push, and local/remote parity.
