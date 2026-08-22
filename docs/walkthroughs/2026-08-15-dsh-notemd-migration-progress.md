@@ -7,7 +7,7 @@
 ## 1. Scope Baseline
 
 - Source baseline: `E:\convert\undo\obsidian-NoteMD_new` at `4168a51cd19ad8c3d1e05f604b50936255461a31`.
-- Target release: `E:\convert\undo\notemd-deepseek-harness` on `main` at the design lock `3169964` (`origin/main` synchronized); Phase 19 runtime implementation evidence is recorded below and the final release gate is pending.
+- Target release: `E:\convert\undo\notemd-deepseek-harness` on `main`; Phase 20 commit `bd6375998d91013f7b860b830afaa905b72bd285` is synchronized with `origin/main` and the worktree is clean.
 - In scope: every non-Obsidian-host NoteMD workflow, including documents, knowledge, research, diagrams, artifact export, batch execution, and stable Drawnix behavior.
 - Deliberately out of scope: Obsidian UI and host APIs, direct provider configuration, and the source working tree's uncommitted Drawnix WIP.
 
@@ -302,7 +302,7 @@ No completed Task 1-12 is reopened by this audit; the next phase starts from the
 - The package was deleted before this migration, so the unscoped name is available for first publication. npm dry-run must pass before the real publish; no credential or OTP is stored in the repository or requested through chat. Publish with `npm publish .\\artifacts\\dsh-notemd-0.1.0.tgz --access public --registry=https://registry.npmjs.org/` after completing npm 2FA.
 ## 19. Phase 19 Composite workflow implementation evidence (2026-08-21 to 2026-08-22)
 
-**Phase status:** Runtime implementation complete in the working tree; final release gates and remote publication remain.
+**Phase status:** Runtime implementation and release gate complete; commit `7191030` is the preceding composite closeout.
 
 **Evidence lock:** Target dsh-NotEMD main 3169964, npm dsh-notemd@0.1.1; current source observation ref/obsidian-NotEMD main 07c629c6f99a1171a6a63eaf50ddb0dce0f5fed5; historical oracle obsidian-NoteMD_new 4168a51cd19ad8c3d1e05f604b50936255461a31. No Drawnix WIP was copied or accepted.
 
@@ -369,4 +369,4 @@ Complete the Phase 20 release gate, then keep Drawnix, provider response cache, 
 
 - Fixtures: `fixtures/migration/mermaid-normalization-lock.json` and `fixtures/migration/mermaid-normalization/er-braceless.md`.
 - Focused gate: `34` tests across normalization, catalog, artifact, workflow, and source-faithful planner suites passed; package typecheck/build passed.
-- Fresh root gate: `64` Vitest files / `250` tests, coverage Statements `77.99%`, Branches `74.01%`, Functions `85.95%`, root typecheck, lint, build, pack/verify, clean DSH acceptance, and diff check passed. Remaining action is commit, push, and local/remote parity.
+- Fresh root gate: `64` Vitest files / `250` tests, coverage Statements `77.99%`, Branches `74.01%`, Functions `85.95%`, root typecheck, lint, build, pack/verify, clean DSH acceptance, and diff check passed. Commit `bd63759` was pushed non-force; local and remote resolve to `bd6375998d91013f7b860b830afaa905b72bd285`, and the worktree is clean.

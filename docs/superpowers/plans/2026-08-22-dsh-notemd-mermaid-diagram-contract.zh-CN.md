@@ -37,7 +37,7 @@
 
 - [x] 新鲜串行执行 root typecheck、lint、full test、coverage、build、packed-bundle verify、clean DSH acceptance 与 diff check。
 - [x] 更新双语 architecture audit、implementation plan 与 migration progress，写入精确 source lock、变更文件、测试、限制与拒绝方案。
-- [ ] 非强制提交并推送 `main`；确认 local/remote SHA parity 与 clean worktree。
+- [x] 非强制提交并推送 `main`；确认 local/remote SHA parity 与 clean worktree，SHA 为 `bd6375998d91013f7b860b830afaa905b72bd285`。
 
 ## 被拒方案
 

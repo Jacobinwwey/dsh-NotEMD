@@ -7,7 +7,7 @@
 ## 1. 范围基线
 
 - 源基线：`E:\convert\undo\obsidian-NoteMD_new`，提交 `4168a51cd19ad8c3d1e05f604b50936255461a31`。
-- 目标发布：`E:\convert\undo\notemd-deepseek-harness` 的 `main`，设计锁点提交 `3169964`（`origin/main` 已同步）；下方记录 Phase 15-19 evidence，最终 release gate 尚待本轮新鲜执行。
+- 目标发布：`E:\convert\undo\notemd-deepseek-harness` 的 `main`；Phase 20 提交 `bd6375998d91013f7b860b830afaa905b72bd285` 已与 `origin/main` 同步，工作区 clean。
 - 范围内：全部非 Obsidian 宿主的 NoteMD 工作流，包括文档、知识库、研究、图表、工件导出、批处理和稳定 Drawnix 能力。
 - 明确排除：Obsidian UI 与宿主 API、直连 Provider 配置，以及源工作树中尚未提交的 Drawnix WIP。
 
@@ -314,7 +314,7 @@
 
 ## 20. Phase 20 Mermaid normalization 与 semantic diagram contract（2026-08-22）
 
-**阶段状态：** runtime implementation 已完成于工作区；剩余是新鲜完整 release gate 与 mainline 发布。
+**阶段状态：** runtime implementation 与 release gate 已完成；前一 composite closeout 提交为 `7191030`。
 
 **源锁：** `ref/obsidian-NotEMD@07c629c6f99a1171a6a63eaf50ddb0dce0f5fed5`；接受 Mermaid normalization、validator、diagram catalog、timeline/swimlane/quadrant adapter 等可迁移路径。Drawnix、host gallery/preview、Provider cache 与 Mermaid runtime initialization 继续排除。
 
@@ -329,4 +329,4 @@
 
 - Fixture：`fixtures/migration/mermaid-normalization-lock.json` 与 `fixtures/migration/mermaid-normalization/er-braceless.md`。
 - focused gate：normalization、catalog、artifact、workflow、source-faithful planner 共 34 个测试通过；package typecheck/build 通过。
-- 新鲜 root gate：64 个 Vitest 文件 / 250 个测试，coverage Statements 77.99%、Branches 74.01%、Functions 85.95%，root typecheck、lint、build、pack/verify、clean DSH acceptance 与 diff check 通过。剩余动作是 commit、push 与 local/remote parity。
+- 新鲜 root gate：64 个 Vitest 文件 / 250 个测试，coverage Statements 77.99%、Branches 74.01%、Functions 85.95%，root typecheck、lint、build、pack/verify、clean DSH acceptance 与 diff check 通过。提交 `bd63759` 已非强制推送；local/remote 均解析为 `bd6375998d91013f7b860b830afaa905b72bd285`，工作区 clean。

@@ -37,7 +37,7 @@
 
 - [x] Run fresh root typecheck, lint, full test suite, coverage, build, packed-bundle verification, clean DSH acceptance, and diff checks serially.
 - [x] Update the bilingual architecture audit, implementation plan, and migration progress with exact source locks, changed files, tests, limitations, and rejected alternatives.
-- [ ] Commit and push `main` non-force; verify local and remote SHA parity and a clean worktree.
+- [x] Commit and push `main` non-force; verify local and remote SHA parity and a clean worktree at `bd6375998d91013f7b860b830afaa905b72bd285`.
 
 ## Rejected alternatives
 
