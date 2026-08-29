@@ -1,14 +1,11 @@
 # dsh-NotEMD
 
-<p align="center">
-  <a href="https://linux.do/"><img alt="linux.do" src="https://img.shields.io/badge/friend-linux.do-1f883d?style=flat-square"></a>
-</p>
-
 
 [![npm](https://img.shields.io/npm/v/dsh-notemd?logo=npm&label=npm)](https://www.npmjs.com/package/dsh-notemd)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-bundle-0f766e)](https://github.com/deepseek-ai/deepseek-harness)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D22.19-3c873a)](https://nodejs.org/)
 [![Repository](https://img.shields.io/badge/repository-dsh--NotEMD-181717?logo=github)](https://github.com/Jacobinwwey/dsh-NotEMD)
+[![linux.do](https://img.shields.io/badge/friend-linux.do-1f883d?style=flat-square?logo=github)](https://linux.do/))
 
 Portable, approval-gated NoteMD workflows for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). The bundle operates on an explicit workspace root, keeps canonical source and derived artifacts together, and has no dependency on Obsidian APIs, editor state, commands, or UI hosts.
 
