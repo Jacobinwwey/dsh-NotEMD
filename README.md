@@ -5,6 +5,10 @@
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D22.19-3c873a)](https://nodejs.org/)
 [![Repository](https://img.shields.io/badge/repository-dsh--NotEMD-181717?logo=github)](https://github.com/Jacobinwwey/dsh-NotEMD)
 
+<p align="center">
+  <a href="https://linux.do/"><img alt="linux.do" src="https://img.shields.io/badge/friend-linux.do-1f883d?style=flat-square"></a>
+</p>
+
 Portable, approval-gated NoteMD workflows for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). The bundle operates on an explicit workspace root, keeps canonical source and derived artifacts together, and has no dependency on Obsidian APIs, editor state, commands, or UI hosts.
 
 [English](https://github.com/Jacobinwwey/dsh-NotEMD/blob/main/README.md) | [简体中文](https://github.com/Jacobinwwey/dsh-NotEMD/blob/main/README.zh-CN.md)
