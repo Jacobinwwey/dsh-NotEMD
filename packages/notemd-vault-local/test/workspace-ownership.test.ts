@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, unlink, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, realpath, rm, unlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -27,7 +27,7 @@ test('acquires one owner, records lifecycle metadata, and releases idempotently'
     recoveryCount: 0,
   })
   const lock = JSON.parse(await readFile(join(root, '.notemd', 'runtime', 'workspace-owner.json'), 'utf8')) as Record<string, unknown>
-  expect(lock).toMatchObject({ version: 1, ownerRevision: 'owner-a', processStartToken: 'start-a', workspaceRoot: root })
+  expect(lock).toMatchObject({ version: 1, ownerRevision: 'owner-a', processStartToken: 'start-a', workspaceRoot: await realpath(root) })
 
   await expect(guard.release()).resolves.toMatchObject({ cleanupHealthy: true, code: 'workspace-owner-released' })
   await expect(guard.release()).resolves.toMatchObject({ cleanupHealthy: true, code: 'workspace-owner-released' })
@@ -62,7 +62,8 @@ test('recovers a dead stale owner and increments the durable recovery counter', 
     version: 1,
     pid: 707,
     processStartToken: 'dead-start',
-    workspaceRoot: root,
+    // Persisted locks use canonical paths, including expansion of Windows 8.3 names.
+    workspaceRoot: await realpath(root),
     ownerRevision: 'dead-owner',
     acquiredAt: '2026-08-17T00:00:00.000Z',
     heartbeatAt: '2026-08-17T00:00:00.000Z',

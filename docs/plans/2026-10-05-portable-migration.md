@@ -35,6 +35,8 @@ Installed-bundle acceptance also caught stale copied manuals. A prepack step now
 
 The first Linux CI run exposed two older test fixtures hardcoding a Windows temporary directory. They now use Node's platform temporary-directory API, so clean runners do not require a developer-specific drive.
 
+Windows CI additionally exposed an ownership-test assumption that temporary paths never use 8.3 aliases. The expected lock path and stale-lock fixture now use the canonical real path required by the existing runtime contract; production ownership checks remain strict.
+
 ## Validation and delivery
 
 - Focused geometry/renderer checks: 25 tests passed.
