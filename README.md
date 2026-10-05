@@ -72,10 +72,16 @@ Only a matching `committed` receipt produces a workspace change event. `conflict
 
 ## Capabilities
 
+### Source upgrade following NotEMD 1.9.12
+
+The current source branch adds relationship-aware SVG projection across seven graph renderers: visible hierarchy links, bounded distance-improving placement, boundary-connected routes, distinct self/parallel/reverse relations and complete wrapped labels. The SVG projection fingerprint is now `2`; semantic/native source formats and adapter contracts remain unchanged. This is a source update after the published `0.1.1` package.
+
+The layout is deterministic and bounded, not a guarantee of zero crossings in every dense graph. It uses estimated text widths and the most recent 64 routes for congestion scoring. Native JSON Canvas coordinates remain a separate implementation. Browser SVG-to-PDF and modal diagnostic folding are not runtime capabilities of this bundle; existing durable jobs already preserve prior stage results. See the [migration analysis](docs/plans/2026-10-05-portable-migration.md).
+
 | Area | Model-facing entry points | Contract |
 | --- | --- | --- |
 | Workspace | `notemd_workspace_list`, `notemd_workspace_read` | Workspace-relative Markdown paths, root containment, immutable revisions. |
-| Knowledge | `notemd_knowledge_search`, `notemd_knowledge_retrieve` | Derived index only; retrieval rereads the vault and returns citations. |
+| Knowledge | `notemd_knowledge_search`, `notemd_knowledge_retrieve` | Queries return indexed content and citations; committed workspace events refresh affected source sections. External edits require index refresh. |
 | Note workflows | `notemd_plan_*` | Wiki-links, title generation, translation, concept extraction, Mermaid/formula repair, chapter split, original-text extraction, folder batches, duplicate checks, and reviewed dedupe. Planning never writes. |
 | Research | `notemd_research_discover`, `notemd_research_capture_evidence`, `notemd_plan_research_synthesis` | Uses DSH `web`; durable evidence stores identity, citations, and a digest, not untrusted tool output. |
 | Mutation | `notemd_request_plan_approval`, `notemd_apply_approved_plan` | One plan digest, one approval receipt, one consume; exact revision preconditions; stale plans fail closed. |

@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest'
+import { graphProjectionVersion } from '@notemd-harness/artifacts'
 
 import { MermaidSvgRenderer } from '../src/index.js'
 
@@ -10,6 +11,9 @@ test('emits Mermaid source and a labelled SVG source projection', () => {
   expect(output.preview).toMatchObject({ filename: 'preview.svg', mediaType: 'image/svg+xml' })
   expect(readyContent(output.preview)).toContain('data-notemd-renderer="mermaid-source-projection"')
   expect(readyContent(output.export)).toContain('<svg')
+  expect(output.preview.fingerprint?.version).toBe(graphProjectionVersion)
+  expect(output.export.fingerprint?.version).toBe(graphProjectionVersion)
+  expect(output.source.fingerprint ?? new MermaidSvgRenderer().fingerprint).toMatchObject({ version: '1' })
 })
 
 function graphSpec(canonicalTarget: 'mermaid') {

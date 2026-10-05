@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest'
+import { graphProjectionVersion } from '@notemd-harness/artifacts'
 
 import { JsonCanvasSvgRenderer } from '../src/index.js'
 
@@ -23,6 +24,9 @@ test('retains JSON Canvas as source and labels SVG as a non-canonical projection
   expect(JSON.parse(output.source.content)).toMatchObject({ nodes: expect.any(Array), edges: expect.any(Array) })
   expect(readyContent(output.preview)).toContain('data-notemd-projection="json-canvas"')
   expect(readyContent(output.preview)).toContain('JSON Canvas projection')
+  expect(output.preview.fingerprint?.version).toBe(graphProjectionVersion)
+  expect(output.export.fingerprint?.version).toBe(graphProjectionVersion)
+  expect(output.source.fingerprint ?? new JsonCanvasSvgRenderer().fingerprint).toMatchObject({ version: '1' })
 })
 
 function readyContent(value: { readonly content?: string }): string {

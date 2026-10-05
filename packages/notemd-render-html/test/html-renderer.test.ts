@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest'
+import { graphProjectionVersion } from '@notemd-harness/artifacts'
 
 import { HtmlSvgRenderer } from '../src/index.js'
 
@@ -18,6 +19,9 @@ test('emits an inspectable HTML source with a separate SVG projection', () => {
   expect(output.source).toMatchObject({ filename: 'diagram.html', mediaType: 'text/html' })
   expect(output.source.content.toLocaleLowerCase()).toContain('<!doctype html>')
   expect(readyContent(output.preview)).toContain('data-notemd-renderer="html-projection"')
+  expect(output.preview.fingerprint?.version).toBe(graphProjectionVersion)
+  expect(output.export.fingerprint?.version).toBe(graphProjectionVersion)
+  expect(output.source.fingerprint ?? new HtmlSvgRenderer().fingerprint).toMatchObject({ version: '1' })
 })
 
 function readyContent(value: { readonly content?: string }): string {

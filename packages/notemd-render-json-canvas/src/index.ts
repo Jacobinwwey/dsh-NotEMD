@@ -1,4 +1,5 @@
 import {
+  graphProjectionVersion,
   renderGraphProjectionSvg,
   validateDiagramSpec,
   type DiagramArtifactRenderer,
@@ -24,10 +25,11 @@ export class JsonCanvasSvgRenderer implements DiagramArtifactRenderer {
       theme: spec.rendererIntent.theme,
       fontFamily: spec.rendererIntent.fontFamily,
     })
+    const projectionFingerprint = Object.freeze({ ...this.fingerprint, version: graphProjectionVersion })
     return Object.freeze({
       source: Object.freeze({ filename: 'diagram.canvas', mediaType: 'application/json', content: `${JSON.stringify(jsonCanvasSource(spec.graph), null, 2)}\n` }),
-      preview: Object.freeze({ filename: 'preview.svg', mediaType: 'image/svg+xml', content: svg }),
-      export: Object.freeze({ filename: 'export.svg', mediaType: 'image/svg+xml', content: svg }),
+      preview: Object.freeze({ filename: 'preview.svg', mediaType: 'image/svg+xml', content: svg, fingerprint: projectionFingerprint }),
+      export: Object.freeze({ filename: 'export.svg', mediaType: 'image/svg+xml', content: svg, fingerprint: projectionFingerprint }),
     })
   }
 }

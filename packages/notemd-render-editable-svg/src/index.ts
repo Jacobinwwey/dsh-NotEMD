@@ -1,4 +1,5 @@
 import {
+  graphProjectionVersion,
   renderGraphProjectionSvg,
   validateDiagramSpec,
   type DiagramArtifactRenderer,
@@ -8,7 +9,7 @@ import {
 
 export class EditableSvgRenderer implements DiagramArtifactRenderer {
   readonly target = 'editable-svg' as const
-  readonly fingerprint = Object.freeze({ id: 'notemd-editable-svg', version: '1' })
+  readonly fingerprint = Object.freeze({ id: 'notemd-editable-svg', version: graphProjectionVersion })
 
   render(specInput: EditableSvgDiagramSpec): DiagramArtifactRenderOutput {
     const spec = validateDiagramSpec(specInput)

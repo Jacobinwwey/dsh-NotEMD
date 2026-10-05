@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { afterEach, expect, test } from 'vitest'
+import { graphProjectionVersion } from '@notemd-harness/artifacts'
 
 import type { ProcessArtifactExecution } from '@notemd-harness/process'
 import { createBinarySha256, StagedAssetStore } from '@notemd-harness/vault-local'
@@ -36,6 +37,9 @@ test('produces escaped deterministic Circuitikz source and digest-bound staged P
   expect(output.export).toMatchObject({ mediaType: 'application/pdf', filename: 'diagram.pdf' })
   expect(output.export).toHaveProperty('stagedAsset.mediaType', 'application/pdf')
   expect(output.export).toHaveProperty('stagedAsset.sha256', createBinarySha256(pdf))
+  expect(output.preview.fingerprint?.version).toBe(graphProjectionVersion)
+  expect(output.source.fingerprint?.version).toBe('1')
+  expect(output.export.fingerprint?.version).toBe('tectonic-executable')
 })
 
 test('reports missing Tectonic without creating a fake PDF', async () => {

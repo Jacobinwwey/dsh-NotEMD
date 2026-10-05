@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "sourceObservation": {
+    "repository": "https://github.com/Jacobinwwey/obsidian-NotEMD",
+    "tag": "1.9.12",
+    "commit": "0f493b8d3cd60553e5a517660ca1a729ce4acdfc",
+    "paths": [
+      "src/diagram/adapters/drawnix/drawnixMindMapProjection.ts",
+      "src/tests/drawnixRelationshipPlacement.test.ts"
+    ]
+  },
+  "disposition": "portable-behavioral-adaptation",
+  "projectionVersion": "2",
+  "acceptedSemantics": [
+    "immutable-complete-source-graph",
+    "hierarchy-preserving-deterministic-placement",
+    "bounded-strict-relation-distance-improvement",
+    "boundary-ports-and-scored-orthogonal-routes",
+    "complete-labels-and-canvas-enclosure"
+  ],
+  "evidence": [
+    "packages/notemd-artifacts/test/graph-layout.test.ts",
+    "packages/notemd-artifacts/test/svg-projection.test.ts",
+    "packages/notemd-render-drawnix/test/drawnix-renderer.test.ts"
+  ],
+  "excluded": ["Plait serialization", "Obsidian modal state", "browser CSS-to-PDF runtime"],
+  "historicalEvidence": "source-intake-lock.json remains unchanged; this clean release follow-up supersedes only its Drawnix layout deferral"
+}

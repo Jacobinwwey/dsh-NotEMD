@@ -1,4 +1,5 @@
 import { afterEach, expect, test } from 'vitest'
+import { graphProjectionVersion } from '@notemd-harness/artifacts'
 
 import type { ProcessArtifactExecution, ProcessExecutableCapability } from '@notemd-harness/process'
 
@@ -28,6 +29,9 @@ test('produces deterministic escaped Draw.io XML and a labelled projection', asy
   expect(first.preview).toMatchObject({ mediaType: 'image/svg+xml', filename: 'preview.svg' })
   expect('content' in first.preview && first.preview.content).toContain('data-notemd-projection="drawio"')
   expect(first.export).toMatchObject({ mediaType: 'image/svg+xml', filename: 'export.svg' })
+  expect(first.preview.fingerprint?.version).toBe(graphProjectionVersion)
+  expect(first.source.fingerprint?.version).toBe('1')
+  expect(first.export.fingerprint?.version).toBe('drawio-executable')
 })
 
 test('reports a missing Draw.io executable without fabricating an export', async () => {

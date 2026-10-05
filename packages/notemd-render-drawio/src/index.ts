@@ -1,4 +1,5 @@
 import {
+  graphProjectionVersion,
   renderGraphProjectionSvg,
   validateDiagramSpec,
   type DiagramArtifactRenderOutput,
@@ -42,7 +43,7 @@ export class DrawioArtifactRenderer implements SpecialistArtifactRenderer<'drawi
         filename: 'preview.svg',
         mediaType: 'image/svg+xml',
         content: projection,
-        fingerprint: Object.freeze({ id: 'notemd-drawio-projection', version: '1' }),
+        fingerprint: Object.freeze({ id: 'notemd-drawio-projection', version: graphProjectionVersion }),
       }),
       export: nativeDerivative(native),
     })

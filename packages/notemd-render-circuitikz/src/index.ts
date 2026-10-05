@@ -1,4 +1,5 @@
 import {
+  graphProjectionVersion,
   renderGraphProjectionSvg,
   validateDiagramSpec,
   type DiagramArtifactRenderOutput,
@@ -47,7 +48,7 @@ export class CircuitikzArtifactRenderer implements SpecialistArtifactRenderer<'c
         filename: 'preview.svg',
         mediaType: 'image/svg+xml',
         content: projection,
-        fingerprint: Object.freeze({ id: 'notemd-circuitikz-projection', version: '1' }),
+        fingerprint: Object.freeze({ id: 'notemd-circuitikz-projection', version: graphProjectionVersion }),
       }),
       export: await nativeDerivative(native, this.stagedAssets),
     })

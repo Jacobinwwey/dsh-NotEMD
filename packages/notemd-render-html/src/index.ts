@@ -1,4 +1,5 @@
 import {
+  graphProjectionVersion,
   escapeSvgText,
   renderGraphProjectionSvg,
   validateDiagramSpec,
@@ -24,10 +25,11 @@ export class HtmlSvgRenderer implements DiagramArtifactRenderer {
       theme: spec.rendererIntent.theme,
       fontFamily: spec.rendererIntent.fontFamily,
     })
+    const projectionFingerprint = Object.freeze({ ...this.fingerprint, version: graphProjectionVersion })
     return Object.freeze({
       source: Object.freeze({ filename: 'diagram.html', mediaType: 'text/html', content: htmlSource(spec) }),
-      preview: Object.freeze({ filename: 'preview.svg', mediaType: 'image/svg+xml', content: svg }),
-      export: Object.freeze({ filename: 'export.svg', mediaType: 'image/svg+xml', content: svg }),
+      preview: Object.freeze({ filename: 'preview.svg', mediaType: 'image/svg+xml', content: svg, fingerprint: projectionFingerprint }),
+      export: Object.freeze({ filename: 'export.svg', mediaType: 'image/svg+xml', content: svg, fingerprint: projectionFingerprint }),
     })
   }
 }

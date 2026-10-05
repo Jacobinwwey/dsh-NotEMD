@@ -69,10 +69,16 @@ read -> immutable WorkspaceMutationPlan -> approval -> apply -> committed receip
 
 ## 能力矩阵
 
+### 对应 NotEMD 1.9.12 的源代码升级
+
+当前源码为七个图形渲染器增加基于关系的 SVG 投影：可见层级连线、有计算预算且只接受距离改善的排布、节点边界连接、独立自环/平行/反向关系，以及完整换行标签。SVG 投影指纹更新为 `2`，语义/原生源格式与适配器契约保持不变。这是已发布 `0.1.1` 软件包之后的源码更新。
+
+布局是确定性且有计算预算的启发式算法，不保证任意密集图零交叉。它使用估算文本宽度，并对最近 64 条路径进行拥挤度评分。原生 JSON Canvas 坐标仍由独立实现负责。浏览器 SVG 到 PDF 和模态诊断折叠不属于此 bundle 的运行能力；既有持久化任务已经保留前序阶段结果。详见[迁移分析](docs/plans/2026-10-05-portable-migration.zh-CN.md)。
+
 | 区域 | 面向模型的入口 | 契约 |
 | --- | --- | --- |
 | 工作区 | `notemd_workspace_list`、`notemd_workspace_read` | 工作区相对 Markdown 路径、根目录 containment、不可变 revision。 |
-| 知识索引 | `notemd_knowledge_search`、`notemd_knowledge_retrieve` | 只读派生索引；检索重新读取 Vault 并返回 citation。 |
+| 知识索引 | `notemd_knowledge_search`、`notemd_knowledge_retrieve` | 查询返回索引内容及 citation；已提交的工作区事件刷新受影响的源章节，外部编辑需要刷新索引。 |
 | 笔记工作流 | `notemd_plan_*` | Wiki-link、标题生成、翻译、概念提取、Mermaid/公式修复、章节拆分、原文提取、文件夹批处理、重复检查与人工确认去重；规划不写入。 |
 | 联网研究 | `notemd_research_discover`、`notemd_research_capture_evidence`、`notemd_plan_research_synthesis` | 使用 DSH `web`；持久化 evidence 只保存身份、citation 与 digest，不把不可信工具输出作为事实。 |
 | 修改 | `notemd_request_plan_approval`、`notemd_apply_approved_plan` | 一个 plan digest、一个 approval receipt、一次消费；精确 revision 前置条件；陈旧 plan fail closed。 |

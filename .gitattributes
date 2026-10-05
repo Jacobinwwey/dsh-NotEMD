@@ -1,0 +1,2 @@
+# Migration fixtures are byte-addressed contracts; checkout must preserve their hashes.
+fixtures/** text eol=lf

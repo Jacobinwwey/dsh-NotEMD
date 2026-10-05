@@ -166,6 +166,7 @@
     "@notemd-harness/workflows"
   ],
   "scripts": {
+    "prepack": "node ../../scripts/sync-bundle-readmes.mjs",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --config ../../vitest.config.ts"

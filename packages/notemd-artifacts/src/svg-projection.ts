@@ -1,4 +1,8 @@
-import type { DiagramChartInput, DiagramGraphInput, DiagramGraphNode } from './diagram-spec.js'
+import type { DiagramChartInput, DiagramGraphInput } from './diagram-spec.js'
+import { layoutGraph, wrapGraphText, type GraphLayoutEdge, type GraphLayoutNode } from './graph-layout.js'
+
+/** Version every consumer's SVG derivative when the shared graph geometry changes. */
+export const graphProjectionVersion = '2'
 
 export interface SvgProjectionOptions {
   readonly title: string
@@ -9,38 +13,34 @@ export interface SvgProjectionOptions {
   readonly subtitle?: string
 }
 
-interface PositionedNode {
-  readonly id: string
-  readonly label: string
-  readonly x: number
-  readonly y: number
-  readonly width: number
-  readonly height: number
-}
-
 const graphWidth = 960
-const nodeWidth = 220
-const nodeHeight = 84
-const horizontalGap = 68
-const verticalGap = 72
 
 export function renderGraphProjectionSvg(graph: DiagramGraphInput, options: SvgProjectionOptions): string {
-  const nodes = positionGraphNodes(graph.nodes)
+  const layout = layoutGraph(graph)
   const colors = projectionColors(options.theme)
-  const graphHeight = Math.max(320, 128 + Math.ceil(nodes.length / 3) * (nodeHeight + verticalGap) + 64)
-  const nodeById = new Map(nodes.map((node) => [node.id, node]))
-  const edgeMarkup = graph.edges.map((edge) => renderGraphEdge(edge, nodeById, colors)).join('')
-  const nodeMarkup = nodes.map((node, index) => renderGraphNode(node, index, colors, options.fontFamily)).join('')
+  const titleLines = wrapGraphText(options.title, layout.width - 64, 20)
+  const subtitleLines = options.subtitle === undefined ? [] : wrapGraphText(options.subtitle, layout.width - 64, 13)
+  const subtitleTop = 38 + titleLines.length * 26
+  const headerBottom = subtitleTop + subtitleLines.length * 18 + 24
+  const graphOffset = Math.max(0, headerBottom - 118)
+  const graphHeight = layout.height + graphOffset
+  const hierarchyMarkup = layout.hierarchy.map((edge) => `<polyline data-edge-kind="hierarchy" points="${routePoints(edge)}" fill="none" stroke="${colors.border}" stroke-width="2" />`).join('')
+  const relationMarkup = layout.relations.map((edge) => renderGraphEdge(edge, colors, options.fontFamily)).join('')
+  const nodeMarkup = layout.nodes.map((node, index) => renderGraphNode(node, index, colors, options.fontFamily)).join('')
 
   return svgDocument(
+    layout.width,
     graphHeight,
     options,
     [
-      `<rect width="${graphWidth}" height="${graphHeight}" fill="${colors.background}" />`,
-      `<text x="32" y="38" font-family="${escapeSvgAttribute(options.fontFamily)}" font-size="20" font-weight="700" fill="${colors.title}">${escapeSvgText(options.title)}</text>`,
-      options.subtitle === undefined ? '' : `<text x="32" y="64" font-family="${escapeSvgAttribute(options.fontFamily)}" font-size="13" fill="${colors.muted}">${escapeSvgText(options.subtitle)}</text>`,
-      edgeMarkup,
+      `<rect width="${layout.width}" height="${graphHeight}" fill="${colors.background}" />`,
+      `<text x="32" y="38" font-family="${escapeSvgAttribute(options.fontFamily)}" font-size="20" font-weight="700" fill="${colors.title}">${textSpans(titleLines, 32, 26)}</text>`,
+      subtitleLines.length === 0 ? '' : `<text x="32" y="${subtitleTop}" font-family="${escapeSvgAttribute(options.fontFamily)}" font-size="13" fill="${colors.muted}">${textSpans(subtitleLines, 32, 18)}</text>`,
+      `<g transform="translate(0 ${graphOffset})">`,
+      hierarchyMarkup,
+      relationMarkup,
       nodeMarkup,
+      '</g>',
     ].join(''),
     colors,
   )
@@ -101,7 +101,7 @@ export function renderChartProjectionSvg(chart: DiagramChartInput, options: SvgP
     return `<rect x="${x}" y="86" width="12" height="12" fill="${seriesColor(index)}" /><text x="${x + 18}" y="97" font-family="${escapeSvgAttribute(options.fontFamily)}" font-size="13" fill="${colors.text}">${escapeSvgText(series.label)}</text>`
   }).join('')
 
-  return svgDocument(height, options, [
+  return svgDocument(width, height, options, [
     `<rect width="${width}" height="${height}" fill="${colors.background}" />`,
     `<text x="32" y="38" font-family="${escapeSvgAttribute(options.fontFamily)}" font-size="20" font-weight="700" fill="${colors.title}">${escapeSvgText(options.title)}</text>`,
     options.subtitle === undefined ? '' : `<text x="32" y="64" font-family="${escapeSvgAttribute(options.fontFamily)}" font-size="13" fill="${colors.muted}">${escapeSvgText(options.subtitle)}</text>`,
@@ -124,55 +124,34 @@ export function escapeSvgAttribute(value: string): string {
     .replace(/'/gu, '&#39;')
 }
 
-function svgDocument(height: number, options: SvgProjectionOptions, content: string, colors: ProjectionColors): string {
+function svgDocument(width: number, height: number, options: SvgProjectionOptions, content: string, colors: ProjectionColors): string {
   const projection = options.projection === undefined ? '' : ` data-notemd-projection="${escapeSvgAttribute(options.projection)}"`
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${graphWidth}" height="${height}" viewBox="0 0 ${graphWidth} ${height}" role="img" data-notemd-renderer="${escapeSvgAttribute(options.rendererId)}"${projection}><title>${escapeSvgText(options.title)}</title><defs><marker id="notemd-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="${colors.edge}" /></marker></defs>${content}</svg>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" data-notemd-renderer="${escapeSvgAttribute(options.rendererId)}"${projection}><title>${escapeSvgText(options.title)}</title><defs><marker id="notemd-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="${colors.edge}" /></marker></defs>${content}</svg>`
 }
 
-function positionGraphNodes(nodes: readonly DiagramGraphNode[]): readonly PositionedNode[] {
-  const flattened = flattenGraphNodes(nodes)
-  return flattened.map((node, index) => {
-    const column = index % 3
-    const row = Math.floor(index / 3)
-    return Object.freeze({
-      id: node.id,
-      label: node.label,
-      x: 52 + column * (nodeWidth + horizontalGap),
-      y: 118 + row * (nodeHeight + verticalGap),
-      width: nodeWidth,
-      height: nodeHeight,
-    })
-  })
+function routePoints(edge: GraphLayoutEdge): string {
+  return edge.points.map((point) => `${point.x},${point.y}`).join(' ')
 }
 
-function flattenGraphNodes(nodes: readonly DiagramGraphNode[]): readonly DiagramGraphNode[] {
-  return nodes.flatMap((node) => [node, ...(node.children === undefined ? [] : flattenGraphNodes(node.children))])
+function textSpans(lines: readonly string[], x: number, lineHeight: number): string {
+  return lines.map((line, index) => `<tspan x="${x}" dy="${index === 0 ? 0 : lineHeight}">${escapeSvgText(line)}</tspan>`).join('')
 }
 
 function renderGraphEdge(
-  edge: DiagramGraphInput['edges'][number],
-  nodeById: ReadonlyMap<string, PositionedNode>,
+  edge: GraphLayoutEdge,
   colors: ProjectionColors,
+  fontFamily: string,
 ): string {
-  const from = nodeById.get(edge.from)
-  const to = nodeById.get(edge.to)
-  if (from === undefined || to === undefined) {
-    return ''
-  }
-  const startX = from.x + from.width / 2
-  const startY = from.y + from.height / 2
-  const endX = to.x + to.width / 2
-  const endY = to.y + to.height / 2
   const label = edge.label === undefined
     ? ''
-    : `<text x="${(startX + endX) / 2}" y="${(startY + endY) / 2 - 8}" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="${colors.muted}">${escapeSvgText(edge.label)}</text>`
-  return `<line x1="${startX}" y1="${startY}" x2="${endX}" y2="${endY}" stroke="${colors.edge}" stroke-width="2" marker-end="url(#notemd-arrow)" />${label}`
+    : `<rect x="${edge.label.x}" y="${edge.label.y}" width="${edge.label.width}" height="${edge.label.height}" fill="${colors.background}" /><text x="${edge.label.x + edge.label.width / 2}" y="${edge.label.y + 20}" text-anchor="middle" font-family="${escapeSvgAttribute(fontFamily)}" font-size="12" fill="${colors.muted}">${textSpans(edge.label.lines, edge.label.x + edge.label.width / 2, 16)}</text>`
+  return `<g data-edge-kind="relation" data-from="${escapeSvgAttribute(edge.from)}" data-to="${escapeSvgAttribute(edge.to)}"><polyline points="${routePoints(edge)}" fill="none" stroke="${colors.edge}" stroke-width="2" marker-end="url(#notemd-arrow)" />${label}</g>`
 }
 
-function renderGraphNode(node: PositionedNode, index: number, colors: ProjectionColors, fontFamily: string): string {
+function renderGraphNode(node: GraphLayoutNode, index: number, colors: ProjectionColors, fontFamily: string): string {
   const fill = nodeFill(index, colors)
-  const lines = node.label.split(/\r?\n/u).slice(0, 3)
-  const text = lines.map((line, lineIndex) => `<tspan x="${node.x + node.width / 2}" dy="${lineIndex === 0 ? 0 : 18}">${escapeSvgText(line)}</tspan>`).join('')
+  const lines = node.lines
+  const text = textSpans(lines, node.x + node.width / 2, 18)
   return `<rect x="${node.x}" y="${node.y}" width="${node.width}" height="${node.height}" rx="6" fill="${fill}" stroke="${colors.border}" /><text x="${node.x + node.width / 2}" y="${node.y + node.height / 2 - (lines.length - 1) * 9}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeSvgAttribute(fontFamily)}" font-size="14" fill="${colors.text}">${text}</text>`
 }
 

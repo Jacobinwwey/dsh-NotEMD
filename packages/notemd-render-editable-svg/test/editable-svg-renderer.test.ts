@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest'
+import { graphProjectionVersion } from '@notemd-harness/artifacts'
 
 import { EditableSvgRenderer } from '../src/index.js'
 
@@ -19,6 +20,8 @@ test('uses editable SVG as the canonical source and emits separate preview/expor
   expect(output.source.content).toContain('data-notemd-renderer="editable-svg"')
   expect(readyContent(output.preview)).toContain('data-notemd-renderer="editable-svg"')
   expect(output.preview).not.toBe(output.source)
+  expect(new EditableSvgRenderer().fingerprint.version).toBe(graphProjectionVersion)
+  expect(graphProjectionVersion).not.toBe('1')
 })
 
 function readyContent(value: { readonly content?: string }): string {
