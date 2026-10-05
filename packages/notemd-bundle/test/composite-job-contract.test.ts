@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { tmpdir } from 'node:os'
 
 import { afterEach, expect, test } from 'vitest'
 
@@ -18,7 +19,7 @@ afterEach(async () => {
 })
 
 test('persists a versioned composite workflow identity in the existing job store contract', async () => {
-  workspaceRoot = await mkdtemp(join(process.env.TEMP ?? 'E:/temp', 'notemd-composite-job-'))
+  workspaceRoot = await mkdtemp(join(tmpdir(), 'notemd-composite-job-'))
   await mkdir(workspaceRoot, { recursive: true })
   const store = await FileJobStore.open(workspaceRoot)
   const job = await store.start({

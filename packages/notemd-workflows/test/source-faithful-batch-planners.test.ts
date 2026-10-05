@@ -1,5 +1,6 @@
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { tmpdir } from 'node:os'
 
 import { afterEach, beforeEach, expect, test } from 'vitest'
 
@@ -25,7 +26,7 @@ class ScriptedTransformer implements TextTransformer {
 let workspaceRoot = ''
 
 beforeEach(async () => {
-  workspaceRoot = await mkdtemp(join(process.env.TEMP ?? 'E:/temp', 'notemd-composite-planner-'))
+  workspaceRoot = await mkdtemp(join(tmpdir(), 'notemd-composite-planner-'))
   await mkdir(join(workspaceRoot, 'concepts'), { recursive: true })
   await mkdir(join(workspaceRoot, 'completed'), { recursive: true })
   await mkdir(join(workspaceRoot, 'mermaid'), { recursive: true })

@@ -33,6 +33,8 @@ Windows exposed a fixture issue unrelated to graph semantics: committed LF fixtu
 
 Installed-bundle acceptance also caught stale copied manuals. A prepack step now synchronizes both root language manuals into the bundle at the packaging boundary.
 
+The first Linux CI run exposed two older test fixtures hardcoding a Windows temporary directory. They now use Node's platform temporary-directory API, so clean runners do not require a developer-specific drive.
+
 ## Validation and delivery
 
 - Focused geometry/renderer checks: 25 tests passed.
